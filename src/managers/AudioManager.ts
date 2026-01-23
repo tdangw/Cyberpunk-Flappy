@@ -65,7 +65,7 @@ export class AudioManager {
         if (this.bgm) this.bgm.stop();
 
         this.bgm = new Howl({
-            src: [`/audio/${file}`],
+            src: [`audio/${file}`],
             loop: true,
             volume: this.config.bgmVolume,
             onloaderror: () => console.warn(`BGM file not found: /audio/${file}`)
