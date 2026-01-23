@@ -45,7 +45,7 @@ export class AudioManager {
 
         soundFiles.forEach(s => {
             this.sounds.set(s.id, new Howl({
-                src: [`/audio/${s.file}`],
+                src: [`audio/${s.file}`],
                 volume: this.config.sfxVolume,
                 onloaderror: () => console.warn(`Audio file not found: /audio/${s.file}`)
             }));
