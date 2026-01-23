@@ -179,7 +179,7 @@ export class Game {
         // Brief delay before fall sound triggers
         setTimeout(() => {
             if (this.state === 'DYING') this.audioManager.play('die'); // FALL SOUND
-        }, 100);
+        }, 250);
     }
 
     private handleGroundCollision(): void {
