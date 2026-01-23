@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cyberpunk Flappy Bird: Pro Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div id="game-container">
+    <canvas id="game" width="1280" height="720"></canvas>
+
+    <div class="ui-layer">
+      <!-- HUD (High positioning) -->
+      <div id="top-hud">
+        <div id="coin-display">
+          <span class="coin-icon">$</span> <span id="total-coins">0</span>
+        </div>
+
+        <div id="score-container">
+          <div id="score">0</div>
+        </div>
+
+        <div id="action-buttons">
+          <div id="shop-btn" class="btn-icon">🛍️</div>
+          <div id="settings-btn" class="btn-icon">⚙</div>
+        </div>
+      </div>
+
+      <div id="energy-bar-hud">
+        <span id="energy-label">Nitro System</span>
+        <div id="energy-container">
+          <div id="energy-fill"></div>
+        </div>
+      </div>
+
+      <div id="bonus-notification" class="bonus-popup">
+        <div class="bonus-title">PHASE REWARD</div>
+        <div class="bonus-amount">+10 CREDITS</div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div id="settings-panel" class="modal-panel compact-settings">
+        <span class="close-modal">&times;</span>
+        <h2>SYSTEM CONFIG</h2>
+
+        <div class="settings-content">
+          <div class="setting-row">
+            <span class="setting-label">Music</span>
+            <input type="range" id="bgmVolumeRange" min="0" max="1" step="0.1">
+            <button id="toggle-bgm" class="btn-toggle">ON</button>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Sound FX</span>
+            <input type="range" id="sfxVolumeRange" min="0" max="1" step="0.1">
+            <button id="toggle-sfx" class="btn-toggle">ON</button>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="setting-row">
+            <span class="setting-label">Core Speed</span>
+            <input type="range" id="speedRange" min="1" max="10" step="0.5">
+            <span id="val-speed" class="val-display">2</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Gravity</span>
+            <input type="range" id="gravityRange" min="0.05" max="0.5" step="0.01">
+            <span id="val-gravity" class="val-display">0.15</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Lift Force</span>
+            <input type="range" id="liftRange" min="3" max="12" step="0.5">
+            <span id="val-lift" class="val-display">6</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Gap Width</span>
+            <input type="range" id="gapRange" min="150" max="400" step="10">
+            <span id="val-gap" class="val-display">250</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="resetDefaultsBtn" class="btn-secondary">DEFAULT</button>
+          <button id="applySettingsBtn" class="btn-primary">RESUME</button>
+        </div>
+      </div>
+
+      <!-- Shop Panel -->
+      <div id="shop-panel" class="modal-panel full-shop">
+        <span class="close-modal">&times;</span>
+        <h2>CYBER SHOP</h2>
+        <div class="shop-balance">CREDITS: <span id="shop-balance">0</span></div>
+
+        <div class="shop-main-layout">
+          <div class="shop-grid" id="skin-grid"></div>
+        </div>
+        <div id="shop-msg"
+          style="color: var(--neon-red); text-align: center; font-size: 0.8rem; margin-top: 0.5rem; font-weight: 700;">
+        </div>
+      </div>
+
+      <!-- Confirmation Popup -->
+      <div id="confirm-modal" class="modal-panel confirm-dialog">
+        <h2 id="confirm-title">PURCHASE</h2>
+        <p id="confirm-msg"></p>
+        <div class="modal-footer">
+          <button id="confirm-cancel" class="btn-secondary">CANCEL</button>
+          <button id="confirm-ok" class="btn-primary">CONFIRM</button>
+        </div>
+      </div>
+
+      <!-- Start & Map Selection Screen -->
+      <div id="start-screen" class="screen-overlay">
+        <div class="map-selector-container">
+          <div class="map-option active" data-map="5" data-name="Sunny Highlands">☀️</div>
+          <div class="map-option" data-map="0" data-name="Neon City">🏙️</div>
+          <div class="map-option" data-map="1" data-name="Techno Jungle">🎋</div>
+          <div class="map-option" data-map="2" data-name="Ocean Abyss">🫧</div>
+          <div class="map-option" data-map="3" data-name="Volcano Core">🌋</div>
+          <div class="map-option" data-map="4" data-name="Star Forge">✨</div>
+        </div>
+        <div id="selected-theme-name">SUNNY HIGHLANDS</div>
+        <div class="start-instruction">CLICK TO INITIATE</div>
+      </div>
+
+      <!-- Game Over -->
+      <div id="message" style="display:none;">
+        <div class="game-over-header">GAME OVER</div>
+        <div class="simple-stats">
+          <div class="simple-stat-row">
+            <span class="label">Score</span><span id="finalScore" class="value">0</span>
+          </div>
+          <div class="simple-stat-row">
+            <span class="label">Record</span><span id="finalBest" class="value">0</span>
+          </div>
+          <div class="simple-stat-row">
+            <span class="label">Coins</span><span id="finalCoins" class="value">0</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="restartBtn" class="btn-outline">RETRY</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Tooltip Node -->
+  <div id="custom-tooltip"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
