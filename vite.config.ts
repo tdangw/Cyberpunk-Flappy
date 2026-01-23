@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-    base: './', // Use relative paths for assets, better for itch.io
+    base: '/Cyberpunk-Flappy-Bird/', // PHẢI CÓ gạch chéo 2 đầu và đúng tên repo
     build: {
         outDir: 'dist',
         assetsDir: 'assets',
