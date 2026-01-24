@@ -110,8 +110,11 @@ export class UIManager {
         });
 
         window.addEventListener('mousedown', (e) => {
+            const target = e.target as HTMLElement;
             const activeModal = document.querySelector('.modal-panel.modal-active');
-            if (activeModal && !(e.target as HTMLElement).closest('.modal-panel')) {
+
+            // Nếu click trúng nút mở hoặc click bên trong modal thì không đóng
+            if (activeModal && !target.closest('.modal-panel') && !target.closest('.btn-icon')) {
                 this.closeActiveModals();
             }
         });
