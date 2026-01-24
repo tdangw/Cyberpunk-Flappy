@@ -18,7 +18,7 @@ export class Game {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
 
-    private state: GameStateType = 'START';
+    private state: GameStateType = 'SPLASH';
     private frames = 0;
     private score = 0;
     private sessionCoins = 0;
@@ -142,6 +142,13 @@ export class Game {
         this.rafId = requestAnimationFrame(this.loop);
     }
 
+    public onSplashPlay(): void {
+        if (this.state === 'SPLASH') {
+            this.state = 'START';
+            this.audioManager.startBGM(this.renderer.getThemeMapId());
+        }
+    }
+
     private loop = (timestamp: number): void => {
         let dt = (timestamp - this.lastTime) / 1000;
         if (dt < 0) dt = 0.016; // Fallback for first frame weirdness
@@ -212,7 +219,7 @@ export class Game {
                     this.saveManager.addCoins(10);
                     this.updateCoinUI();
                     this.audioManager.play('coin');
-                    (window as any).uiManager?.showBonus();
+                    window.dispatchEvent(new CustomEvent('phaseReward'));
                 }
                 this.lastThemeName = theme.pipeColor + theme.decorations;
             }
@@ -358,6 +365,12 @@ export class Game {
         this.state = 'GAMEOVER';
         this.saveManager.updateHighScore(this.score, this.isClassicMode);
         this.saveManager.updateBoostRemaining(this.bird.nitroRemaining);
+
+        const currentDist = Math.floor(this.distanceTraveled / 50);
+        if (!this.isClassicMode) {
+            this.saveManager.updateMaxDistance(currentDist);
+        }
+
         setTimeout(() => {
             if (this.state === 'GAMEOVER') {
                 // Phát âm thanh gameover riêng biệt khi hiện popup
@@ -367,7 +380,9 @@ export class Game {
                     detail: {
                         score: this.score,
                         coins: this.sessionCoins,
-                        isClassic: this.isClassicMode
+                        isClassic: this.isClassicMode,
+                        distance: currentDist,
+                        bestDistance: this.saveManager.getMaxDistance()
                     }
                 }));
             }
@@ -412,12 +427,14 @@ export class Game {
         this.config = { ...this.config, ...newConfig };
         this.bird.setConfig(this.config);
         this.pipeManager.setConfig(this.config);
+        this.inputManager.setUseDashButton(this.config.useDashButton);
     }
     getConfig(): GameConfig { return { ...this.config }; }
     getScore(): number { return this.score; }
     getEnergy(): number { return this.bird.energy; }
     getCurrentThemeName(): string { return this.renderer.getCurrentTheme().theme; }
     getState(): GameStateType { return this.state; }
+    public getInputManager(): InputManager { return this.inputManager; }
     private updateScoreUI(): void { window.dispatchEvent(new CustomEvent('updateUI')); }
     private updateCoinUI(): void { window.dispatchEvent(new CustomEvent('updateUI')); }
 

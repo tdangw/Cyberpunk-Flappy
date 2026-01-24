@@ -12,6 +12,7 @@ export interface GameConfig {
     bgmEnabled: boolean;
     sfxEnabled: boolean;
     pipeSpacing: number;
+    useDashButton: boolean;
 }
 
 export interface StageDefinition {
@@ -40,6 +41,7 @@ export interface PlayerData {
     equippedBoostId?: string;
     boostRemainingMeters?: number;
     inventoryBoosts: { [key: string]: number };
+    maxDistance?: number;
 }
 
 export interface Particle {
@@ -98,4 +100,4 @@ export interface BirdState {
     nitroCapacity?: number;
 }
 
-export type GameState = 'START' | 'PLAYING' | 'PAUSED' | 'DYING' | 'GAMEOVER';
+export type GameState = 'SPLASH' | 'START' | 'PLAYING' | 'PAUSED' | 'DYING' | 'GAMEOVER';

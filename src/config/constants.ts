@@ -13,6 +13,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     sfxVolume: 0.6,
     bgmEnabled: true,
     sfxEnabled: true,
+    useDashButton: false,
 };
 
 export interface StageDefinition {

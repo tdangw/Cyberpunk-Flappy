@@ -77,6 +77,18 @@ export class AudioManager {
         }
     }
 
+    startBGM(mapId: string): void {
+        const bgmFiles: { [key: string]: string } = {
+            'neon': 'bgm_city.mp3',
+            'jungle': 'bgm_jungle.mp3',
+            'ocean': 'bgm_ocean.mp3',
+            'volcano': 'bgm_volcano.mp3',
+            'forge': 'bgm_space.mp3',
+            'sunny': 'bgm_sunny.mp3'
+        };
+        this.playBGM(bgmFiles[mapId] || 'bgm_city.mp3');
+    }
+
     setBGMVolume(val: number): void {
         this.config.bgmVolume = val;
         if (this.bgm) this.bgm.volume(val);

@@ -11,8 +11,14 @@ export class InputManager {
     private onDashEnd?: () => void;
     private onEsc?: () => void;
 
+    private useDashButton: boolean = false;
+
     constructor() {
         this.setupListeners();
+    }
+
+    public setUseDashButton(val: boolean): void {
+        this.useDashButton = val;
     }
 
     private lastTouchTime = 0;
@@ -39,7 +45,7 @@ export class InputManager {
             if (this.isUIElement(e.target as HTMLElement)) return;
             // Only handle left click here; right click is handled by contextmenu
             if (e.button === 0) {
-                this.processPointerDown(e.clientX);
+                this.processPointerDown(e.clientX, this.useDashButton);
             }
         });
         window.addEventListener('mouseup', () => this.onDashEnd?.());
@@ -56,7 +62,7 @@ export class InputManager {
             this.lastTouchTime = Date.now();
 
             const touch = e.touches[0];
-            this.processPointerDown(touch.clientX);
+            this.processPointerDown(touch.clientX, this.useDashButton);
         }, { passive: false });
 
         window.addEventListener('touchend', (e) => {
@@ -81,18 +87,28 @@ export class InputManager {
     }
 
     private isUIElement(target: HTMLElement): boolean {
-        return !!target.closest('.btn-icon, .modal-panel, .map-option, .shop-card-btn, .close-modal, .btn-primary, .btn-secondary, .btn-toggle');
+        return !!target.closest('.btn-icon, .modal-panel, .map-option, .shop-card-btn, .close-modal, .btn-primary, .btn-secondary, .btn-toggle, .screen-overlay, .dash-button-hud');
     }
 
-    private processPointerDown(clientX: number): void {
+    private processPointerDown(clientX: number, useDashButton: boolean = false): void {
         const isRightSide = clientX > window.innerWidth / 2;
 
-        if (isRightSide) {
-            this.onDashStart?.();
-        } else {
+        if (useDashButton) {
+            // In Dash Mode, tapping anywhere is a jump
             this.onJump?.();
+        } else {
+            if (isRightSide) {
+                this.onDashStart?.();
+            } else {
+                this.onJump?.();
+            }
         }
     }
+
+    // Explicit triggers for UI buttons
+    public triggerJump(): void { this.onJump?.(); }
+    public triggerDashStart(): void { this.onDashStart?.(); }
+    public triggerDashEnd(): void { this.onDashEnd?.(); }
 
     private handleKeyDown(key: string): void {
         if (key === ' ' || key === 'ArrowUp') {

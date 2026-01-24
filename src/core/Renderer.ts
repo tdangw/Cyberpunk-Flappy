@@ -40,6 +40,7 @@ export class Renderer {
     }
 
     getCurrentTheme() { return this.currentTheme; }
+    getThemeMapId(): string { return this.currentTheme.mapId; }
     clear(): void { this.ctx.clearRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT); }
 
     drawBackground(frames: number, isClassicMode: boolean = false): void {

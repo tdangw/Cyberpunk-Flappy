@@ -66,7 +66,8 @@ export class SaveManager {
             highScore: 0,
             equippedBoostId: 'nitro_default',
             boostRemainingMeters: 10,
-            inventoryBoosts: {}
+            inventoryBoosts: {},
+            maxDistance: 0
         };
     }
 
@@ -135,6 +136,16 @@ export class SaveManager {
                 this.save();
                 return true;
             }
+        }
+        return false;
+    }
+
+    getMaxDistance(): number { return this.data.maxDistance || 0; }
+    updateMaxDistance(distance: number): boolean {
+        if (distance > (this.data.maxDistance || 0)) {
+            this.data.maxDistance = Math.floor(distance);
+            this.save();
+            return true;
         }
         return false;
     }

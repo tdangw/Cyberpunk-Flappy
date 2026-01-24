@@ -114,6 +114,31 @@ export class UIManager {
 
         bindAction('fullscreen-btn', () => { this.playClick(); this.toggleFullscreen(); });
 
+        // Dash Button in HUD
+        const dashBtn = document.getElementById('dash-btn');
+        if (dashBtn) {
+            const startDash = (e: Event) => {
+                e.preventDefault();
+                e.stopPropagation(); // Stop from bubbling to jump logic
+                this.game.getInputManager().triggerDashStart();
+            };
+            const stopDash = (e: Event) => {
+                e.preventDefault();
+                this.game.getInputManager().triggerDashEnd();
+            };
+            // Use pointer events for maximum reliability
+            dashBtn.addEventListener('pointerdown', startDash);
+            window.addEventListener('pointerup', stopDash);
+        }
+
+        // Play Button on Splash Screen
+        bindAction('play-btn', () => {
+            this.playClick();
+            this.hideSplashScreen();
+            this.showStartScreen();
+            this.game.onSplashPlay();
+        });
+
         // Optimized Start Screen Listener
         const startScreen = document.getElementById('start-screen');
         const startHandler = (e: Event) => {
@@ -133,7 +158,7 @@ export class UIManager {
         startScreen?.addEventListener('touchstart', startHandler, { passive: false });
 
         window.addEventListener('gameOver', ((e: CustomEvent) => {
-            this.showGameOver(e.detail.score, e.detail.coins, e.detail.isClassic);
+            this.showGameOver(e.detail.score, e.detail.coins, e.detail.isClassic, e.detail.bestDistance);
         }) as EventListener);
 
         window.addEventListener('updateUI', () => this.updateAllUI());
@@ -149,6 +174,8 @@ export class UIManager {
                 this.showSettings();
             }
         });
+
+        window.addEventListener('phaseReward', () => this.showBonus());
 
         setInterval(() => this.updateEnergyBar(), 100);
     }
@@ -177,7 +204,9 @@ export class UIManager {
         document.getElementById('applySettingsBtn')?.addEventListener('click', () => {
             this.playClick();
             document.getElementById('settings-panel')?.classList.remove('modal-active');
-            this.game.resume();
+            // Return to main menu (splash)
+            this.game.restart();
+            this.showSplashScreen();
         });
 
         document.getElementById('resetDefaultsBtn')?.addEventListener('click', () => {
@@ -210,6 +239,24 @@ export class UIManager {
             this.audioManager.setSFXEnabled(!this.audioManager.getSettings().sfxEnabled);
             this.updateAudioUI();
         });
+        document.getElementById('toggle-dash-mode')?.addEventListener('click', () => {
+            this.playClick();
+            const current = this.game.getConfig().useDashButton;
+            this.game.updateConfig({ useDashButton: !current });
+            this.updateControlUI();
+        });
+
+        // New Selector Logic
+        document.getElementById('dash-mode-touch')?.addEventListener('click', () => {
+            this.playClick();
+            this.game.updateConfig({ useDashButton: false });
+            this.updateControlUI();
+        });
+        document.getElementById('dash-mode-button')?.addEventListener('click', () => {
+            this.playClick();
+            this.game.updateConfig({ useDashButton: true });
+            this.updateControlUI();
+        });
     }
 
     private setupConfirmControls(): void {
@@ -240,8 +287,32 @@ export class UIManager {
         }
     }
 
+    private updateControlUI(): void {
+        const useDash = this.game.getConfig().useDashButton;
+        const btnTouch = document.getElementById('dash-mode-touch');
+        const btnButton = document.getElementById('dash-mode-button');
+        const container = document.getElementById('game-container');
+
+        if (btnTouch && btnButton) {
+            if (useDash) {
+                btnButton.classList.add('active');
+                btnTouch.classList.remove('active');
+            } else {
+                btnTouch.classList.add('active');
+                btnButton.classList.remove('active');
+            }
+        }
+
+        if (useDash) {
+            container?.classList.add('has-dash-btn');
+        } else {
+            container?.classList.remove('has-dash-btn');
+        }
+    }
+
     private showSettings(): void {
         this.game.pause();
+        this.updateControlUI(); // Ensure UI reflects current state
         document.getElementById('settings-panel')?.classList.add('modal-active');
     }
 
@@ -507,15 +578,26 @@ export class UIManager {
         set('spacingRange', 'val-spacing', config.pipeSpacing);
     }
 
-    private showGameOver(score: number, _coins: number, isClassic: boolean = false): void {
+    private showGameOver(score: number, coins: number, isClassic: boolean = false, bestDist: number = 0): void {
         const msg = document.getElementById('message');
         const s = document.getElementById('finalScore');
         const b = document.getElementById('finalBest');
         const c = document.getElementById('finalCoins');
+        const distRow = document.getElementById('distance-row');
+        const d = document.getElementById('finalDist');
 
         if (s) s.textContent = score.toString();
         if (b) b.textContent = this.saveManager.getHighScore(isClassic).toString();
-        if (c) c.textContent = this.saveManager.getCoins().toString();
+        if (c) c.textContent = coins.toString();
+
+        if (distRow) {
+            if (isClassic) {
+                distRow.style.display = 'none';
+            } else {
+                distRow.style.display = 'flex';
+                if (d) d.textContent = `${bestDist} m`;
+            }
+        }
 
         if (msg) msg.style.display = 'flex';
         this.updateAllUI();
@@ -623,6 +705,16 @@ export class UIManager {
     private showStartScreen(): void {
         const screen = document.getElementById('start-screen');
         if (screen) screen.style.display = 'flex';
+    }
+
+    private hideSplashScreen(): void {
+        const screen = document.getElementById('splash-screen');
+        if (screen) screen.classList.remove('splash-active');
+    }
+
+    private showSplashScreen(): void {
+        const screen = document.getElementById('splash-screen');
+        if (screen) screen.classList.add('splash-active');
     }
 
     showBonus(): void {

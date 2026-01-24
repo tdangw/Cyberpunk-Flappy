@@ -198,7 +198,71 @@ canvas {
 #energy-fill {
   height: 100%;
   background: linear-gradient(90deg, #00d2ff, var(--neon-blue));
+  width: 100%;
+  transition: width 0.1s linear;
   box-shadow: 0 0 10px var(--neon-blue);
+}
+
+/* DASH BUTTON HUD */
+.dash-btn-wrapper {
+  position: absolute;
+  bottom: 2.5rem;
+  /* Moved up a bit more to be clear of ground and distance */
+  right: 1.5rem;
+  display: none;
+  /* Hidden by default */
+  pointer-events: auto !important;
+  /* Force clicks to pass through */
+  z-index: 500;
+}
+
+/* Class to show button when setting is ON */
+.has-dash-btn .dash-btn-wrapper {
+  display: block;
+}
+
+.dash-button-hud {
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 0.8rem;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  /* Circle shape! */
+  background: rgba(0, 0, 0, 0.8);
+  border: 4px solid var(--neon-blue);
+  color: var(--neon-blue);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s;
+  letter-spacing: 2px;
+  box-shadow: 0 0 15px rgba(0, 255, 247, 0.3);
+  pointer-events: auto;
+  user-select: none;
+  touch-action: none;
+}
+
+.dash-button-hud:hover {
+  background: var(--neon-blue);
+  color: #000;
+  box-shadow: 0 0 25px var(--neon-blue);
+  transform: scale(1.05);
+}
+
+.dash-button-hud:active {
+  transform: scale(0.9);
+  box-shadow: 0 0 10px var(--neon-blue);
+  background: #fff;
+}
+
+.dash-button-hud:disabled {
+  opacity: 0.3;
+  cursor: default;
+  border-color: #555;
+  color: #555;
+  box-shadow: none;
 }
 
 /* MODALS BASE */
@@ -289,6 +353,22 @@ h2 {
   justify-content: center;
   pointer-events: auto;
   z-index: 50;
+  transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#start-screen[style*="display: none"] {
+  opacity: 0;
+  transform: scale(0.95);
+  display: flex !important;
+  /* Keep it in DOM for transition */
+  pointer-events: none;
+  visibility: hidden;
+}
+
+#start-screen:not([style*="display: none"]) {
+  opacity: 1;
+  transform: scale(1);
+  visibility: visible;
 }
 
 .map-selector-container {
@@ -716,6 +796,42 @@ h2 {
   color: var(--grey-muted);
 }
 
+/* SETTINGS SELECTOR GROUP */
+.selector-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+  border-radius: 0.4rem;
+  padding: 2px;
+  overflow: hidden;
+}
+
+.selector-btn {
+  background: #222 !important;
+  /* Force dark background */
+  border: none !important;
+  color: #666 !important;
+  padding: 0.4rem 1.2rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 5rem;
+}
+
+.selector-btn.active {
+  background: var(--neon-blue) !important;
+  color: #000 !important;
+  box-shadow: 0 0 15px var(--neon-blue);
+  text-shadow: none;
+}
+
+.selector-btn:not(.active):hover {
+  color: #aaa !important;
+  background: #333 !important;
+}
+
 /* CONFIRM POPUP */
 .confirm-dialog {
   width: 28rem;
@@ -816,7 +932,8 @@ h2 {
   background: rgba(10, 10, 20, 0.95);
   border: 2px solid var(--neon-red);
   border-radius: 1.5rem;
-  padding: 2.5rem 3.5rem;
+  padding: 1.5rem 2.5rem;
+  /* More compact padding */
   text-align: center;
   box-shadow: 0 0 60px rgba(255, 51, 51, 0.25), inset 0 0 20px rgba(255, 51, 51, 0.1);
   animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), shake 0.5s ease-in-out 0.4s;
@@ -860,11 +977,13 @@ h2 {
 }
 
 .game-over-header {
-  font-size: 3.5rem;
+  font-size: 2.8rem;
+  /* Slightly smaller header */
   color: var(--neon-red);
   text-shadow: 0 0 20px var(--neon-red);
   font-weight: 950;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+  /* Reduced margin */
   letter-spacing: 6px;
   background: linear-gradient(180deg, #fff, var(--neon-red));
   -webkit-background-clip: text;
@@ -873,10 +992,12 @@ h2 {
 }
 
 .simple-stats {
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
+  /* Reduced margin */
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 0.8rem;
+  /* Tighter gaps for 4 rows */
 }
 
 .simple-stat-row {
@@ -884,8 +1005,7 @@ h2 {
   justify-content: space-between;
   align-items: center;
   gap: 4rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.2rem;
 }
 
 .simple-stat-row .label {
@@ -986,18 +1106,32 @@ h2 {
   white-space: nowrap;
 }
 
+.bonus-popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.95);
+  padding: 1.5rem 3rem;
+  border: 2px solid var(--neon-gold);
+  z-index: 2000;
+  box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
+  visibility: hidden;
+  /* Prevent flicker at start */
+}
+
 .bonus-popup.active {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
-}
-
-.bonus-title {
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 400;
-  letter-spacing: 4px;
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
+  visibility: visible;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .bonus-amount {
@@ -1005,4 +1139,105 @@ h2 {
   font-size: 1.8rem;
   font-weight: 900;
   text-shadow: 0 0 15px var(--neon-gold);
+}
+
+/* SPLASH SCREEN */
+#splash-screen {
+  background: url('/menu_bg.jpg') no-repeat center center;
+  background-size: cover;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+  display: flex !important;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  z-index: 5000;
+  transform: scale(1);
+}
+
+#splash-screen.splash-active {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transform: scale(1);
+}
+
+/* Exit animation for splash screen */
+#splash-screen:not(.splash-active) {
+  opacity: 0;
+  transform: scale(1.1);
+  /* Slight zoom out effect on exit */
+  pointer-events: none;
+}
+
+/* Hide HUD when splash is active */
+#splash-screen.splash-active~#main-hud {
+  display: none !important;
+}
+
+.splash-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transform: translateY(-5rem);
+  /* Negative value moves it UP towards the logo */
+}
+
+.main-play-btn {
+  font-size: 2.2rem;
+  padding: 1rem 6rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 4px solid #fff;
+  color: #fff;
+  font-weight: 950;
+  cursor: pointer;
+  letter-spacing: 15px;
+  position: relative;
+  transition: 0.3s all;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+  text-indent: 15px;
+  margin-right: 5rem;
+  /* Moved left as requested */
+  overflow: hidden;
+  /* For sweep effect */
+}
+
+/* RETRO SCANLINE SWEEP EFFECT */
+.main-play-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.4),
+      rgba(255, 255, 255, 0.1),
+      transparent);
+  transition: 0.5s;
+}
+
+.main-play-btn:hover::after {
+  left: 100%;
+  transition: 0.7s;
+}
+
+/* NEON RUNNING BORDER ON HOVER */
+.main-play-btn:hover {
+  background: #000;
+  color: #fff;
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 30px var(--neon-blue);
+  transform: scale(1.05);
+  text-shadow: 0 0 10px var(--neon-blue);
+}
+
+.main-play-btn:active {
+  transform: scale(0.95);
 }

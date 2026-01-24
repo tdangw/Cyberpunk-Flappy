@@ -15,29 +15,7 @@
     <canvas id="game" width="1280" height="720"></canvas>
 
     <div class="ui-layer">
-      <!-- HUD (High positioning) -->
-      <div id="top-hud">
-        <div id="coin-display">
-          <span class="coin-icon">$</span> <span id="total-coins">0</span>
-        </div>
-
-        <div id="score-container">
-          <div id="score">0</div>
-        </div>
-
-        <div id="action-buttons">
-          <div id="fullscreen-btn" class="btn-icon">⛶</div>
-          <div id="shop-btn" class="btn-icon">🛍️</div>
-          <div id="settings-btn" class="btn-icon">⚙</div>
-        </div>
-      </div>
-
-      <div id="energy-bar-hud">
-        <span id="energy-label">Nitro System</span>
-        <div id="energy-container">
-          <div id="energy-fill"></div>
-        </div>
-      </div>
+      <!-- Main HUD (will be moved) -->
 
       <div id="bonus-notification" class="bonus-popup">
         <div class="bonus-title">PHASE REWARD</div>
@@ -59,6 +37,13 @@
             <span class="setting-label">Sound FX</span>
             <input type="range" id="sfxVolumeRange" min="0" max="1" step="0.1">
             <button id="toggle-sfx" class="btn-toggle">ON</button>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Dash Control</span>
+            <div class="selector-group">
+              <button id="dash-mode-touch" class="selector-btn active">TOUCH</button>
+              <button id="dash-mode-button" class="selector-btn">BUTTON</button>
+            </div>
           </div>
 
           <div class="divider"></div>
@@ -92,7 +77,7 @@
 
         <div class="modal-footer">
           <button id="resetDefaultsBtn" class="btn-secondary">DEFAULT</button>
-          <button id="applySettingsBtn" class="btn-primary">RESUME</button>
+          <button id="applySettingsBtn" class="btn-primary">MENU</button>
         </div>
         <div class="version-tag">V1.01</div>
       </div>
@@ -143,8 +128,45 @@
         </div>
       </div>
 
+      <!-- Splash Screen (Landing) -->
+      <div id="splash-screen" class="screen-overlay splash-active">
+        <div class="splash-content">
+          <div id="play-btn" class="main-play-btn">PLAY</div>
+        </div>
+      </div>
+
+      <div id="main-hud">
+        <!-- HUD (High positioning) -->
+        <div id="top-hud">
+          <div id="coin-display">
+            <span class="coin-icon">$</span> <span id="total-coins">0</span>
+          </div>
+
+          <div id="score-container">
+            <div id="score">0</div>
+          </div>
+
+          <div id="action-buttons">
+            <div id="fullscreen-btn" class="btn-icon">⛶</div>
+            <div id="shop-btn" class="btn-icon">🛍️</div>
+            <div id="settings-btn" class="btn-icon">⚙</div>
+          </div>
+        </div>
+
+        <div id="energy-bar-hud">
+          <span id="energy-label">Nitro System</span>
+          <div id="energy-container">
+            <div id="energy-fill"></div>
+          </div>
+        </div>
+
+        <div id="dash-btn-container" class="dash-btn-wrapper">
+          <button id="dash-btn" class="dash-button-hud">DASH</button>
+        </div>
+      </div>
+
       <!-- Start & Map Selection Screen -->
-      <div id="start-screen" class="screen-overlay">
+      <div id="start-screen" class="screen-overlay" style="display: none;">
         <!-- Game Mode Selection -->
         <h3 class="mode-label">GAME MODE</h3>
         <div class="mode-selector-container">
@@ -174,6 +196,9 @@
             </div>
             <div class="simple-stat-row">
               <span class="label">RECORD</span><span id="finalBest" class="value">0</span>
+            </div>
+            <div id="distance-row" class="simple-stat-row">
+              <span class="label">MAX DISTANCE</span><span id="finalDist" class="value">0</span>
             </div>
             <div class="simple-stat-row">
               <span class="label">CREDITS</span><span id="finalCoins" class="value">0</span>
