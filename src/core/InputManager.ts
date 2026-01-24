@@ -45,9 +45,13 @@ export class InputManager {
         window.addEventListener('mouseup', () => this.onDashEnd?.());
 
         window.addEventListener('touchstart', (e) => {
-            if (this.isUIElement(e.target as HTMLElement)) return;
+            const target = e.target as HTMLElement;
+            if (this.isUIElement(target)) {
+                // If it's a UI element, let the specific element's listener handle it
+                return;
+            }
 
-            // Prevent default to stop scrolling and zooming, and stop ghost mouse events
+            // Prevent default to stop scrolling and zooming
             if (e.cancelable) e.preventDefault();
             this.lastTouchTime = Date.now();
 
@@ -56,10 +60,12 @@ export class InputManager {
         }, { passive: false });
 
         window.addEventListener('touchend', (e) => {
-            // Prevent default to stop mouseup from firing
+            const target = e.target as HTMLElement;
+            if (this.isUIElement(target)) return;
+
             if (e.cancelable) e.preventDefault();
             this.onDashEnd?.();
-        });
+        }, { passive: false });
 
         // Context Menu (Right Click) for Dash
         window.addEventListener('contextmenu', (e) => {

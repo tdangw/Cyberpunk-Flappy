@@ -42,27 +42,41 @@ export class UIManager {
     }
 
     private setupEventListeners(): void {
-        document.getElementById('settings-btn')?.addEventListener('click', () => { this.playClick(); this.showSettings(); });
-        document.getElementById('shop-btn')?.addEventListener('click', () => { this.playClick(); this.showShop(); });
+        const bindAction = (id: string, callback: () => void) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('click', (e) => { e.stopPropagation(); callback(); });
+            el.addEventListener('touchstart', (e) => { e.stopPropagation(); callback(); }, { passive: false });
+        };
+
+        bindAction('settings-btn', () => { this.playClick(); this.showSettings(); });
+        bindAction('shop-btn', () => { this.playClick(); this.showShop(); });
 
         document.querySelectorAll('.shop-tab').forEach((tab) => {
-            tab.addEventListener('click', (e) => {
+            const handler = (e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
                 this.playClick();
-                const target = e.target as HTMLElement;
                 document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
-                target.classList.add('active');
-                this.currentShopTab = target.getAttribute('data-tab') as any;
+                (e.target as HTMLElement).classList.add('active');
+                this.currentShopTab = (e.target as HTMLElement).getAttribute('data-tab') as any;
                 this.renderShopGrid();
-            });
+            };
+            tab.addEventListener('click', handler);
+            tab.addEventListener('touchstart', handler, { passive: false });
         });
 
         document.querySelectorAll('.close-modal').forEach((btn) => {
-            btn.addEventListener('click', (e) => {
+            const handler = (e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
                 this.playClick();
                 const modal = (e.target as HTMLElement).closest('.modal-panel');
                 modal?.classList.remove('modal-active');
                 if (!document.querySelector('.modal-active')) this.game.resume();
-            });
+            };
+            btn.addEventListener('click', handler);
+            btn.addEventListener('touchstart', handler, { passive: false });
         });
 
         this.setupSettingsControls();
@@ -70,25 +84,27 @@ export class UIManager {
         this.setupConfirmControls();
 
         // Retry Button
-        document.getElementById('restartBtn')?.addEventListener('click', () => {
-            this.playClick();
-            this.hideGameOver();
-            this.showStartScreen();
-            this.game.restart();
-        });
+        bindAction('restartBtn', () => { this.playClick(); this.hideGameOver(); this.showStartScreen(); this.game.restart(); });
 
-        document.getElementById('fullscreen-btn')?.addEventListener('click', () => { this.playClick(); this.toggleFullscreen(); });
+        bindAction('fullscreen-btn', () => { this.playClick(); this.toggleFullscreen(); });
 
-        document.getElementById('start-screen')?.addEventListener('mousedown', (e) => {
+        // Optimized Start Screen Listener
+        const startScreen = document.getElementById('start-screen');
+        const startHandler = (e: Event) => {
+            const target = e.target as HTMLElement;
             // If user clicked a button (map, mode, settings), don't start the game
-            if ((e.target as HTMLElement).closest('.map-option, .mode-option, .btn-icon, .modal-panel')) return;
+            if (target.closest('.map-option, .mode-option, .btn-icon, .modal-panel')) return;
 
-            // Otherwise, if we are in START state, initiate the game
+            // Otherwise, initiate
             if (this.game.getState() === 'START') {
+                e.preventDefault();
+                e.stopPropagation();
                 this.hideStartScreen();
                 this.game.resume(true);
             }
-        });
+        };
+        startScreen?.addEventListener('mousedown', startHandler);
+        startScreen?.addEventListener('touchstart', startHandler, { passive: false });
 
         window.addEventListener('gameOver', ((e: CustomEvent) => {
             this.showGameOver(e.detail.score, e.detail.coins, e.detail.isClassic);
@@ -484,7 +500,8 @@ export class UIManager {
             opt.addEventListener('mousemove', (e: MouseEvent) => this.showTooltip(description, e.clientX, e.clientY));
             opt.addEventListener('mouseleave', () => this.hideTooltip());
 
-            opt.addEventListener('click', (e: MouseEvent) => {
+            const handler = (e: Event) => {
+                e.preventDefault();
                 e.stopPropagation();
                 const mapIdIndex = parseInt(opt.getAttribute('data-map') || '0');
                 this.playClick();
@@ -499,7 +516,10 @@ export class UIManager {
 
                 this.game.setStartMap(mapIdIndex);
                 this.updateStartScreenTheme(mapIdIndex);
-            });
+            };
+
+            opt.addEventListener('click', handler);
+            opt.addEventListener('touchstart', handler, { passive: false });
 
             if (opt.classList.contains('active')) {
                 const initialMapIndex = parseInt(opt.getAttribute('data-map') || '5');
@@ -520,11 +540,7 @@ export class UIManager {
         const modes = document.querySelectorAll('.mode-option') as NodeListOf<HTMLElement>;
 
         modes.forEach(modeBtn => {
-            modeBtn.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-            });
-
-            modeBtn.addEventListener('click', (e) => {
+            const handler = (e: Event) => {
                 e.stopPropagation();
                 e.preventDefault();
                 this.playClick();
@@ -533,7 +549,9 @@ export class UIManager {
 
                 const mode = modeBtn.getAttribute('data-mode') || 'advance';
                 this.game.setGameMode(mode as 'classic' | 'advance');
-            });
+            };
+            modeBtn.addEventListener('click', handler);
+            modeBtn.addEventListener('touchstart', handler, { passive: false });
         });
     }
 
