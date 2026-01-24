@@ -775,6 +775,8 @@ export class UIManager {
                 modeBtn.classList.add('active');
 
                 this.game.setGameMode(mode as 'classic' | 'advance');
+                this.setupTutorialIcons(); // Refresh tutorial icons for new mode
+                this.updateControlUI(); // Ensure Dash button in HUD is toggled
             };
             modeBtn.addEventListener('click', handler);
             modeBtn.addEventListener('touchstart', handler, { passive: false });
@@ -818,7 +820,10 @@ export class UIManager {
         const jumpIcon = document.getElementById('tut-jump-icon');
         const dashIcon = document.getElementById('tut-dash-icon');
         const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        const isClassic = this.game.getState() === 'START' && (document.querySelector('.mode-option[data-mode="classic"].active') !== null);
+
+        // Find which mode is active from the buttons
+        const classicBtn = document.querySelector('.mode-option[data-mode="classic"]');
+        const isClassic = classicBtn?.classList.contains('active');
 
         if (jumpIcon) {
             if (isTouch) {
