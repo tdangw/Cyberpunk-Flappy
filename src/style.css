@@ -71,6 +71,7 @@ canvas {
   box-shadow: 0 0 5rem rgba(0, 0, 0, 1);
   border: 1px solid #111;
   z-index: 1;
+  touch-action: none;
 }
 
 .ui-layer {
@@ -123,6 +124,7 @@ canvas {
   height: 2rem;
   display: flex;
   align-items: center;
+  pointer-events: auto;
 }
 
 #score-container {
@@ -490,6 +492,12 @@ h2 {
   text-transform: uppercase;
   letter-spacing: 1px;
   text-align: center;
+  height: 2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .shop-card-btn {

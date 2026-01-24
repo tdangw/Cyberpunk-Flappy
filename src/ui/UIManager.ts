@@ -77,12 +77,15 @@ export class UIManager {
             this.game.restart();
         });
 
+        document.getElementById('fullscreen-btn')?.addEventListener('click', () => { this.playClick(); this.toggleFullscreen(); });
+
         document.getElementById('start-screen')?.addEventListener('mousedown', (e) => {
-            if ((e.target as HTMLElement).closest('.map-option, .modal-panel')) return;
+            // If user clicked a button (map, mode, settings), don't start the game
+            if ((e.target as HTMLElement).closest('.map-option, .mode-option, .btn-icon, .modal-panel')) return;
 
-            this.hideStartScreen();
-
+            // Otherwise, if we are in START state, initiate the game
             if (this.game.getState() === 'START') {
+                this.hideStartScreen();
                 this.game.resume(true);
             }
         });
@@ -570,6 +573,18 @@ export class UIManager {
             setTimeout(() => {
                 popup.classList.remove('active');
             }, 2500);
+        }
+    }
+
+    private toggleFullscreen(): void {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
         }
     }
 

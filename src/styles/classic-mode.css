@@ -18,7 +18,7 @@
 }
 
 .classic-mode #top-hud {
-    justify-content: center;
+    justify-content: flex-end;
 }
 
 .classic-mode .simple-stat-row:last-child {
