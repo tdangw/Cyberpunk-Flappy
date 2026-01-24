@@ -111,6 +111,17 @@ export class AudioManager {
         this.config.sfxEnabled = enabled;
     }
 
+    pauseAll(): void {
+        if (this.bgm) this.bgm.pause();
+        this.sounds.forEach(s => s.pause());
+    }
+
+    resumeAll(): void {
+        if (this.config.bgmEnabled && this.bgm && !this.bgm.playing()) {
+            this.bgm.play();
+        }
+    }
+
     getSettings() {
         return { ...this.config };
     }

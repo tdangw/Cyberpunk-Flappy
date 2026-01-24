@@ -216,6 +216,22 @@ export class UIManager {
             this.runCountdown(e.detail.onComplete);
         }) as EventListener);
 
+        // Visibility Change Protection (Anti-drain / Auto-pause)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                // Rời tab hoặc tắt màn hình
+                if (this.game.getState() === 'PLAYING') {
+                    this.game.pause();
+                    this.showSettings(); // Tự động mở menu để game không chạy tiếp khi quay lại
+                }
+                this.audioManager.pauseAll();
+            } else {
+                // Quay lại tab
+                // Chỉ resume nhạc, game vẫn đợi người chơi đóng menu
+                this.audioManager.resumeAll();
+            }
+        });
+
         setInterval(() => this.updateEnergyBar(), 100);
     }
 
