@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cyberpunk Flappy Bird: Pro Edition</title>
+  <title>Cyberpunk-Flappy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
@@ -94,6 +94,7 @@
           <button id="resetDefaultsBtn" class="btn-secondary">DEFAULT</button>
           <button id="applySettingsBtn" class="btn-primary">RESUME</button>
         </div>
+        <div class="version-tag">V1.01</div>
       </div>
 
       <!-- Shop Panel -->
@@ -106,7 +107,11 @@
           <div class="shop-tab" data-tab="boosts">BOOSTS</div>
         </div>
 
-        <div class="shop-balance">CREDITS: <span id="shop-balance">0</span></div>
+        <div class="shop-balance">
+          <div>CREDITS: <span id="shop-balance">0</span></div>
+          <div class="skins-count">SKINS OWNED: <span id="owned-skins-count">0</span>/<span
+              id="total-skins-count">0</span></div>
+        </div>
         <div class="shop-main-layout">
           <div class="shop-grid" id="shop-grid"></div>
         </div>
@@ -125,6 +130,16 @@
         <div class="modal-footer">
           <button id="confirm-cancel" class="btn-secondary">CANCEL</button>
           <button id="confirm-ok" class="btn-primary">CONFIRM</button>
+        </div>
+      </div>
+
+      <div id="security-modal" class="modal-panel confirm-dialog security-alert">
+        <h2 style="color: var(--neon-red);">SECURITY ALERT</h2>
+        <p id="security-msg">Local data has been modified illegally. For your safety, credits and progress have been
+          restored from the last secure backup.</p>
+        <div class="modal-footer">
+          <button id="security-ok" class="btn-primary" style="border-color: var(--neon-red); color: var(--neon-red);">I
+            UNDERSTAND</button>
         </div>
       </div>
 
@@ -150,21 +165,23 @@
       </div>
 
       <!-- Game Over -->
-      <div id="message" style="display:none;">
-        <div class="game-over-header">GAME OVER</div>
-        <div class="simple-stats">
-          <div class="simple-stat-row">
-            <span class="label">Score</span><span id="finalScore" class="value">0</span>
+      <div id="message" class="game-over-overlay" style="display:none;">
+        <div class="game-over-popup">
+          <div class="game-over-header">GAME OVER</div>
+          <div class="simple-stats">
+            <div class="simple-stat-row">
+              <span class="label">SCORE</span><span id="finalScore" class="value">0</span>
+            </div>
+            <div class="simple-stat-row">
+              <span class="label">RECORD</span><span id="finalBest" class="value">0</span>
+            </div>
+            <div class="simple-stat-row">
+              <span class="label">CREDITS</span><span id="finalCoins" class="value">0</span>
+            </div>
           </div>
-          <div class="simple-stat-row">
-            <span class="label">Record</span><span id="finalBest" class="value">0</span>
+          <div class="modal-footer">
+            <button id="restartBtn" class="btn-primary">RETRY</button>
           </div>
-          <div class="simple-stat-row">
-            <span class="label">Coins</span><span id="finalCoins" class="value">0</span>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button id="restartBtn" class="btn-outline">RETRY</button>
         </div>
       </div>
     </div>

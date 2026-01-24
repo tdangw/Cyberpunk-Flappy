@@ -11,7 +11,7 @@ export interface BoostDefinition {
 export const BOOSTS: BoostDefinition[] = [
     {
         id: 'nitro_default',
-        name: 'Default Nitro',
+        name: 'Standard Nitro',
         description: 'Auto-recharging cell. 10m max, 30s recovery.',
         capacity: 10,
         price: 0,
@@ -19,49 +19,49 @@ export const BOOSTS: BoostDefinition[] = [
     },
     {
         id: 'nitro_basic',
-        name: 'Basic Nitro Cell',
+        name: 'Flux Cell',
         description: 'Standard energy cell. 30m total dash.',
         capacity: 30,
         price: 50
     },
     {
         id: 'nitro_advanced',
-        name: 'Advanced Nitro Core',
+        name: 'Vanguard Core',
         description: 'Military grade energy. 80m total dash.',
         capacity: 80,
         price: 120
     },
     {
         id: 'nitro_premium',
-        name: 'Premium Nitro Pack',
+        name: 'Nebula Array',
         description: 'Quantum storage unit. 150m total dash.',
         capacity: 150,
         price: 200
     },
     {
         id: 'nitro_super',
-        name: 'Super Nitro Array',
+        name: 'Infinity Drive',
         description: 'Infinite flow battery. 300m total dash.',
         capacity: 300,
         price: 350
     },
     {
         id: 'nitro_ultra',
-        name: 'Ultra Nitro Tank',
+        name: 'Titan Tank',
         description: 'Heavy duty energy storage. 500m total dash.',
         capacity: 500,
         price: 550
     },
     {
         id: 'nitro_quantum',
-        name: 'Quantum Nitro Core',
+        name: 'Quasar Core',
         description: 'Atomic scale compression. 800m total dash.',
         capacity: 800,
         price: 800
     },
     {
         id: 'nitro_hyper',
-        name: 'Hyper Nitro Drive',
+        name: 'Godspeed Drive',
         description: 'Experimental super-cell. 1200m total dash.',
         capacity: 1200,
         price: 1100

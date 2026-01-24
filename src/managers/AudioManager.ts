@@ -40,7 +40,8 @@ export class AudioManager {
             { id: 'die', file: 'die.wav' },
             { id: 'coin', file: 'coin.wav' },
             { id: 'dash', file: 'dash.wav' },
-            { id: 'click', file: 'click.wav' }
+            { id: 'click', file: 'click.wav' },
+            { id: 'gameover', file: 'gameover.wav' }
         ];
 
         soundFiles.forEach(s => {

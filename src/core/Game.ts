@@ -103,12 +103,6 @@ export class Game {
             if (e.key === '`') {
                 this.showFps = !this.showFps;
             }
-            if (e.key === '1') {
-                // Cheat: Add 50 score
-                this.score += 50;
-                this.updateScoreUI();
-                // Removed unwanted firework effect
-            }
         });
     }
 
@@ -288,16 +282,16 @@ export class Game {
         this.audioManager.play('hit'); // Sync: Hit Pipe
         this.particleSystem.emit(this.bird.x, this.bird.y, 15, COLORS.NEON_RED);
 
-        // Brief delay before fall sound triggers
-        setTimeout(() => {
-            if (this.state === 'DYING') this.audioManager.play('die'); // FALL SOUND
-        }, 250);
+        // Stop music when dying starts
+        this.audioManager.setBGMEnabled(false);
     }
 
     private handleGroundCollision(): void {
         if (this.state === 'GAMEOVER') return;
 
         this.audioManager.play('hit'); // Sync: Impact Ground
+        this.audioManager.play('die'); // Game over sound
+        this.audioManager.setBGMEnabled(false);
         this.gameOver();
     }
 
@@ -333,13 +327,14 @@ export class Game {
 
         if (this.state === 'START') this.renderer.drawStartMessage();
 
-        // FPS Logic
         if (this.showFps) {
             this.ctx.fillStyle = '#0f0';
             this.ctx.font = '16px "JetBrains Mono"';
             this.ctx.shadowBlur = 0;
-            this.ctx.fillText(`FPS: ${this.fps}`, CANVAS.WIDTH - 150, CANVAS.HEIGHT - 50);
-            this.ctx.fillText(`Score: ${this.score}`, CANVAS.WIDTH - 150, CANVAS.HEIGHT - 30);
+            this.ctx.textAlign = 'right';
+            this.ctx.fillText(`FPS: ${this.fps}`, CANVAS.WIDTH - 10, CANVAS.HEIGHT - 55);
+            this.ctx.fillText(`Score: ${this.score}`, CANVAS.WIDTH - 10, CANVAS.HEIGHT - 35);
+            this.ctx.textAlign = 'left'; // Reset for other drawing
         }
 
         // Distance Counter (Lower Right Corner)
@@ -365,6 +360,9 @@ export class Game {
         this.saveManager.updateBoostRemaining(this.bird.nitroRemaining);
         setTimeout(() => {
             if (this.state === 'GAMEOVER') {
+                // Phát âm thanh gameover riêng biệt khi hiện popup
+                this.audioManager.play('gameover');
+
                 window.dispatchEvent(new CustomEvent('gameOver', {
                     detail: {
                         score: this.score,
@@ -389,6 +387,9 @@ export class Game {
         this.particleSystem.clear();
         this.updateScoreUI();
         this.updateCoinUI();
+
+        // Resume music on restart
+        this.audioManager.setBGMEnabled(true);
 
         // Re-apply mode settings to ensure consistent state
         this.setGameMode(this.isClassicMode ? 'classic' : 'advance');

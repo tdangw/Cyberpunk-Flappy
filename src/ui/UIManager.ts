@@ -35,6 +35,32 @@ export class UIManager {
         this.setupMapSelector();
         this.updateAllUI();
         this.updateAudioUI();
+        this.checkTampering();
+
+        // Listen for real-time security alerts
+        window.addEventListener('securityAlert', () => this.showSecurityAlert());
+    }
+
+    private checkTampering(): void {
+        if (this.saveManager.isTampered()) {
+            this.showSecurityAlert();
+        }
+    }
+
+    private showSecurityAlert(): void {
+        const securityModal = document.getElementById('security-modal');
+        const okBtn = document.getElementById('security-ok');
+
+        if (securityModal && !securityModal.classList.contains('modal-active')) {
+            this.game.pause();
+            securityModal.classList.add('modal-active');
+
+            okBtn?.addEventListener('click', () => {
+                this.playClick();
+                securityModal.classList.remove('modal-active');
+                this.game.resume();
+            }, { once: true });
+        }
     }
 
     private playClick(): void {
@@ -223,7 +249,17 @@ export class UIManager {
         this.game.pause();
         this.renderShopGrid();
         this.updateShopBalance();
+        this.updateSkinsOwnedCount();
         document.getElementById('shop-panel')?.classList.add('modal-active');
+    }
+
+    private updateSkinsOwnedCount(): void {
+        const owned = this.saveManager.getOwnedSkins().length;
+        const total = this.skinManager.getAllSkins().length;
+        const ownedEl = document.getElementById('owned-skins-count');
+        const totalEl = document.getElementById('total-skins-count');
+        if (ownedEl) ownedEl.textContent = owned.toString();
+        if (totalEl) totalEl.textContent = total.toString();
     }
 
     private showTooltip(text: string, x: number, y: number): void {
@@ -252,11 +288,7 @@ export class UIManager {
         if (fill) fill.style.width = `${energyPct}%`;
 
         if (label) {
-            const boostId = this.saveManager.getEquippedBoostId();
-            const boostDef = BOOSTS.find(b => b.id === boostId);
-            if (boostDef) {
-                label.textContent = `${boostDef.name.toUpperCase()} (${energyPct.toFixed(1)}%)`;
-            }
+            label.textContent = `NITRO (${energyPct.toFixed(1)}%)`;
         }
     }
 
@@ -428,6 +460,7 @@ export class UIManager {
                     this.saveManager.equipSkin(id);
                     this.renderSkinGrid();
                     this.updateAllUI();
+                    this.updateSkinsOwnedCount();
                 } else {
                     const msg = document.getElementById('shop-msg');
                     if (msg) { msg.textContent = 'INSUFFICIENT CREDITS'; setTimeout(() => msg.textContent = '', 2000); }
@@ -540,6 +573,15 @@ export class UIManager {
         const modes = document.querySelectorAll('.mode-option') as NodeListOf<HTMLElement>;
 
         modes.forEach(modeBtn => {
+            const mode = modeBtn.getAttribute('data-mode') || 'advance';
+            const description = mode === 'classic'
+                ? "CLASSIC MODE: Pure skill. No nitro, no shops, just you and the pipes. Standard physics."
+                : "ADVANCE MODE: Full experience. Use nitro, unlock skins, and travel through different sectors.";
+
+            modeBtn.addEventListener('mouseenter', (e) => this.showTooltip(description, e.clientX, e.clientY));
+            modeBtn.addEventListener('mousemove', (e) => this.showTooltip(description, e.clientX, e.clientY));
+            modeBtn.addEventListener('mouseleave', () => this.hideTooltip());
+
             const handler = (e: Event) => {
                 e.stopPropagation();
                 e.preventDefault();
@@ -547,7 +589,6 @@ export class UIManager {
                 modes.forEach(m => m.classList.remove('active'));
                 modeBtn.classList.add('active');
 
-                const mode = modeBtn.getAttribute('data-mode') || 'advance';
                 this.game.setGameMode(mode as 'classic' | 'advance');
             };
             modeBtn.addEventListener('click', handler);

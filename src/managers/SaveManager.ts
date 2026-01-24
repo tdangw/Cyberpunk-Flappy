@@ -6,7 +6,9 @@ import type { PlayerData } from '../types';
 export class SaveManager {
     private static instance: SaveManager;
     private storageKey = 'flappy_cyber_data';
+    private backupKey = 'flappy_cyber_data_bak';
     private data: PlayerData;
+    private wasTampered: boolean = false;
 
     private constructor() {
         this.data = this.load();
@@ -21,13 +23,42 @@ export class SaveManager {
 
     private load(): PlayerData {
         const saved = localStorage.getItem(this.storageKey);
+        const backup = localStorage.getItem(this.backupKey);
+
         if (saved) {
             try {
-                return JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+                if (this.verifySignature(parsed)) {
+                    // Main save is valid, update backup just in case
+                    localStorage.setItem(this.backupKey, saved);
+                    return parsed.content;
+                } else {
+                    console.warn('⚠️ MAIN SAVE TAMPERED. Attempting to restore from backup.');
+                    this.wasTampered = true;
+                    // Trigger UI alert event
+                    window.dispatchEvent(new CustomEvent('securityAlert'));
+
+                    // Try backup
+                    if (backup) {
+                        try {
+                            const parsedBak = JSON.parse(backup);
+                            if (this.verifySignature(parsedBak)) {
+                                console.log('✅ Success: Restored from last known valid backup.');
+                                return parsedBak.content;
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+                }
             } catch (e) {
                 console.error('Failed to parse saved data', e);
             }
         }
+        return this.getDefaultData();
+    }
+
+    public isTampered(): boolean { return this.wasTampered; }
+
+    private getDefaultData(): PlayerData {
         return {
             coins: 0,
             ownedSkins: ['sphere-0'],
@@ -40,20 +71,40 @@ export class SaveManager {
     }
 
     resetData(): void {
-        this.data = {
-            coins: 0,
-            ownedSkins: ['sphere-0'],
-            equippedSkin: 'sphere-0',
-            highScore: 0,
-            equippedBoostId: 'nitro_default',
-            boostRemainingMeters: 10,
-            inventoryBoosts: {}
-        };
+        this.data = this.getDefaultData();
         this.save();
+        localStorage.removeItem(this.backupKey);
+    }
+
+    private generateSignature(data: PlayerData): string {
+        const str = JSON.stringify(data);
+        const salt = 'cyber_salt_99';
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
+        }
+        for (let i = 0; i < salt.length; i++) {
+            hash = ((hash << 5) - hash) + salt.charCodeAt(i);
+            hash |= 0;
+        }
+        return hash.toString(16);
+    }
+
+    private verifySignature(savedObj: any): boolean {
+        if (!savedObj || !savedObj.content || !savedObj.sig) return false;
+        return this.generateSignature(savedObj.content) === savedObj.sig;
     }
 
     save(): void {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+        const wrapped = {
+            content: this.data,
+            sig: this.generateSignature(this.data)
+        };
+        const serialized = JSON.stringify(wrapped);
+        localStorage.setItem(this.storageKey, serialized);
+        // Also update backup with this known-good state
+        localStorage.setItem(this.backupKey, serialized);
     }
 
     getCoins(): number { return this.data.coins; }
