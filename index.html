@@ -43,6 +43,7 @@
             <div class="selector-group">
               <button id="dash-mode-touch" class="selector-btn active">TOUCH</button>
               <button id="dash-mode-button" class="selector-btn">BUTTON</button>
+              <button id="toggle-fps-btn" class="selector-btn">FPS</button>
             </div>
           </div>
 
@@ -79,7 +80,7 @@
           <button id="resetDefaultsBtn" class="btn-secondary">DEFAULT</button>
           <button id="applySettingsBtn" class="btn-primary">MENU</button>
         </div>
-        <div class="version-tag">V1.01</div>
+        <div class="version-tag">V1.02</div>
       </div>
 
       <!-- Shop Panel -->
@@ -151,6 +152,7 @@
             <div id="shop-btn" class="btn-icon">🛍️</div>
             <div id="settings-btn" class="btn-icon">⚙</div>
           </div>
+          <div id="fps-display" class="fps-text">60 FPS</div>
         </div>
 
         <div id="energy-bar-hud">
@@ -184,6 +186,14 @@
         </div>
         <div id="selected-theme-name">SUNNY HIGHLANDS</div>
         <div class="start-instruction">CLICK TO INITIATE</div>
+      </div>
+
+      <!-- Countdown Overlay -->
+      <div id="countdown-overlay" class="screen-overlay"
+        style="display:none; z-index: 9999; background: rgba(0,0,0,0.5);">
+        <div id="countdown-text"
+          style="font-size: 8rem; font-weight: 900; color: var(--neon-blue); text-shadow: 0 0 30px var(--neon-blue);">3
+        </div>
       </div>
 
       <!-- Game Over -->

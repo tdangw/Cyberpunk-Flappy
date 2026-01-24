@@ -97,12 +97,23 @@ export class UIManager {
                 e.preventDefault();
                 e.stopPropagation();
                 this.playClick();
-                const modal = (e.target as HTMLElement).closest('.modal-panel');
-                modal?.classList.remove('modal-active');
-                if (!document.querySelector('.modal-active')) this.game.resume();
+                this.closeActiveModals();
             };
             btn.addEventListener('click', handler);
             btn.addEventListener('touchstart', handler, { passive: false });
+        });
+
+        // Click outside to close modals
+        document.querySelectorAll('.modal-panel').forEach(modal => {
+            modal.addEventListener('mousedown', (e) => e.stopPropagation());
+            modal.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            const activeModal = document.querySelector('.modal-panel.modal-active');
+            if (activeModal && !(e.target as HTMLElement).closest('.modal-panel')) {
+                this.closeActiveModals();
+            }
         });
 
         this.setupSettingsControls();
@@ -157,6 +168,17 @@ export class UIManager {
         startScreen?.addEventListener('mousedown', startHandler);
         startScreen?.addEventListener('touchstart', startHandler, { passive: false });
 
+        window.addEventListener('keydown', (e) => {
+            if ((e.code === 'Space' || e.code === 'ArrowUp') && this.game.getState() === 'START') {
+                // If it's the start screen, the game started event will catch it
+            }
+        });
+
+        window.addEventListener('gameStarted', () => {
+            this.hideStartScreen();
+            this.hideSplashScreen();
+        });
+
         window.addEventListener('gameOver', ((e: CustomEvent) => {
             this.showGameOver(e.detail.score, e.detail.coins, e.detail.isClassic, e.detail.bestDistance);
         }) as EventListener);
@@ -167,8 +189,7 @@ export class UIManager {
             const panel = document.getElementById('settings-panel');
             if (panel?.classList.contains('modal-active')) {
                 this.playClick();
-                panel.classList.remove('modal-active');
-                this.game.resume();
+                this.closeActiveModals();
             } else {
                 this.playClick();
                 this.showSettings();
@@ -176,6 +197,15 @@ export class UIManager {
         });
 
         window.addEventListener('phaseReward', () => this.showBonus());
+        window.addEventListener('fpsUpdate', ((e: CustomEvent) => {
+            const el = document.getElementById('fps-display');
+            if (el) el.textContent = `${e.detail} FPS`;
+        }) as EventListener);
+
+        window.addEventListener('startCountdown', ((e: CustomEvent) => {
+            if (e.detail.onStart) e.detail.onStart();
+            this.runCountdown(e.detail.onComplete);
+        }) as EventListener);
 
         setInterval(() => this.updateEnergyBar(), 100);
     }
@@ -203,10 +233,10 @@ export class UIManager {
 
         document.getElementById('applySettingsBtn')?.addEventListener('click', () => {
             this.playClick();
-            document.getElementById('settings-panel')?.classList.remove('modal-active');
-            // Return to main menu (splash)
-            this.game.restart();
-            this.showSplashScreen();
+            this.closeActiveModals(() => {
+                this.game.restart();
+                this.showSplashScreen();
+            });
         });
 
         document.getElementById('resetDefaultsBtn')?.addEventListener('click', () => {
@@ -257,6 +287,14 @@ export class UIManager {
             this.game.updateConfig({ useDashButton: true });
             this.updateControlUI();
         });
+
+        // FPS Single Toggle
+        document.getElementById('toggle-fps-btn')?.addEventListener('click', () => {
+            this.playClick();
+            const current = this.game.getConfig().showFPS;
+            this.game.updateConfig({ showFPS: !current });
+            this.updateControlUI();
+        });
     }
 
     private setupConfirmControls(): void {
@@ -303,6 +341,19 @@ export class UIManager {
             }
         }
 
+        const useFPS = this.game.getConfig().showFPS;
+        const btnFPS = document.getElementById('toggle-fps-btn');
+
+        if (btnFPS) {
+            if (useFPS) {
+                btnFPS.classList.add('active');
+                container?.classList.add('has-fps');
+            } else {
+                btnFPS.classList.remove('active');
+                container?.classList.remove('has-fps');
+            }
+        }
+
         if (useDash) {
             container?.classList.add('has-dash-btn');
         } else {
@@ -314,6 +365,49 @@ export class UIManager {
         this.game.pause();
         this.updateControlUI(); // Ensure UI reflects current state
         document.getElementById('settings-panel')?.classList.add('modal-active');
+    }
+
+    private closeActiveModals(onFinalComplete?: () => void): void {
+        const activeModals = document.querySelectorAll('.modal-panel.modal-active');
+        if (activeModals.length === 0) {
+            if (onFinalComplete) onFinalComplete();
+            return;
+        }
+
+        activeModals.forEach(m => m.classList.remove('modal-active'));
+
+        // If we were paused, resume with countdown
+        if (this.game.getState() === 'PAUSED') {
+            this.game.resumeWithCountdown(onFinalComplete);
+        } else {
+            if (onFinalComplete) onFinalComplete();
+        }
+    }
+
+    private runCountdown(onComplete: () => void): void {
+        const overlay = document.getElementById('countdown-overlay');
+        const text = document.getElementById('countdown-text');
+        if (!overlay || !text) {
+            onComplete();
+            return;
+        }
+
+        overlay.style.display = 'flex';
+        let count = 3;
+        text.textContent = count.toString();
+        this.audioManager.play('click'); // Beep for count
+
+        const interval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                text.textContent = count.toString();
+                this.audioManager.play('click');
+            } else {
+                clearInterval(interval);
+                overlay.style.display = 'none';
+                onComplete();
+            }
+        }, 800); // 800ms per count for a snappy feel
     }
 
     private showShop(): void {
@@ -750,5 +844,6 @@ export class UIManager {
         if (c) c.textContent = this.saveManager.getCoins().toString();
         if (s) s.textContent = this.game.getScore().toString();
         this.updateShopBalance();
+        this.updateControlUI();
     }
 }

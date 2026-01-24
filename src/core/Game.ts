@@ -41,12 +41,11 @@ export class Game {
     private rafId: number | null = null;
     private screenShake = 0;
     private lastTime = 0;
-
-    // Debug
-    private showFps = false;
-    private fps = 0;
-    private lastFpsTime = 0;
+    private isSafeResuming = false;
+    // Perf metrics
+    private fps = 60;
     private frameCount = 0;
+    private lastFpsUpdate = performance.now();
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -101,7 +100,9 @@ export class Game {
     private setupDebugKeys(): void {
         window.addEventListener('keydown', (e) => {
             if (e.key === '`') {
-                this.showFps = !this.showFps;
+                this.updateConfig({ showFPS: !this.config.showFPS });
+                // Notify UI to update buttons and display
+                window.dispatchEvent(new CustomEvent('updateUI'));
             }
         });
     }
@@ -111,8 +112,10 @@ export class Game {
             if (this.state === 'START') {
                 this.state = 'PLAYING';
                 this.lastTime = performance.now();
+                window.dispatchEvent(new CustomEvent('gameStarted'));
             }
             if (this.state === 'PLAYING') {
+                this.isSafeResuming = false; // Restore normal speed on action
                 this.bird.flap();
                 this.audioManager.play('jump');
                 if (!this.isClassicMode) {
@@ -123,6 +126,7 @@ export class Game {
 
         this.inputManager.setDashStartCallback(() => {
             if (this.state === 'PLAYING' && !this.isClassicMode) {
+                this.isSafeResuming = false; // Restore normal speed on action
                 this.bird.startDash();
                 this.audioManager.play('dash');
             }
@@ -152,14 +156,21 @@ export class Game {
     private loop = (timestamp: number): void => {
         let dt = (timestamp - this.lastTime) / 1000;
         if (dt < 0) dt = 0.016; // Fallback for first frame weirdness
+
+        // Safe Resume: Reduce speed by 90%
+        if (this.isSafeResuming && this.state === 'PLAYING') {
+            dt *= 0.1;
+        }
+
         this.lastTime = timestamp;
 
         // FPS Calculation
         this.frameCount++;
-        if (timestamp - this.lastFpsTime >= 1000) {
+        if (timestamp - this.lastFpsUpdate >= 1000) {
             this.fps = this.frameCount;
             this.frameCount = 0;
-            this.lastFpsTime = timestamp;
+            this.lastFpsUpdate = timestamp;
+            window.dispatchEvent(new CustomEvent('fpsUpdate', { detail: this.fps }));
         }
 
         this.update(dt);
@@ -334,16 +345,6 @@ export class Game {
 
         if (this.state === 'START') this.renderer.drawStartMessage();
 
-        if (this.showFps) {
-            this.ctx.fillStyle = '#0f0';
-            this.ctx.font = '16px "JetBrains Mono"';
-            this.ctx.shadowBlur = 0;
-            this.ctx.textAlign = 'right';
-            this.ctx.fillText(`FPS: ${this.fps}`, CANVAS.WIDTH - 10, CANVAS.HEIGHT - 55);
-            this.ctx.fillText(`Score: ${this.score}`, CANVAS.WIDTH - 10, CANVAS.HEIGHT - 35);
-            this.ctx.textAlign = 'left'; // Reset for other drawing
-        }
-
         // Distance Counter (Lower Right Corner)
         // 50 pixels = 1 meter
         if (!this.isClassicMode) {
@@ -415,6 +416,7 @@ export class Game {
         if (this.state === 'PAUSED' || (forceStart && this.state === 'START')) {
             const wasStart = this.state === 'START';
             this.state = 'PLAYING';
+            this.lastTime = performance.now(); // Reset time to prevent big DT jump
 
             // Nếu bắt đầu từ màn hình chờ, thực hiện nhảy ngay lập tức
             if (forceStart && wasStart) {
@@ -422,6 +424,27 @@ export class Game {
                 this.audioManager.play('jump');
             }
         }
+    }
+
+    resumeWithCountdown(callback?: () => void): void {
+        if (this.state !== 'PAUSED') {
+            if (callback) callback();
+            return;
+        }
+
+        window.dispatchEvent(new CustomEvent('startCountdown', {
+            detail: {
+                onStart: () => {
+                    // Game stays paused during the countdown
+                },
+                onComplete: () => {
+                    // Start game in slow-motion mode
+                    this.isSafeResuming = true;
+                    this.resume();
+                    if (callback) callback();
+                }
+            }
+        }));
     }
     updateConfig(newConfig: Partial<GameConfig>): void {
         this.config = { ...this.config, ...newConfig };
@@ -435,6 +458,7 @@ export class Game {
     getCurrentThemeName(): string { return this.renderer.getCurrentTheme().theme; }
     getState(): GameStateType { return this.state; }
     public getInputManager(): InputManager { return this.inputManager; }
+    public getFPS(): number { return this.fps; }
     private updateScoreUI(): void { window.dispatchEvent(new CustomEvent('updateUI')); }
     private updateCoinUI(): void { window.dispatchEvent(new CustomEvent('updateUI')); }
 

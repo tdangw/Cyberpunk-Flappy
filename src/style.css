@@ -209,6 +209,8 @@ canvas {
   bottom: 2.5rem;
   /* Moved up a bit more to be clear of ground and distance */
   right: 1.5rem;
+  width: 5rem;
+  height: 5rem;
   display: none;
   /* Hidden by default */
   pointer-events: auto !important;
@@ -255,6 +257,58 @@ canvas {
   transform: scale(0.9);
   box-shadow: 0 0 10px var(--neon-blue);
   background: #fff;
+}
+
+/* DASH BUTTON ACCENTS - 4 Corner Arcs */
+.dash-btn-wrapper::before,
+.dash-btn-wrapper::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 3px solid var(--neon-blue);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  opacity: 0.8;
+}
+
+.dash-btn-wrapper::before {
+  mask-image: conic-gradient(from 0deg,
+      transparent 25deg,
+      black 30deg, black 60deg,
+      transparent 65deg, transparent 115deg,
+      black 120deg, black 150deg,
+      transparent 155deg, transparent 205deg,
+      black 210deg, black 240deg,
+      transparent 245deg, transparent 295deg,
+      black 300deg, black 330deg,
+      transparent 335deg);
+  -webkit-mask-image: conic-gradient(from 0deg,
+      transparent 25deg,
+      black 30deg, black 60deg,
+      transparent 65deg, transparent 115deg,
+      black 120deg, black 150deg,
+      transparent 155deg, transparent 205deg,
+      black 210deg, black 240deg,
+      transparent 245deg, transparent 295deg,
+      black 300deg, black 330deg,
+      transparent 335deg);
+}
+
+.dash-btn-wrapper::after {
+  /* Offset by 45deg to get the corners or sides as preferred, but one element with complex mask is better */
+  display: none;
+  /* Consolidating into ::before for simplicity and performance */
+}
+
+
+.has-dash-btn:active .dash-btn-wrapper::before,
+.has-dash-btn:active .dash-btn-wrapper::after {
+  transform: scale(1.1);
+  opacity: 0.5;
 }
 
 .dash-button-hud:disabled {
@@ -751,16 +805,30 @@ h2 {
   align-items: center;
   gap: 1.5rem;
   margin-bottom: 1rem;
-  height: 2.2rem;
+  min-height: 2.2rem;
+  /* Use min-height instead of fixed height */
 }
 
 .setting-label {
-  width: 9rem;
+  width: 8rem;
+  /* Slightly narrower */
   color: #aaa;
   font-size: 0.85rem;
   text-transform: uppercase;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.btn-toggle.on {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  background: rgba(0, 255, 247, 0.1);
+  box-shadow: 0 0 10px var(--neon-blue);
+}
+
+.btn-toggle.off {
+  border-color: var(--grey-muted);
+  color: var(--grey-muted);
 }
 
 .setting-row input[type="range"] {
@@ -799,37 +867,75 @@ h2 {
 /* SETTINGS SELECTOR GROUP */
 .selector-group {
   display: flex;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid #333;
-  border-radius: 0.4rem;
-  padding: 2px;
-  overflow: hidden;
+  flex: 1;
+  gap: 0.8rem;
+  margin-right: 5rem;
+  /* Precisely matches the slider track ending point */
 }
 
 .selector-btn {
-  background: #222 !important;
-  /* Force dark background */
-  border: none !important;
+  background: #111 !important;
+  border: 1px solid #333 !important;
   color: #666 !important;
-  padding: 0.4rem 1.2rem;
+  padding: 0.5rem 0.75rem;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 5rem;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border-radius: 0.4rem;
 }
 
 .selector-btn.active {
   background: var(--neon-blue) !important;
   color: #000 !important;
+  border-color: var(--neon-blue) !important;
   box-shadow: 0 0 15px var(--neon-blue);
   text-shadow: none;
 }
 
+.selector-btn:hover:not(.active) {
+  border-color: #555 !important;
+  color: #aaa !important;
+}
+
+/* Removed border-left fallback */
+
 .selector-btn:not(.active):hover {
   color: #aaa !important;
   background: #333 !important;
+}
+
+.setting-label.mini {
+  width: auto;
+  margin-left: 0.5rem;
+  font-size: 0.65rem;
+  color: var(--neon-blue);
+  /* Make it neon blue to be very visible */
+  font-weight: 900;
+  opacity: 0.8;
+}
+
+/* FPS DISPLAY IN HUD - Positioned under Settings */
+.fps-text {
+  position: absolute;
+  top: 3.5rem;
+  right: 1.1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: rgba(0, 255, 247, 0.6);
+  font-weight: 800;
+  display: none;
+  text-shadow: 0 0 5px var(--neon-blue);
+}
+
+#game-container.has-fps .fps-text {
+  display: block;
 }
 
 /* CONFIRM POPUP */

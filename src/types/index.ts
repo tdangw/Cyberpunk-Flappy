@@ -13,6 +13,7 @@ export interface GameConfig {
     sfxEnabled: boolean;
     pipeSpacing: number;
     useDashButton: boolean;
+    showFPS: boolean;
 }
 
 export interface StageDefinition {
