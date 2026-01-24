@@ -10,7 +10,10 @@ export class Bird implements BirdState {
     speed: number;
     radius: number;
     rotation: number;
-    energy: number;
+
+    nitroRemaining: number;
+    nitroCapacity: number;
+    nitroType: string;
     isDashing: boolean;
     wingAngle: number;
     stabilizeTimer: number;
@@ -18,6 +21,10 @@ export class Bird implements BirdState {
 
     private config: GameConfig;
     private onGameOver: () => void;
+    private dashAwaitingMeters = 0;
+    private stopRequested = false;
+    private nitroRechargeRate = 0; // m/s
+    private pxToMeter = 50;
 
     constructor(config: GameConfig, onGameOver: () => void) {
         this.x = 200;
@@ -25,7 +32,12 @@ export class Bird implements BirdState {
         this.speed = 0;
         this.radius = 16;
         this.rotation = 0;
-        this.energy = ENERGY.MAX;
+
+        this.nitroType = 'nitro_default';
+        this.nitroCapacity = 10;
+        this.nitroRemaining = 10;
+        this.nitroRechargeRate = 1.0;
+
         this.isDashing = false;
         this.wingAngle = 0;
         this.stabilizeTimer = 0;
@@ -34,75 +46,145 @@ export class Bird implements BirdState {
         this.onGameOver = onGameOver;
     }
 
-    setConfig(config: GameConfig): void {
-        this.config = config;
+    setNitroState(type: string, capacity: number, remaining: number, rechargeRate: number = 0): void {
+        this.nitroType = type;
+        this.nitroCapacity = capacity;
+        this.nitroRemaining = remaining;
+        this.nitroRechargeRate = rechargeRate;
     }
 
-    update(): void {
-        if (this.invulnerableTimer > 0) this.invulnerableTimer--;
+    get energy(): number {
+        return (this.nitroRemaining / this.nitroCapacity) * 100;
+    }
+
+    update(dtRatio: number): void {
+        if (this.invulnerableTimer > 0) this.invulnerableTimer -= 1 * dtRatio;
 
         if (this.isDashing) {
-            this.handleDashing();
+            this.handleDashing(dtRatio);
         } else {
-            this.handleNormalMovement();
+            this.handleNormalMovement(dtRatio);
         }
 
-        this.updateRotation();
+        this.updateRotation(dtRatio);
         this.checkBounds();
     }
 
-    private handleDashing(): void {
+    private handleDashing(dtRatio: number): void {
         this.stabilizeTimer = 0;
-        if (this.energy > 0) {
-            this.energy -= ENERGY.DRAIN_RATE;
+        const dashSpeed = this.config.speed * 2.5;
+        const movedMeters = (dashSpeed * dtRatio) / this.pxToMeter;
+
+        if (this.nitroRemaining > 0 || this.dashAwaitingMeters > 0) {
+            const consumeMeters = Math.min(this.nitroRemaining > 0 ? this.nitroRemaining : this.dashAwaitingMeters, movedMeters);
+            if (this.nitroRemaining > 0) this.nitroRemaining -= consumeMeters;
+
+            if (this.dashAwaitingMeters > 0) {
+                this.dashAwaitingMeters -= movedMeters;
+            }
+
             this.speed = 0;
-            // Auto-center to middle
-            this.y += (CANVAS.HEIGHT / 2 - this.y) * 0.02;
+            this.y += (CANVAS.HEIGHT / 2 - this.y) * 0.02 * dtRatio;
+
+            // Stop condition:
+            const outOfEnergy = this.nitroRemaining <= 0 && this.dashAwaitingMeters <= 0;
+            const releasedAndBuffered = this.stopRequested && this.dashAwaitingMeters <= 0;
+
+            if (outOfEnergy || releasedAndBuffered) {
+                this.finishDash();
+            }
         } else {
-            this.stopDash();
+            this.finishDash();
         }
     }
 
-    private handleNormalMovement(): void {
-        if (this.stabilizeTimer > 0) {
-            this.stabilizeTimer--;
-            this.speed = 0;
+    private finishDash(): void {
+        this.isDashing = false;
+        this.stopRequested = false;
+        this.dashAwaitingMeters = 0;
+        this.stabilizeTimer = ENERGY.STABILIZE_DURATION;
+        this.invulnerableTimer = ENERGY.STABILIZE_DURATION;
+        this.checkNitroFallback();
+    }
+
+    private checkNitroFallback(): void {
+        if (this.nitroType !== 'nitro_default' && this.nitroRemaining <= 0) {
+            window.dispatchEvent(new CustomEvent('nitroDepleted'));
+            this.setNitroState('nitro_default', 10, 0, 0.333);
+        }
+    }
+
+    private handleNormalMovement(dtRatio: number): void {
+        const hasStabilized = this.stabilizeTimer <= 0;
+
+        if (!hasStabilized) {
+            this.stabilizeTimer -= 1 * dtRatio;
+            // Removed speed = 0 here. Bird now falls normally during recovery.
+        }
+
+        if (this.nitroRechargeRate > 0) {
+            const recharge = (this.nitroRechargeRate * dtRatio) / 60;
+            this.nitroRemaining = Math.min(this.nitroRemaining + recharge, this.nitroCapacity);
+        }
+
+        // Apply constant physics
+        this.speed += this.config.gravity * dtRatio;
+        this.y += this.speed * dtRatio;
+
+        if (!hasStabilized) {
+            // Keep bird level during recovery but allowed to fall
             this.rotation = 0;
-        } else {
-            this.energy = Math.min(this.energy + ENERGY.RECHARGE_RATE, ENERGY.MAX);
-            this.speed += this.config.gravity;
-            this.y += this.speed;
         }
     }
 
-    private updateRotation(): void {
+    startDash(): void {
+        if (!this.isDashing && this.nitroRemaining > 0) {
+            // Default Nitro requires > 20% to activate (anti-spam)
+            if (this.nitroType === 'nitro_default' && this.energy < 20) {
+                return;
+            }
+
+            this.isDashing = true;
+            this.stopRequested = false;
+            this.dashAwaitingMeters = 2; // Fixed tap distance
+        }
+    }
+
+    stopDash(): void {
+        if (this.isDashing) {
+            this.stopRequested = true;
+        }
+    }
+
+    updateFall(dtRatio: number): void {
+        this.speed += this.config.gravity * dtRatio;
+        this.y += this.speed * dtRatio;
+        this.rotation += 0.15 * dtRatio;
+    }
+
+    private updateRotation(dtRatio: number): void {
         if (this.isDashing) {
             this.rotation = 0;
-            this.wingAngle += 0.5;
+            this.wingAngle += 0.5 * dtRatio;
         } else {
             if (this.stabilizeTimer > 0) {
                 this.rotation = 0;
             } else {
-                if (this.speed < -2) {
-                    this.rotation = -0.3;
-                } else if (this.speed > 2) {
-                    this.rotation += 0.05;
+                if (this.speed < -2) this.rotation = -0.3;
+                else if (this.speed > 2) {
+                    this.rotation += 0.05 * dtRatio;
                     if (this.rotation > 1.2) this.rotation = 1.2;
-                } else {
-                    this.rotation = 0;
-                }
+                } else this.rotation = 0;
             }
-            this.wingAngle += 0.2;
+            this.wingAngle += 0.2 * dtRatio;
         }
     }
 
     private checkBounds(): void {
-        // Ground collision
         if (this.y + this.radius >= CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT) {
             this.y = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - this.radius;
             this.onGameOver();
         }
-        // Ceiling collision
         if (this.y - this.radius <= 0) {
             this.y = this.radius;
             this.speed = 0;
@@ -117,33 +199,14 @@ export class Bird implements BirdState {
         }
     }
 
-    startDash(): void {
-        if (this.energy >= 20 && !this.isDashing) {
-            this.isDashing = true;
-        }
-    }
-
-    stopDash(): void {
-        if (this.isDashing) {
-            this.isDashing = false;
-            this.stabilizeTimer = ENERGY.STABILIZE_DURATION;
-            this.invulnerableTimer = ENERGY.STABILIZE_DURATION;
-        }
-    }
-
-    isInvulnerable(): boolean {
-        return this.isDashing || this.invulnerableTimer > 0;
-    }
+    isInvulnerable(): boolean { return this.isDashing || this.invulnerableTimer > 0; }
 
     reset(): void {
-        this.x = 200;
-        this.y = 350;
-        this.speed = 0;
-        this.rotation = 0;
-        this.energy = ENERGY.MAX;
-        this.isDashing = false;
-        this.wingAngle = 0;
-        this.stabilizeTimer = 0;
-        this.invulnerableTimer = 0;
+        this.x = 200; this.y = 350; this.speed = 0; this.rotation = 0;
+        this.isDashing = false; this.wingAngle = 0; this.stabilizeTimer = 0; this.invulnerableTimer = 0;
+        this.dashAwaitingMeters = 0;
+        this.stopRequested = false;
     }
+
+    setConfig(config: GameConfig): void { this.config = config; }
 }

@@ -1,0 +1,63 @@
+.mode-label {
+    color: var(--neon-blue);
+    font-size: 1.2rem;
+    letter-spacing: 4px;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    font-weight: 900;
+    text-shadow: 0 0 15px rgba(0, 255, 247, 0.6);
+}
+
+.mode-selector-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    pointer-events: auto;
+}
+
+.mode-option {
+    padding: 0.7rem 1.8rem;
+    border: 2px solid #444;
+    border-radius: 0.4rem;
+    color: #888;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.3s;
+    background: rgba(0, 0, 0, 0.6);
+    letter-spacing: 1px;
+}
+
+.mode-option:hover {
+    border-color: var(--neon-blue);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.mode-option.active {
+    background: var(--neon-blue);
+    color: #000;
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 15px var(--neon-blue);
+    transform: scale(1.05);
+}
+
+#start-screen[data-theme="sunny"] .mode-label {
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Sunny Theme Overrides */
+#start-screen[data-theme="sunny"] .mode-option {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #eee;
+}
+
+#start-screen[data-theme="sunny"] .mode-option.active {
+    background: #fff;
+    color: #333;
+    border-color: #fff;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+}

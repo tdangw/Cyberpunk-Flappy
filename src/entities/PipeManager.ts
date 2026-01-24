@@ -9,35 +9,37 @@ export class PipeManager {
     private pipes: Pipe[] = [];
     private coins: Coin[] = [];
     private config: GameConfig;
+    private currentPipeInterval: number = 250;
     private pipeColor: string = COLORS.NEON_PINK;
     private pipeStyle: string = 'cyber';
 
     constructor(config: GameConfig) {
         this.config = config;
+        this.setNextPipeInterval();
     }
 
     setConfig(config: GameConfig): void {
         this.config = config;
+        this.setNextPipeInterval();
     }
 
-    update(speed: number): void {
-        this.pipes.forEach((p) => (p.x -= speed));
+    update(speed: number, dtRatio: number, spawnCoins: boolean = true): void {
+        this.pipes.forEach((p) => (p.x -= speed * dtRatio));
         if (this.pipes.length && this.pipes[0].x + this.pipes[0].w < -100) {
             this.pipes.shift();
         }
 
         const lastPipe = this.pipes[this.pipes.length - 1];
-        const minSpawnDist = 300;
-        const maxSpawnDist = 600;
-        const nextDist = Math.random() * (maxSpawnDist - minSpawnDist) + minSpawnDist;
 
-        if (!lastPipe || CANVAS.WIDTH - lastPipe.x >= nextDist) {
-            this.createPipe();
+        // If no pipes, spawn immediately. If pipes exist, check against stored interval.
+        if (!lastPipe || CANVAS.WIDTH - lastPipe.x >= this.currentPipeInterval) {
+            this.createPipe(spawnCoins);
+            this.setNextPipeInterval();
         }
 
         this.coins.forEach((c) => {
-            c.x -= speed;
-            c.wobble += 0.03;
+            c.x -= speed * dtRatio;
+            c.wobble += 0.03 * dtRatio;
             this.pipes.forEach(p => {
                 const horizontalOverlap = c.x + c.r > p.x - 5 && c.x - c.r < p.x + p.w + 5;
                 if (horizontalOverlap) {
@@ -47,15 +49,17 @@ export class PipeManager {
             });
         });
 
-        if (Math.random() < 0.005) this.spawnSafeRandomCoin();
+        // Random floating coins (disabled in classic)
+        if (spawnCoins && Math.random() < 0.005 * dtRatio) this.spawnSafeRandomCoin();
+
         this.coins = this.coins.filter((c) => c.x + c.r > 0 && !c.collected);
     }
 
-    private createPipe(): void {
+    private createPipe(spawnCoins: boolean): void {
         const groundH = CANVAS.GROUND_HEIGHT;
-        const gap = this.config.pipeGap;
-
-        // Ensure more dramatic height variations
+        const configGap = this.config.pipeGap;
+        const gapVariance = (Math.random() - 0.5) * 40;
+        const gap = configGap + gapVariance;
         const padding = 80;
         const minY = padding;
         const maxY = CANVAS.HEIGHT - groundH - gap - padding;
@@ -70,29 +74,66 @@ export class PipeManager {
         };
         this.pipes.push(pipe);
 
-        if (Math.random() > 0.4) {
-            this.coins.push({
-                x: pipe.x + 40,
-                y: topH + gap / 2,
-                r: 15,
-                collected: false,
-                wobble: Math.random() * Math.PI,
-            });
+        if (spawnCoins && Math.random() > 0.4) {
+            const coinX = pipe.x + 40;
+            const coinY = topH + gap / 2;
+            if (this.isPositionSafe(coinX, coinY, 15)) {
+                this.coins.push({ x: coinX, y: coinY, r: 15, collected: false, wobble: Math.random() * Math.PI });
+            }
         }
     }
 
+    private isPositionSafe(x: number, y: number, r: number): boolean {
+        // Check against pipes
+        const pipeOverlap = this.pipes.some(p => {
+            const horizontalProximity = x + r > p.x - 20 && x - r < p.x + p.w + 20;
+            if (!horizontalProximity) return false;
+            // Inside horizontal range, check vertical gap
+            const gapTop = p.top;
+            const gapBottom = p.top + this.config.pipeGap;
+            return y - r < gapTop + 10 || y + r > gapBottom - 10;
+        });
+        if (pipeOverlap) return false;
+
+        // Check against existing coins
+        const coinOverlap = this.coins.some(c => {
+            const dx = c.x - x;
+            const dy = c.y - y;
+            return Math.sqrt(dx * dx + dy * dy) < (c.r + r + 20);
+        });
+        return !coinOverlap;
+    }
+
     private spawnSafeRandomCoin(): void {
-        const x = CANVAS.WIDTH + 150;
-        const y = Math.random() * (CANVAS.HEIGHT - 350) + 150;
-        if (!this.pipes.some(p => Math.abs(x - (p.x + 40)) < 250)) {
+        // Try spawning between pipes (midpoint logic)
+        let x = CANVAS.WIDTH + 150;
+        const lastPipe = this.pipes[this.pipes.length - 1];
+        if (lastPipe) {
+            // Spawn 200px after last pipe if interval allows
+            x = lastPipe.x + this.currentPipeInterval / 2;
+        }
+
+        const minY = 150;
+        const maxY = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - 150;
+        const y = Math.random() * (maxY - minY) + minY;
+
+        if (this.isPositionSafe(x, y, 15)) {
             this.coins.push({ x, y, r: 15, collected: false, wobble: Math.random() * Math.PI });
         }
     }
 
     setColors(color: string): void { this.pipeColor = color; }
     setStyle(style: string): void { this.pipeStyle = style; }
+    private setNextPipeInterval(): void {
+        const baseSpacing = this.config.pipeSpacing || 250;
+        const variance = 200;
+        const randomDist = baseSpacing + (Math.random() - 0.5) * variance;
+        this.currentPipeInterval = Math.max(150, randomDist);
+    }
+
     getPipes(): Pipe[] { return this.pipes; }
     getCoins(): Coin[] { return this.coins; }
+
     reset(): void { this.pipes = []; this.coins = []; }
 
     render(ctx: CanvasRenderingContext2D): void {
@@ -145,9 +186,15 @@ export class PipeManager {
             drawBody();
         }
 
-        // Internal Details
+        // Universal Body Fill for ALL styles
+        ctx.globalAlpha = 0.15; // Subtle fill
+        ctx.fillStyle = this.pipeColor;
+        ctx.fillRect(p.x, 0, p.w, p.top);
+        ctx.fillRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
+        ctx.globalAlpha = 1.0;
+
+        // Internal Details & Borders
         ctx.shadowBlur = 0;
-        ctx.globalAlpha = 0.3;
         ctx.strokeStyle = this.pipeColor;
 
         switch (this.pipeStyle) {
@@ -155,31 +202,58 @@ export class PipeManager {
             case 'neon':
             case 'glitch':
             case 'plasma':
-                for (let y = 20; y < p.top; y += 40) { ctx.beginPath(); ctx.moveTo(p.x + 10, y); ctx.lineTo(p.x + p.w - 10, y); ctx.stroke(); }
-                for (let y = botY + 20; y < CANVAS.HEIGHT; y += 40) { ctx.beginPath(); ctx.moveTo(p.x + 10, y); ctx.lineTo(p.x + p.w - 10, y); ctx.stroke(); }
+                // Add fill for these tech styles + extra glow
+                ctx.fillStyle = this.pipeColor;
+                ctx.globalAlpha = 0.1;
+                ctx.fillRect(p.x + 5, 0, p.w - 10, p.top);
+                ctx.fillRect(p.x + 5, botY, p.w - 10, CANVAS.HEIGHT - botY);
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                for (let y = 20; y < p.top; y += 40) { ctx.moveTo(p.x, y); ctx.lineTo(p.x + p.w, y); }
+                for (let y = botY + 20; y < CANVAS.HEIGHT; y += 40) { ctx.moveTo(p.x, y); ctx.lineTo(p.x + p.w, y); }
+                ctx.stroke();
+                // Solid Border
+                ctx.globalAlpha = 1;
+                ctx.strokeRect(p.x, 0, p.w, p.top);
+                ctx.strokeRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
                 break;
             case 'bamboo':
                 ctx.fillStyle = this.pipeColor;
-                for (let y = 40; y < p.top; y += 80) ctx.fillRect(p.x - 5, y, p.w + 10, 8);
-                for (let y = botY + 40; y < CANVAS.HEIGHT; y += 80) ctx.fillRect(p.x - 5, y, p.w + 10, 8);
+                ctx.fillRect(p.x, 0, p.w, p.top);
+                ctx.fillRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
+                // Knots
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                for (let y = 40; y < p.top; y += 80) ctx.fillRect(p.x - 2, y, p.w + 4, 6);
+                for (let y = botY + 40; y < CANVAS.HEIGHT; y += 80) ctx.fillRect(p.x - 2, y, p.w + 4, 6);
                 break;
             case 'rusty':
             case 'stone':
-                ctx.fillStyle = this.pipeColor;
-                for (let y = 20; y < p.top; y += 60) { ctx.beginPath(); ctx.arc(p.x + 10, y, 4, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(p.x + p.w - 10, y, 4, 0, Math.PI * 2); ctx.fill(); }
-                for (let y = botY + 20; y < CANVAS.HEIGHT; y += 60) { ctx.beginPath(); ctx.arc(p.x + 10, y, 4, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(p.x + p.w - 10, y, 4, 0, Math.PI * 2); ctx.fill(); }
+            case 'lava':
+            case 'magma':
+                ctx.fillStyle = this.pipeColor; // Solid Fill
+                ctx.fillRect(p.x, 0, p.w, p.top);
+                ctx.fillRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
+                // Texture
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                for (let y = 20; y < p.top; y += 50) { ctx.beginPath(); ctx.arc(p.x + 10, y, 5, 0, Math.PI * 2); ctx.fill(); }
+                for (let y = botY + 20; y < CANVAS.HEIGHT; y += 50) { ctx.beginPath(); ctx.arc(p.x + p.w - 15, y + 10, 8, 0, Math.PI * 2); ctx.fill(); }
                 break;
             case 'golden':
             case 'crystal':
             case 'ice':
-                ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.2;
-                ctx.fillRect(p.x + p.w / 2 - 5, 0, 10, p.top);
-                ctx.fillRect(p.x + p.w / 2 - 5, botY, 10, CANVAS.HEIGHT - botY);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fillRect(p.x, 0, p.w, p.top);
+                ctx.fillRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
+                ctx.strokeStyle = '#fff';
+                ctx.strokeRect(p.x, 0, p.w, p.top);
+                ctx.strokeRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
                 break;
             case 'laser':
-                ctx.strokeStyle = '#fff'; ctx.globalAlpha = 0.8; ctx.lineWidth = 1;
+                ctx.strokeStyle = this.pipeColor; ctx.lineWidth = 3;
+                ctx.globalAlpha = 0.9;
                 ctx.beginPath(); ctx.moveTo(p.x + p.w / 2, 0); ctx.lineTo(p.x + p.w / 2, p.top); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(p.x + p.w / 2, botY); ctx.lineTo(p.x + p.w / 2, CANVAS.HEIGHT); ctx.stroke();
+                ctx.shadowColor = this.pipeColor; ctx.shadowBlur = 20;
                 break;
         }
 
@@ -209,35 +283,49 @@ export class PipeManager {
 
     private draw3DPipe(ctx: CanvasRenderingContext2D, x: number, w: number, top: number, bot: number): void {
         ctx.globalAlpha = 1.0;
-        const drawBody = (sy: number, ey: number) => {
-            const h = Math.abs(ey - sy);
-            // Main 3D Pipe Shading - using sy ensures top and bottom pipes look the same
-            const pipeGrad = ctx.createLinearGradient(x, sy, x + w, sy);
-            pipeGrad.addColorStop(0, '#064e3b');
-            pipeGrad.addColorStop(0.5, '#10b981');
-            pipeGrad.addColorStop(1, '#064e3b');
 
-            ctx.fillStyle = pipeGrad;
-            ctx.fillRect(x, sy, w, h);
+        // Optimized Cylinder Shader - FASTEST & SMOOTHEST
+        const drawCylinder = (sx: number, sy: number, sw: number, sh: number) => {
+            // Gradient only - no overlay for maximum performance and smoothness
+            const grad = ctx.createLinearGradient(sx, sy, sx + sw, sy);
+            grad.addColorStop(0, '#000');           // Edge shadow
+            grad.addColorStop(0.15, this.pipeColor);// Base color
+            grad.addColorStop(0.4, this.pipeColor); // Highlight area (flat)
+            grad.addColorStop(0.85, this.pipeColor);// Base color
+            grad.addColorStop(1.0, '#000');         // Edge shadow
 
-            // Neon Glow Edges
-            ctx.strokeStyle = '#00fff7';
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = 0.8;
-            ctx.strokeRect(x, sy, w, h);
+            ctx.fillStyle = grad;
+            ctx.fillRect(sx, sy, sw, sh);
 
-            // Inner highlight for 3D look
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 1;
-            ctx.globalAlpha = 0.3;
-            ctx.beginPath();
-            ctx.moveTo(x + 10, sy);
-            ctx.lineTo(x + 10, ey);
-            ctx.stroke();
-            ctx.globalAlpha = 1.0;
+            // Add a very subtle inner shadow line to define shape without white
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(sx + sw * 0.7, sy, sw * 0.1, sh);
         };
 
-        drawBody(0, top);
-        drawBody(bot, CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT);
+        const rimHeight = 25;
+        const rimOverhang = 6;
+
+        // Darker color for inside the pipe (simulating depth without solid black line)
+        const getDarkShade = () => {
+            // Simple hack: overlay black with alpha on current coloring
+            return 'rgba(0,0,0,0.5)';
+        };
+
+        // TOP PIPE
+        drawCylinder(x, 0, w, top - rimHeight); // Body
+        drawCylinder(x - rimOverhang, top - rimHeight, w + rimOverhang * 2, rimHeight); // Rim
+
+        // Cap (Bottom of top pipe) - No black line
+        // Just fill with a slightly darker shade to look like a solid object
+        ctx.fillStyle = getDarkShade();
+        ctx.fillRect(x + 2, top - 4, w - 4, 4);
+
+        // BOTTOM PIPE
+        drawCylinder(x - rimOverhang, bot, w + rimOverhang * 2, rimHeight); // Rim
+        drawCylinder(x, bot + rimHeight, w, CANVAS.HEIGHT - (bot + rimHeight) - CANVAS.GROUND_HEIGHT); // Body
+
+        // Cap (Top of bottom pipe)
+        ctx.fillStyle = getDarkShade();
+        ctx.fillRect(x + 2, bot, w - 4, 4);
     }
 }

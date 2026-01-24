@@ -32,7 +32,10 @@ export class SaveManager {
             coins: 0,
             ownedSkins: ['sphere-0'],
             equippedSkin: 'sphere-0',
-            highScore: 0
+            highScore: 0,
+            equippedBoostId: 'nitro_default',
+            boostRemainingMeters: 10,
+            inventoryBoosts: {}
         };
     }
 
@@ -41,7 +44,10 @@ export class SaveManager {
             coins: 0,
             ownedSkins: ['sphere-0'],
             equippedSkin: 'sphere-0',
-            highScore: 0
+            highScore: 0,
+            equippedBoostId: 'nitro_default',
+            boostRemainingMeters: 10,
+            inventoryBoosts: {}
         };
         this.save();
     }
@@ -61,12 +67,25 @@ export class SaveManager {
         return false;
     }
 
-    getHighScore(): number { return this.data.highScore || 0; }
-    updateHighScore(score: number): void {
-        if (score > this.getHighScore()) {
-            this.data.highScore = score;
-            this.save();
+    getHighScore(isClassic: boolean = false): number {
+        return isClassic ? (this.data.classicHighScore || 0) : (this.data.highScore || 0);
+    }
+
+    updateHighScore(score: number, isClassic: boolean = false): boolean {
+        if (isClassic) {
+            if (score > (this.data.classicHighScore || 0)) {
+                this.data.classicHighScore = score;
+                this.save();
+                return true;
+            }
+        } else {
+            if (score > (this.data.highScore || 0)) {
+                this.data.highScore = score;
+                this.save();
+                return true;
+            }
         }
+        return false;
     }
 
     getOwnedSkins(): string[] { return this.data.ownedSkins; }
@@ -81,5 +100,42 @@ export class SaveManager {
     equipSkin(id: string): void {
         this.data.equippedSkin = id;
         this.save();
+    }
+
+    getEquippedBoostId(): string {
+        return this.data.equippedBoostId || 'nitro_default';
+    }
+
+    setEquippedBoost(id: string, capacity: number): void {
+        this.data.equippedBoostId = id;
+        this.data.boostRemainingMeters = capacity;
+        this.save();
+    }
+
+    getBoostRemaining(): number {
+        return this.data.boostRemainingMeters || 0;
+    }
+
+    updateBoostRemaining(meters: number): void {
+        this.data.boostRemainingMeters = meters;
+        this.save();
+    }
+
+    addBoostToInventory(id: string, count: number = 1): void {
+        if (!this.data.inventoryBoosts) this.data.inventoryBoosts = {};
+        this.data.inventoryBoosts[id] = (this.data.inventoryBoosts[id] || 0) + count;
+        this.save();
+    }
+
+    getBoostCount(id: string): number {
+        return this.data.inventoryBoosts?.[id] || 0;
+    }
+
+    useBoostFromInventory(id: string): boolean {
+        if (!this.data.inventoryBoosts || !this.data.inventoryBoosts[id]) return false;
+        this.data.inventoryBoosts[id]--;
+        if (this.data.inventoryBoosts[id] <= 0) delete this.data.inventoryBoosts[id];
+        this.save();
+        return true;
     }
 }

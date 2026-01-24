@@ -1,0 +1,26 @@
+/* Classic Mode UI Overrides */
+.classic-mode #coin-display,
+.classic-mode #energy-bar-hud,
+.classic-mode #shop-btn,
+.classic-mode #settings-btn,
+.classic-mode #bonus-notification {
+    display: none !important;
+}
+
+.classic-mode #score {
+    font-size: 3rem;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    color: #fff;
+    position: fixed;
+    top: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.classic-mode #top-hud {
+    justify-content: center;
+}
+
+.classic-mode .simple-stat-row:last-child {
+    display: none !important;
+}

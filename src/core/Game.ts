@@ -8,6 +8,8 @@ import { SaveManager } from '../managers/SaveManager';
 import { InputManager } from './InputManager';
 import { Renderer } from './Renderer';
 import { AudioManager } from '../managers/AudioManager';
+import { LevelGenerator } from './LevelGenerator';
+import { BOOSTS } from '../config/boosts';
 
 /**
  * Main Game class - orchestrates all game systems
@@ -22,6 +24,8 @@ export class Game {
     private sessionCoins = 0;
     private lastThemeName = '';
     private startMapIndex = 0;
+    private distanceTraveled = 0;
+    private isClassicMode = false;
 
     private config: GameConfig;
     private bird: Bird;
@@ -36,6 +40,13 @@ export class Game {
 
     private rafId: number | null = null;
     private screenShake = 0;
+    private lastTime = 0;
+
+    // Debug
+    private showFps = false;
+    private fps = 0;
+    private lastFpsTime = 0;
+    private frameCount = 0;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -55,22 +66,69 @@ export class Game {
         this.particleSystem = new ParticleSystem();
 
         this.setupInput();
+        this.setupDebugKeys();
+        this.setupNitroEvents();
+        this.syncNitroToBird();
         this.audioManager.playBGM();
         this.start();
     }
 
+    private setupNitroEvents(): void {
+        window.addEventListener('nitroDepleted', () => {
+            const boostId = this.saveManager.getEquippedBoostId();
+            if (boostId !== 'nitro_default') {
+                this.saveManager.useBoostFromInventory(boostId);
+            }
+            this.saveManager.setEquippedBoost('nitro_default', 10);
+            this.updateCoinUI(); // Refresh UI if needed
+        });
+    }
+
+    private syncNitroToBird(): void {
+        const boostId = this.saveManager.getEquippedBoostId();
+        const remaining = this.saveManager.getBoostRemaining();
+
+        // Find boost details
+        const boostDef = BOOSTS.find(b => b.id === boostId) || BOOSTS[0];
+        this.bird.setNitroState(
+            boostDef.id,
+            boostDef.capacity,
+            remaining,
+            boostDef.rechargeRate || 0
+        );
+    }
+
+    private setupDebugKeys(): void {
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '`') {
+                this.showFps = !this.showFps;
+            }
+            if (e.key === '1') {
+                // Cheat: Add 50 score
+                this.score += 50;
+                this.updateScoreUI();
+                // Removed unwanted firework effect
+            }
+        });
+    }
+
     private setupInput(): void {
         this.inputManager.setJumpCallback(() => {
-            if (this.state === 'START') this.state = 'PLAYING';
+            if (this.state === 'START') {
+                this.state = 'PLAYING';
+                this.lastTime = performance.now();
+            }
             if (this.state === 'PLAYING') {
                 this.bird.flap();
                 this.audioManager.play('jump');
-                this.particleSystem.emit(this.bird.x, this.bird.y, 5, '#fff');
+                if (!this.isClassicMode) {
+                    this.particleSystem.emit(this.bird.x, this.bird.y, 5, '#fff');
+                }
             }
         });
 
         this.inputManager.setDashStartCallback(() => {
-            if (this.state === 'PLAYING') {
+            if (this.state === 'PLAYING' && !this.isClassicMode) {
                 this.bird.startDash();
                 this.audioManager.play('dash');
             }
@@ -79,36 +137,90 @@ export class Game {
         this.inputManager.setDashEndCallback(() => {
             if (this.state === 'PLAYING') this.bird.stopDash();
         });
+
+        this.inputManager.setEscCallback(() => {
+            window.dispatchEvent(new CustomEvent('openSettings'));
+        });
     }
 
-    private start(): void { this.loop(); }
-    private loop = (): void => { this.update(); this.render(); this.rafId = requestAnimationFrame(this.loop); };
+    private start(): void {
+        this.lastTime = performance.now();
+        this.rafId = requestAnimationFrame(this.loop);
+    }
 
-    private update(): void {
-        if (this.state === 'PAUSED') return;
+    private loop = (timestamp: number): void => {
+        let dt = (timestamp - this.lastTime) / 1000;
+        if (dt < 0) dt = 0.016; // Fallback for first frame weirdness
+        this.lastTime = timestamp;
+
+        // FPS Calculation
+        this.frameCount++;
+        if (timestamp - this.lastFpsTime >= 1000) {
+            this.fps = this.frameCount;
+            this.frameCount = 0;
+            this.lastFpsTime = timestamp;
+        }
+
+        this.update(dt);
+        this.render();
+        this.rafId = requestAnimationFrame(this.loop);
+    };
+
+    // ... (update method unchanged) -> This comment was from previous patch, causing issues.
+    // We will consolidate update/render here.
+
+    // ... (render logic moved to bottom)
+
+    private update(dt: number): void {
+        if (this.state === 'PAUSED') {
+            this.lastTime = performance.now();
+            return;
+        }
+
+        // Smoother Cap: 0.05s (20fps minimum to avoid huge jumps)
+        const safeDt = Math.min(dt, 0.05);
+        // Target 60 FPS reference: if dt = 0.016 (60hz), ratio = 1.
+        // If dt = 0.007 (144hz), ratio = 0.42.
+        const dtRatio = safeDt * 60;
+
         this.frames++;
 
         if (this.screenShake > 0) this.screenShake--;
 
         if (this.state === 'PLAYING') {
-            this.bird.update();
+            this.bird.update(dtRatio);
             const speed = this.bird.isDashing ? this.config.speed * 2.5 : this.config.speed;
-            this.pipeManager.update(speed);
-            this.particleSystem.update(speed);
 
-            this.renderer.updateTheme(this.score, this.startMapIndex);
+            // Accurate Distance Tracking (pixels)
+            // Assuming 50 pixels = 1 meter for gameplay feel
+            const moveStep = speed * dtRatio;
+            this.distanceTraveled += moveStep;
+
+            // Update pipes with Coin Spawn Flag (Disable coins if classic mode)
+            this.pipeManager.update(speed, dtRatio, !this.isClassicMode);
+
+            // Procedural Level Generation
+            // Use visual score (passed pipes) for difficulty, but could use distance too
+            const mapId = this.getMapIdByIndex(this.startMapIndex);
+
+            // In Classic Mode, we stick to the starting theme and don't progress zones
+            const effectiveScore = this.isClassicMode ? 0 : this.score;
+
+            const stageDef = LevelGenerator.getInstance().getStageForScore(effectiveScore, mapId);
+
+            this.renderer.setTheme(stageDef, mapId);
             const theme = this.renderer.getCurrentTheme();
 
-            if (this.lastThemeName !== theme.theme) {
+            if (this.lastThemeName !== theme.pipeColor + theme.decorations) {
                 if (this.lastThemeName !== '') {
                     // Bonus Coins every phase change (rewarding progression)
                     this.sessionCoins += 10;
                     this.saveManager.addCoins(10);
                     this.updateCoinUI();
-                    this.audioManager.play('coin'); // Reward sound
+                    this.audioManager.play('coin');
                     (window as any).uiManager?.showBonus();
                 }
-                this.lastThemeName = theme.theme;
+                this.lastThemeName = theme.pipeColor + theme.decorations;
             }
 
             this.pipeManager.setColors(theme.pipeColor);
@@ -120,16 +232,17 @@ export class Game {
                 this.particleSystem.emit(this.bird.x - 10, this.bird.y, 1, 'rgba(255, 255, 255, 0.4)');
             }
         } else if (this.state === 'DYING') {
-            this.bird.speed += this.config.gravity;
-            this.bird.y += this.bird.speed;
-            this.bird.rotation += 0.15;
-            this.particleSystem.update(0);
+            this.bird.updateFall(dtRatio);
 
-            // Ground check handled via the Bird's callback which calls handleGroundCollision
             if (this.bird.y + this.bird.radius >= CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT) {
                 this.handleGroundCollision();
             }
         }
+
+        // Update particles regardless of state (so explosions play out)
+        // Use active speed if playing, else 0 (or small drift)
+        const particleSpeed = this.state === 'PLAYING' ? this.config.speed : 0;
+        this.particleSystem.update(particleSpeed, dtRatio);
     }
 
     private checkCollisions(): void {
@@ -190,32 +303,75 @@ export class Game {
 
     private render(): void {
         this.ctx.save();
-        if (this.screenShake > 0) {
+        if (this.screenShake > 0 && !this.isClassicMode) {
             this.ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
         }
 
         this.renderer.clear();
-        this.renderer.drawBackground(this.frames);
+
+        // Pass Classic flags to renderer
+        this.renderer.drawBackground(this.frames, this.isClassicMode);
+        this.renderer.drawDistanceMarkers(this.distanceTraveled, this.isClassicMode);
         this.renderer.drawGround(this.frames, this.state === 'PLAYING' ? this.config.speed : 0);
+
         this.pipeManager.render(this.ctx);
+
+        // Particles now allowed in Classic (vFX requested for collisions)
         this.particleSystem.render(this.ctx);
 
-        if (this.bird.isDashing) {
+        if (this.bird.isDashing && !this.isClassicMode) {
             this.renderer.drawDashEffect(this.bird, this.frames);
         }
 
-        this.skinManager.drawSkin(this.ctx, this.saveManager.getEquippedSkin(), this.bird, this.bird.isDashing, this.frames);
+        // Classic = Default Bird, Advance = Equipped Skin
+        if (this.isClassicMode) {
+            // Draw default simple bird (yellow/basic)
+            this.skinManager.drawSkin(this.ctx, 'default', this.bird, false, this.frames);
+        } else {
+            this.skinManager.drawSkin(this.ctx, this.saveManager.getEquippedSkin(), this.bird, this.bird.isDashing, this.frames);
+        }
 
         if (this.state === 'START') this.renderer.drawStartMessage();
+
+        // FPS Logic
+        if (this.showFps) {
+            this.ctx.fillStyle = '#0f0';
+            this.ctx.font = '16px "JetBrains Mono"';
+            this.ctx.shadowBlur = 0;
+            this.ctx.fillText(`FPS: ${this.fps}`, CANVAS.WIDTH - 150, CANVAS.HEIGHT - 50);
+            this.ctx.fillText(`Score: ${this.score}`, CANVAS.WIDTH - 150, CANVAS.HEIGHT - 30);
+        }
+
+        // Distance Counter (Lower Right Corner)
+        // 50 pixels = 1 meter
+        if (!this.isClassicMode) {
+            const distance = Math.floor(this.distanceTraveled / 50);
+            this.ctx.save();
+            this.ctx.font = '14px "Segoe UI", Arial, sans-serif'; // Regular weight, normal size
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.textAlign = 'right';
+            this.ctx.shadowBlur = 0; // No Shadow
+            // Added space as requested: "0 m" instead of "0m"
+            this.ctx.fillText(`${distance} m`, CANVAS.WIDTH - 10, CANVAS.HEIGHT - 10);
+            this.ctx.restore();
+        }
+
         this.ctx.restore();
     }
 
     private gameOver(): void {
         this.state = 'GAMEOVER';
-        this.saveManager.updateHighScore(this.score);
+        this.saveManager.updateHighScore(this.score, this.isClassicMode);
+        this.saveManager.updateBoostRemaining(this.bird.nitroRemaining);
         setTimeout(() => {
             if (this.state === 'GAMEOVER') {
-                window.dispatchEvent(new CustomEvent('gameOver', { detail: { score: this.score, coins: this.sessionCoins } }));
+                window.dispatchEvent(new CustomEvent('gameOver', {
+                    detail: {
+                        score: this.score,
+                        coins: this.sessionCoins,
+                        isClassic: this.isClassicMode
+                    }
+                }));
             }
         }, 800);
     }
@@ -225,12 +381,17 @@ export class Game {
         this.score = 0;
         this.sessionCoins = 0;
         this.frames = 0;
+        this.distanceTraveled = 0;
         this.lastThemeName = '';
         this.bird.reset();
+        this.syncNitroToBird(); // Ensure fresh boost state from save
         this.pipeManager.reset();
         this.particleSystem.clear();
         this.updateScoreUI();
         this.updateCoinUI();
+
+        // Re-apply mode settings to ensure consistent state
+        this.setGameMode(this.isClassicMode ? 'classic' : 'advance');
     }
 
     pause(): void { if (this.state === 'PLAYING') this.state = 'PAUSED'; }
@@ -254,7 +415,10 @@ export class Game {
 
     setStartMap(index: number): void {
         this.startMapIndex = index;
-        this.renderer.updateTheme(0, index);
+        const mapId = this.getMapIdByIndex(index);
+        const stageDef = LevelGenerator.getInstance().getStageForScore(0, mapId);
+        this.renderer.setTheme(stageDef, mapId);
+
         const theme = this.renderer.getCurrentTheme() as any;
         if (theme.bgm) {
             this.audioManager.playBGM(theme.bgm);
@@ -270,6 +434,22 @@ export class Game {
         this.saveManager.resetData();
         this.updateScoreUI();
         this.updateCoinUI();
+    }
+
+    setGameMode(mode: 'classic' | 'advance'): void {
+        this.isClassicMode = mode === 'classic';
+
+        // Toggle UI visibility via global class
+        const container = document.getElementById('game-container');
+        if (this.isClassicMode) {
+            container?.classList.add('classic-mode');
+        } else {
+            container?.classList.remove('classic-mode');
+        }
+
+        // Both modes now use the same core physics configuration for consistency
+        // Classic mode just hides the extra UI and visual flair
+        // REMOVED: Automatic reset to default config here to allow user settings to persist.
     }
 
     destroy(): void { if (this.rafId) cancelAnimationFrame(this.rafId); }

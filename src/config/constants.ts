@@ -4,10 +4,11 @@ import type { GameConfig } from '../types';
  * Default game configuration values
  */
 export const DEFAULT_CONFIG: GameConfig = {
-    speed: 2,
-    gravity: 0.15,
-    jump: 6,
-    pipeGap: 250,
+    speed: 5.0,
+    gravity: 0.8,
+    jump: 15.5,
+    pipeGap: 200,
+    pipeSpacing: 250, // Default spacing
     bgmVolume: 0.4,
     sfxVolume: 0.6,
     bgmEnabled: true,
@@ -21,13 +22,23 @@ export interface StageDefinition {
     groundColor: string;
     pipeStyle: string;
     decorations: string;
+    pipePattern?: string; // Optional for compatibility / new feature
+}
+
+export interface MapPalette {
+    pipeColors: string[];
+    skyColors: string[];
+    groundColors: string[]; // Base ground colors
+    styles: string[];
+    decorations: string[];
+    patterns: string[];
 }
 
 export interface MapDefinition {
     id: string;
     name: string;
     bgm: string;
-    stages: StageDefinition[];
+    palette: MapPalette;
 }
 
 export const MAPS: MapDefinition[] = [
@@ -35,98 +46,82 @@ export const MAPS: MapDefinition[] = [
         id: 'neon',
         name: 'Neon District',
         bgm: 'bgm_city.mp3',
-        stages: [
-            { score: 0, pipeColor: '#00fff7', skyColor: '#05001a', groundColor: '#0a0020', pipeStyle: 'cyber', decorations: 'buildings' },
-            { score: 50, pipeColor: '#ff00ff', skyColor: '#0a0025', groundColor: '#100030', pipeStyle: 'cyber', decorations: 'buildings' },
-            { score: 100, pipeColor: '#39ff14', skyColor: '#001a05', groundColor: '#00250a', pipeStyle: 'cyber', decorations: 'buildings' },
-            { score: 150, pipeColor: '#ff3333', skyColor: '#1a0000', groundColor: '#250000', pipeStyle: 'cyber', decorations: 'buildings' },
-            { score: 200, pipeColor: '#ffd700', skyColor: '#1a1a00', groundColor: '#252500', pipeStyle: 'cyber', decorations: 'buildings' },
-            { score: 250, pipeColor: '#00ffff', skyColor: '#000000', groundColor: '#111', pipeStyle: 'glitch', decorations: 'pixels' },
-            { score: 300, pipeColor: '#ffffff', skyColor: '#0a1a2a', groundColor: '#050a15', pipeStyle: 'crystal', decorations: 'shards' },
-            { score: 350, pipeColor: '#ff6600', skyColor: '#1a052a', groundColor: '#100015', pipeStyle: 'neon', decorations: 'clouds' },
-            { score: 400, pipeColor: '#cc00ff', skyColor: '#051a2a', groundColor: '#001015', pipeStyle: 'plasma', decorations: 'waves' },
-            { score: 450, pipeColor: '#ff0000', skyColor: '#2a0505', groundColor: '#1a0000', pipeStyle: 'lava', decorations: 'fire' }
-        ]
+        palette: {
+            pipeColors: ['#00fff7', '#ff00ff', '#39ff14', '#ff3333', '#ffd700', '#0099ff', '#ff6600'],
+            skyColors: ['#05001a', '#0a0025', '#001a05', '#1a0000', '#1a1a00', '#000000'],
+            groundColors: ['#0a0020', '#100030', '#00250a', '#250000', '#252500', '#111'],
+            styles: ['cyber', 'neon', 'glitch', 'plasma'],
+            decorations: ['buildings', 'pixels', 'shards', 'waves'],
+            patterns: ['circuit', 'plain', 'lines']
+        }
     },
     {
         id: 'jungle',
         name: 'Techno Jungle',
         bgm: 'bgm_jungle.mp3',
-        stages: [
-            { score: 0, pipeColor: '#39ff14', skyColor: '#001a05', groundColor: '#001000', pipeStyle: 'bamboo', decorations: 'trees' },
-            { score: 50, pipeColor: '#00ff88', skyColor: '#002010', groundColor: '#001a08', pipeStyle: 'bamboo', decorations: 'trees' },
-            { score: 100, pipeColor: '#88ff00', skyColor: '#101a00', groundColor: '#081500', pipeStyle: 'bamboo', decorations: 'trees' },
-            { score: 150, pipeColor: '#ffff00', skyColor: '#1a1a00', groundColor: '#151500', pipeStyle: 'bamboo', decorations: 'trees' },
-            { score: 200, pipeColor: '#ffbb00', skyColor: '#1a1005', groundColor: '#150a00', pipeStyle: 'stone', decorations: 'vines' },
-            { score: 250, pipeColor: '#ff0000', skyColor: '#150000', groundColor: '#250000', pipeStyle: 'rusty', decorations: 'embers' },
-            { score: 300, pipeColor: '#00ff00', skyColor: '#1a1a00', groundColor: '#101000', pipeStyle: 'toxic', decorations: 'slime' },
-            { score: 350, pipeColor: '#ffffff', skyColor: '#aaccaa', groundColor: '#88aa88', pipeStyle: 'paper', decorations: 'petals' },
-            { score: 400, pipeColor: '#00ccff', skyColor: '#1a2a3a', groundColor: '#101a25', pipeStyle: 'ice', decorations: 'snow' },
-            { score: 450, pipeColor: '#333333', skyColor: '#050505', groundColor: '#000000', pipeStyle: 'dark', decorations: 'ghosts' }
-        ]
+        palette: {
+            pipeColors: ['#39ff14', '#00ff88', '#88ff00', '#ffff00', '#ffbb00', '#00cc44'],
+            skyColors: ['#001a05', '#002010', '#101a00', '#1a1a00', '#1a1005', '#052525'],
+            groundColors: ['#001000', '#001a08', '#081500', '#151500', '#150a00', '#001515'],
+            styles: ['bamboo', 'stone', 'toxic'],
+            decorations: ['trees', 'vines', 'slime'], // Removed rain-forest per user request
+            patterns: ['rust', 'stripes', 'plain']
+        }
     },
     {
         id: 'ocean',
         name: 'Cyber Ocean',
         bgm: 'bgm_ocean.mp3',
-        stages: [
-            { score: 0, pipeColor: '#00fff7', skyColor: '#000a1a', groundColor: '#001525', pipeStyle: 'coral', decorations: 'bubbles' },
-            { score: 50, pipeColor: '#0088ff', skyColor: '#000515', groundColor: '#000a18', pipeStyle: 'coral', decorations: 'bubbles' },
-            { score: 100, pipeColor: '#0044ff', skyColor: '#000210', groundColor: '#000510', pipeStyle: 'coral', decorations: 'bubbles' },
-            { score: 150, pipeColor: '#00ffff', skyColor: '#001a1a', groundColor: '#002525', pipeStyle: 'coral', decorations: 'bubbles' },
-            { score: 200, pipeColor: '#cc00ff', skyColor: '#10001a', groundColor: '#150025', pipeStyle: 'lava', decorations: 'fire' },
-            { score: 250, pipeColor: '#ff00ff', skyColor: '#1a001a', groundColor: '#250025', pipeStyle: 'plasma', decorations: 'waves' },
-            { score: 300, pipeColor: '#ffffff', skyColor: '#1a2a3a', groundColor: '#101a25', pipeStyle: 'crystal', decorations: 'shards' },
-            { score: 350, pipeColor: '#ffd700', skyColor: '#1a1a00', groundColor: '#252500', pipeStyle: 'golden', decorations: 'nebula' },
-            { score: 400, pipeColor: '#000a1a', skyColor: '#000', groundColor: '#000', pipeStyle: 'glitch', decorations: 'pixels' },
-            { score: 450, pipeColor: '#ff3333', skyColor: '#050000', groundColor: '#100', pipeStyle: 'dark', decorations: 'ghosts' }
-        ]
+        palette: {
+            pipeColors: ['#00fff7', '#0088ff', '#0044ff', '#00ffff', '#cc00ff', '#ffffff'],
+            skyColors: ['#000a1a', '#000515', '#000210', '#001a1a', '#10001a', '#001020'],
+            groundColors: ['#001525', '#000a18', '#000510', '#002525', '#150025', '#002030'],
+            styles: ['coral'], // Unified style
+            decorations: ['bubbles', 'waves', 'shards'],
+            patterns: ['hex', 'waves', 'plain']
+        }
     },
     {
         id: 'volcano',
         name: 'Volcano Core',
         bgm: 'bgm_volcano.mp3',
-        stages: [
-            { score: 0, pipeColor: '#ff3333', skyColor: '#150000', groundColor: '#250000', pipeStyle: 'rusty', decorations: 'embers' },
-            { score: 50, pipeColor: '#ff6600', skyColor: '#200500', groundColor: '#300a00', pipeStyle: 'rusty', decorations: 'embers' },
-            { score: 100, pipeColor: '#ff9900', skyColor: '#2a0a00', groundColor: '#401000', pipeStyle: 'rusty', decorations: 'embers' },
-            { score: 150, pipeColor: '#ffcc00', skyColor: '#351000', groundColor: '#501500', pipeStyle: 'rusty', decorations: 'embers' },
-            { score: 200, pipeColor: '#ffff00', skyColor: '#401500', groundColor: '#601a00', pipeStyle: 'rusty', decorations: 'embers' },
-            { score: 250, pipeColor: '#ffffff', skyColor: '#000000', groundColor: '#111', pipeStyle: 'glitch', decorations: 'pixels' },
-            { score: 300, pipeColor: '#00ffff', skyColor: '#001a1a', groundColor: '#002525', pipeStyle: 'laser', decorations: 'beams' },
-            { score: 350, pipeColor: '#cc00ff', skyColor: '#10001a', groundColor: '#150025', pipeStyle: 'plasma', decorations: 'waves' },
-            { score: 400, pipeColor: '#39ff14', skyColor: '#001a05', groundColor: '#00250a', pipeStyle: 'toxic', decorations: 'slime' },
-            { score: 450, pipeColor: '#ff0000', skyColor: '#2a0505', groundColor: '#1a0000', pipeStyle: 'lava', decorations: 'fire' }
-        ]
+        palette: {
+            pipeColors: ['#ff3333', '#ff6600', '#ff9900', '#ffcc00', '#ffff00', '#cc0000'],
+            skyColors: ['#150000', '#200500', '#2a0a00', '#351000', '#401500', '#250000'],
+            groundColors: ['#250000', '#300a00', '#401000', '#501500', '#601a00', '#300000'],
+            styles: ['rusty', 'lava', 'magma'],
+            decorations: ['embers', 'fire', 'smoke', 'ash'], // Added smoke, ash
+            patterns: ['cracks', 'magma', 'plain']
+        }
     },
     {
         id: 'forge',
         name: 'Star Forge',
         bgm: 'bgm_space.mp3',
-        stages: [
-            { score: 0, pipeColor: '#ffd700', skyColor: '#050510', groundColor: '#101015', pipeStyle: 'golden', decorations: 'nebula' },
-            { score: 50, pipeColor: '#ffffff', skyColor: '#0a0a20', groundColor: '#1a1a25', pipeStyle: 'golden', decorations: 'nebula' },
-            { score: 100, pipeColor: '#00fff7', skyColor: '#001030', groundColor: '#0a2040', pipeStyle: 'golden', decorations: 'nebula' },
-            { score: 150, pipeColor: '#ff00ff', skyColor: '#100030', groundColor: '#200a40', pipeStyle: 'golden', decorations: 'nebula' },
-            { score: 200, pipeColor: '#39ff14', skyColor: '#051505', groundColor: '#0a250a', pipeStyle: 'golden', decorations: 'nebula' },
-            { score: 250, pipeColor: '#ffaa00', skyColor: '#150a00', groundColor: '#251500', pipeStyle: 'laser', decorations: 'beams' },
-            { score: 300, pipeColor: '#00aaff', skyColor: '#00051a', groundColor: '#000a2a', pipeStyle: 'crystal', decorations: 'shards' },
-            { score: 350, pipeColor: '#ffffff', skyColor: '#000', groundColor: '#000', pipeStyle: 'glitch', decorations: 'pixels' },
-            { score: 400, pipeColor: '#cc00ff', skyColor: '#051a2a', groundColor: '#001015', pipeStyle: 'plasma', decorations: 'waves' },
-            { score: 450, pipeColor: '#ffd700', skyColor: '#000', groundColor: '#000', pipeStyle: 'golden', decorations: 'stars' }
-        ]
+        palette: {
+            pipeColors: ['#ffd700', '#ffffff', '#00fff7', '#ff00ff', '#39ff14', '#00aaff'],
+            skyColors: ['#050510', '#0a0a20', '#001030', '#100030', '#051505', '#000000'],
+            groundColors: ['#101015', '#1a1a25', '#0a2040', '#200a40', '#0a250a', '#111'],
+            styles: ['golden', 'crystal', 'laser', 'star-metal'],
+            decorations: ['nebula', 'shards', 'stars', 'beams'],
+            patterns: ['ornate', 'minimal', 'plain']
+        }
     },
     {
         id: 'sunny',
         name: 'Sunny Highlands',
         bgm: 'bgm_sunny.mp3',
-        stages: [
-            { score: 0, pipeColor: '#00fff7', skyColor: '#6366f1', groundColor: '#22c55e', pipeStyle: '3d_neon', decorations: 'highlands' },
-            { score: 50, pipeColor: '#00ffaa', skyColor: '#4f46e5', groundColor: '#16a34a', pipeStyle: '3d_neon', decorations: 'highlands' },
-            { score: 100, pipeColor: '#ff00ff', skyColor: '#4338ca', groundColor: '#15803d', pipeStyle: '3d_neon', decorations: 'highlands' },
-            { score: 150, pipeColor: '#ffbb00', skyColor: '#3730a3', groundColor: '#166534', pipeStyle: '3d_neon', decorations: 'highlands' },
-            { score: 200, pipeColor: '#fff', skyColor: '#312e81', groundColor: '#14532d', pipeStyle: '3d_neon', decorations: 'highlands' }
-        ]
+        palette: {
+            // Full rainbow range for 3D Neon pipes
+            pipeColors: ['#00fff7', '#00ffaa', '#ff00ff', '#ffbb00', '#ffffff', '#ff3333', '#3333ff', '#39ff14'],
+            // Sky moods: Blue (Classic), Grey (Storm), Purple (Sunset), Dark Grey (Rain)
+            skyColors: ['#6366f1', '#4f46e5', '#9ca3af', '#4b5563', '#312e81', '#1e1b4b'],
+            // Ground follows sky mood roughly or stays grassy green variations
+            groundColors: ['#22c55e', '#16a34a', '#15803d', '#166534', '#14532d', '#3f6212'],
+            styles: ['3d_neon'], // Strict style
+            decorations: ['highlands', 'clouds', 'rain', 'storm'], // Weather variants
+            patterns: ['plain']
+        }
     }
 ];
 

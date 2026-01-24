@@ -1,3 +1,6 @@
+@import './styles/mode-selector.css';
+@import './styles/classic-mode.css';
+
 :root {
   --neon-pink: #ff00ff;
   --neon-blue: #00fff7;
@@ -30,10 +33,13 @@ body {
 #game-container {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
+  /* Dynamic viewport height for mobile browsers */
   display: flex;
   justify-content: center;
   align-items: center;
+  background: #000;
+  overflow: hidden;
 }
 
 canvas {
@@ -44,6 +50,8 @@ canvas {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  touch-action: none;
+  /* Prevent browser handling of gestures */
 }
 
 .ui-layer {
@@ -135,7 +143,7 @@ canvas {
 
 #energy-label {
   font-size: 0.5rem;
-  color: var(--neon-pink);
+  color: #fff;
   font-weight: 700;
   text-transform: uppercase;
   margin-bottom: 0.2rem;
@@ -152,8 +160,8 @@ canvas {
 
 #energy-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff0077, var(--neon-pink));
-  box-shadow: 0 0 10px var(--neon-pink);
+  background: linear-gradient(90deg, #00d2ff, var(--neon-blue));
+  box-shadow: 0 0 10px var(--neon-blue);
 }
 
 /* MODALS BASE */
@@ -169,7 +177,13 @@ canvas {
   pointer-events: auto;
   z-index: 1000;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.9);
-  padding: 2.5rem;
+  padding: 1.5rem 2rem;
+  /* Reduced padding */
+  max-width: 95vw;
+  /* Responsive width */
+  max-height: 90vh;
+  /* Responsive height */
+  overflow-y: auto;
 }
 
 .modal-active {
@@ -191,11 +205,11 @@ canvas {
 
 .close-modal {
   position: absolute;
-  top: 1rem;
-  right: 1.5rem;
+  top: 0.75rem;
+  right: 1.25rem;
   color: #555;
   cursor: pointer;
-  font-size: 2rem;
+  font-size: 1.75rem;
   transition: 0.2s;
 }
 
@@ -204,12 +218,15 @@ canvas {
 }
 
 h2 {
-  margin: 0 0 2rem;
+  margin: 0.5rem 0 1.25rem;
+  /* Reduced margins */
   text-align: center;
   color: var(--neon-blue);
   letter-spacing: 2px;
   font-weight: 900;
   text-shadow: 0 0 10px var(--neon-blue);
+  font-size: 1.5rem;
+  /* More compact size */
 }
 
 /* START SCREEN & MAP SELECTOR */
@@ -322,6 +339,37 @@ h2 {
   padding: 2rem;
 }
 
+.shop-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.shop-tab {
+  padding: 0.5rem 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  border-radius: 0.5rem;
+  color: #888;
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.shop-tab:hover {
+  color: #fff;
+  border-color: var(--neon-blue);
+}
+
+.shop-tab.active {
+  background: var(--neon-blue);
+  color: #000;
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+
 .shop-balance {
   position: absolute;
   top: 1.2rem;
@@ -335,7 +383,7 @@ h2 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.2rem;
-  height: 22rem;
+  height: 20rem;
   overflow-y: auto;
   padding: 0.5rem;
   scrollbar-width: none;
@@ -410,7 +458,6 @@ h2 {
   border: none;
 }
 
-.btn-secondary,
 .btn-outline {
   background: var(--neon-blue);
   color: #000;
@@ -428,6 +475,87 @@ h2 {
   color: #000;
   box-shadow: 0 0 15px var(--neon-blue);
   cursor: default;
+}
+
+.item-quantity {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  background: var(--neon-gold);
+  color: #000;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  box-shadow: 0 0 10px var(--neon-gold);
+  z-index: 10;
+}
+
+.boost-card-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.shop-card-btn.buy {
+  background: var(--neon-gold);
+  color: #000;
+  flex: 1;
+}
+
+.shop-card-btn.activate {
+  background: #222;
+  color: #888;
+  border: 1px solid #444;
+  flex: 1.2;
+}
+
+.quantity-input-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.2rem 0;
+  width: 100%;
+}
+
+.qty-label {
+  font-size: 0.6rem;
+  color: #666;
+}
+
+.qty-input {
+  width: 3rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  border-radius: 0.3rem;
+  color: #fff;
+  text-align: center;
+  font-family: inherit;
+  font-size: 0.75rem;
+  padding: 0.2rem;
+}
+
+.qty-input:focus {
+  border-color: var(--neon-gold);
+  outline: none;
+}
+
+.shop-card-btn.activate.can-activate {
+  background: var(--neon-green);
+  color: #000;
+  border: none;
+}
+
+.shop-card-btn.activate.equipped {
+  background: var(--neon-blue);
+  color: #000;
 }
 
 /* TOOLTIP */
@@ -638,6 +766,11 @@ h2 {
   transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 2000;
   box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .bonus-popup.active {

@@ -3,6 +3,9 @@ import { SaveManager } from '../managers/SaveManager';
 import { SkinManager } from '../managers/SkinManager';
 import { AudioManager } from '../managers/AudioManager';
 import { DEFAULT_CONFIG } from '../config/constants';
+import { BOOSTS } from '../config/boosts';
+import type { BoostDefinition } from '../config/boosts';
+import { IconDrawer } from './IconDrawer';
 
 /**
  * Manages all UI interactions (modals, buttons, HUD, Tooltips)
@@ -15,6 +18,7 @@ export class UIManager {
 
     private confirmCallback: (() => void) | null = null;
     private tooltipEl: HTMLElement | null = null;
+    private currentShopTab: 'skins' | 'boosts' = 'skins';
 
     constructor(game: Game) {
         this.game = game;
@@ -41,6 +45,17 @@ export class UIManager {
         document.getElementById('settings-btn')?.addEventListener('click', () => { this.playClick(); this.showSettings(); });
         document.getElementById('shop-btn')?.addEventListener('click', () => { this.playClick(); this.showShop(); });
 
+        document.querySelectorAll('.shop-tab').forEach((tab) => {
+            tab.addEventListener('click', (e) => {
+                this.playClick();
+                const target = e.target as HTMLElement;
+                document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+                target.classList.add('active');
+                this.currentShopTab = target.getAttribute('data-tab') as any;
+                this.renderShopGrid();
+            });
+        });
+
         document.querySelectorAll('.close-modal').forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 this.playClick();
@@ -65,7 +80,6 @@ export class UIManager {
         document.getElementById('start-screen')?.addEventListener('mousedown', (e) => {
             if ((e.target as HTMLElement).closest('.map-option, .modal-panel')) return;
 
-            // If we're clicking outside map options, hide overlay and start game
             this.hideStartScreen();
 
             if (this.game.getState() === 'START') {
@@ -74,10 +88,22 @@ export class UIManager {
         });
 
         window.addEventListener('gameOver', ((e: CustomEvent) => {
-            this.showGameOver(e.detail.score, e.detail.coins);
+            this.showGameOver(e.detail.score, e.detail.coins, e.detail.isClassic);
         }) as EventListener);
 
         window.addEventListener('updateUI', () => this.updateAllUI());
+
+        window.addEventListener('openSettings', () => {
+            const panel = document.getElementById('settings-panel');
+            if (panel?.classList.contains('modal-active')) {
+                this.playClick();
+                panel.classList.remove('modal-active');
+                this.game.resume();
+            } else {
+                this.playClick();
+                this.showSettings();
+            }
+        });
 
         setInterval(() => this.updateEnergyBar(), 100);
     }
@@ -101,6 +127,7 @@ export class UIManager {
         setupSlider('gravityRange', 'val-gravity', config.gravity, (v) => this.game.updateConfig({ gravity: v }));
         setupSlider('liftRange', 'val-lift', config.jump, (v) => this.game.updateConfig({ jump: v }));
         setupSlider('gapRange', 'val-gap', config.pipeGap, (v) => this.game.updateConfig({ pipeGap: v }));
+        setupSlider('spacingRange', 'val-spacing', config.pipeSpacing, (v) => this.game.updateConfig({ pipeSpacing: v }));
 
         document.getElementById('applySettingsBtn')?.addEventListener('click', () => {
             this.playClick();
@@ -147,7 +174,9 @@ export class UIManager {
         });
         document.getElementById('confirm-ok')?.addEventListener('click', () => {
             this.playClick();
-            if (this.confirmCallback) { this.confirmCallback(); this.confirmCallback = null; }
+            const qtyInput = document.getElementById('confirm-qty-input') as HTMLInputElement;
+            const qty = parseInt(qtyInput?.value || '1');
+            if (this.confirmCallback) { (this.confirmCallback as any)(qty); this.confirmCallback = null; }
             document.getElementById('confirm-modal')?.classList.remove('modal-active');
         });
     }
@@ -173,7 +202,7 @@ export class UIManager {
 
     private showShop(): void {
         this.game.pause();
-        this.renderSkinGrid();
+        this.renderShopGrid();
         this.updateShopBalance();
         document.getElementById('shop-panel')?.classList.add('modal-active');
     }
@@ -197,8 +226,122 @@ export class UIManager {
         if (this.tooltipEl) this.tooltipEl.style.display = 'none';
     }
 
+    private updateEnergyBar(): void {
+        const fill = document.getElementById('energy-fill');
+        const label = document.getElementById('energy-label');
+        const energyPct = this.game.getEnergy();
+        if (fill) fill.style.width = `${energyPct}%`;
+
+        if (label) {
+            const boostId = this.saveManager.getEquippedBoostId();
+            const boostDef = BOOSTS.find(b => b.id === boostId);
+            if (boostDef) {
+                label.textContent = `${boostDef.name.toUpperCase()} (${energyPct.toFixed(1)}%)`;
+            }
+        }
+    }
+
+    private renderShopGrid(): void {
+        if (this.currentShopTab === 'skins') {
+            this.renderSkinGrid();
+        } else {
+            this.renderBoostGrid();
+        }
+    }
+
+    private renderBoostGrid(): void {
+        const gridEl = document.getElementById('shop-grid');
+        if (!gridEl) return;
+        gridEl.innerHTML = '';
+
+        const equippedId = this.saveManager.getEquippedBoostId();
+
+        BOOSTS.forEach(boost => {
+            const count = this.saveManager.getBoostCount(boost.id);
+            const isEquipped = equippedId === boost.id;
+            const isDefault = boost.id === 'nitro_default';
+
+            const card = document.createElement('div');
+            card.className = `skin-card ${isEquipped ? 'equipped' : ''}`;
+
+            const quantityBadge = count > 0 ? `<div class="item-quantity">${count}</div>` : '';
+
+            card.innerHTML = `
+                ${quantityBadge}
+                <div class="card-preview-box">
+                    <img src="${IconDrawer.getNitroIcon(boost.id)}" alt="icon" style="width: 45px; height: 45px;">
+                </div>
+                <div class="card-name">${boost.name}</div>
+                <div style="font-size: 0.55rem; color: #888; text-align: center; margin-bottom: 0.5rem;">${boost.capacity}m Capacity</div>
+                
+                <div class="boost-card-actions">
+                    <button class="shop-card-btn activate ${isEquipped ? 'equipped' : (count > 0 || isDefault ? 'can-activate' : 'locked')}" data-action="activate">
+                        ${isEquipped ? 'ACTIVE' : (isDefault ? 'EQUIP' : 'START')}
+                    </button>
+                    ${!isDefault ? `<button class="shop-card-btn buy" data-action="buy">$${boost.price}</button>` : ''}
+                </div>
+            `;
+
+            card.addEventListener('mouseenter', (e) => this.showTooltip(boost.description, e.clientX, e.clientY));
+            card.addEventListener('mouseleave', () => this.hideTooltip());
+
+            card.querySelector('.buy')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.playClick();
+                this.handleBoostBuy(boost);
+            });
+
+            card.querySelector('.activate')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.playClick();
+                this.handleBoostActivate(boost);
+            });
+
+            gridEl.appendChild(card);
+        });
+    }
+
+    private handleBoostBuy(boost: BoostDefinition): void {
+        this.showConfirm(`PURCHASE: ${boost.name}`, `Select quantity to buy for ${boost.name}:`, (qty) => {
+            const quantity = qty || 1;
+            const total = boost.price * quantity;
+
+            if (this.saveManager.spendCoins(total)) {
+                this.saveManager.addBoostToInventory(boost.id, quantity);
+                this.renderBoostGrid();
+                this.updateAllUI();
+            } else {
+                this.showError('INSUFFICIENT CREDITS');
+            }
+        }, true);
+    }
+
+    private handleBoostActivate(boost: BoostDefinition): void {
+        const equippedId = this.saveManager.getEquippedBoostId();
+        const isDefault = boost.id === 'nitro_default';
+        const count = this.saveManager.getBoostCount(boost.id);
+
+        if (equippedId === boost.id) return;
+
+        if (isDefault || count > 0) {
+            this.saveManager.setEquippedBoost(boost.id, boost.capacity);
+            this.renderBoostGrid();
+            this.game.restart(); // Applies to bird
+        } else {
+            this.showError('NO STOCK - BUY FIRST');
+        }
+    }
+
+    private showError(msg: string): void {
+        const el = document.getElementById('shop-msg');
+        if (el) {
+            el.textContent = msg;
+            setTimeout(() => el.textContent = '', 2000);
+        }
+    }
+
     private renderSkinGrid(): void {
-        const gridEl = document.getElementById('skin-grid');
+        const gridEl = document.getElementById('shop-grid');
         if (!gridEl) return;
         gridEl.innerHTML = '';
 
@@ -274,13 +417,20 @@ export class UIManager {
         }
     }
 
-    private showConfirm(title: string, msg: string, callback: () => void): void {
+    private showConfirm(title: string, msg: string, callback: (qty?: number) => void, showQty: boolean = false): void {
         const modal = document.getElementById('confirm-modal');
         const titleEl = document.getElementById('confirm-title');
         const msgEl = document.getElementById('confirm-msg');
+        const qtyContainer = document.getElementById('confirm-qty-container');
+        const qtyInput = document.getElementById('confirm-qty-input') as HTMLInputElement;
+
         if (titleEl) titleEl.textContent = title;
         if (msgEl) msgEl.textContent = msg;
-        this.confirmCallback = callback;
+
+        if (qtyContainer) qtyContainer.style.display = showQty ? 'block' : 'none';
+        if (qtyInput) qtyInput.value = '1';
+
+        this.confirmCallback = callback as any;
         modal?.classList.add('modal-active');
     }
 
@@ -302,16 +452,17 @@ export class UIManager {
         set('gravityRange', 'val-gravity', config.gravity);
         set('liftRange', 'val-lift', config.jump);
         set('gapRange', 'val-gap', config.pipeGap);
+        set('spacingRange', 'val-spacing', config.pipeSpacing);
     }
 
-    private showGameOver(score: number, _coins: number): void {
+    private showGameOver(score: number, _coins: number, isClassic: boolean = false): void {
         const msg = document.getElementById('message');
         const s = document.getElementById('finalScore');
         const b = document.getElementById('finalBest');
         const c = document.getElementById('finalCoins');
 
         if (s) s.textContent = score.toString();
-        if (b) b.textContent = this.saveManager.getHighScore().toString();
+        if (b) b.textContent = this.saveManager.getHighScore(isClassic).toString();
         if (c) c.textContent = this.saveManager.getCoins().toString();
 
         if (msg) msg.style.display = 'flex';
@@ -347,12 +498,39 @@ export class UIManager {
                 this.updateStartScreenTheme(mapIdIndex);
             });
 
-            // Initial state check for the default active option
             if (opt.classList.contains('active')) {
                 const initialMapIndex = parseInt(opt.getAttribute('data-map') || '5');
                 this.game.setStartMap(initialMapIndex);
                 this.updateStartScreenTheme(initialMapIndex);
             }
+        });
+
+        this.setupModeSelector();
+    }
+
+    private setupModeSelector(): void {
+        const modeContainer = document.querySelector('.mode-selector-container');
+        if (modeContainer) {
+            modeContainer.addEventListener('mousedown', (e) => e.stopPropagation());
+        }
+
+        const modes = document.querySelectorAll('.mode-option') as NodeListOf<HTMLElement>;
+
+        modes.forEach(modeBtn => {
+            modeBtn.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+
+            modeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                this.playClick();
+                modes.forEach(m => m.classList.remove('active'));
+                modeBtn.classList.add('active');
+
+                const mode = modeBtn.getAttribute('data-mode') || 'advance';
+                this.game.setGameMode(mode as 'classic' | 'advance');
+            });
         });
     }
 
@@ -398,11 +576,6 @@ export class UIManager {
     private hideGameOver(): void {
         const msg = document.getElementById('message');
         if (msg) msg.style.display = 'none';
-    }
-
-    private updateEnergyBar(): void {
-        const fill = document.getElementById('energy-fill');
-        if (fill) fill.style.width = `${this.game.getEnergy()}%`;
     }
 
     updateAllUI(): void {

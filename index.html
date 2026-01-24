@@ -64,23 +64,28 @@
 
           <div class="setting-row">
             <span class="setting-label">Core Speed</span>
-            <input type="range" id="speedRange" min="1" max="10" step="0.5">
+            <input type="range" id="speedRange" min="1" max="25" step="0.5">
             <span id="val-speed" class="val-display">2</span>
           </div>
           <div class="setting-row">
             <span class="setting-label">Gravity</span>
-            <input type="range" id="gravityRange" min="0.05" max="0.5" step="0.01">
+            <input type="range" id="gravityRange" min="0.05" max="2.0" step="0.01">
             <span id="val-gravity" class="val-display">0.15</span>
           </div>
           <div class="setting-row">
             <span class="setting-label">Lift Force</span>
-            <input type="range" id="liftRange" min="3" max="12" step="0.5">
+            <input type="range" id="liftRange" min="3" max="30" step="0.5">
             <span id="val-lift" class="val-display">6</span>
           </div>
           <div class="setting-row">
             <span class="setting-label">Gap Width</span>
             <input type="range" id="gapRange" min="150" max="400" step="10">
             <span id="val-gap" class="val-display">250</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Pipe Spacing</span>
+            <input type="range" id="spacingRange" min="200" max="600" step="10">
+            <span id="val-spacing" class="val-display">250</span>
           </div>
         </div>
 
@@ -94,20 +99,28 @@
       <div id="shop-panel" class="modal-panel full-shop">
         <span class="close-modal">&times;</span>
         <h2>CYBER SHOP</h2>
-        <div class="shop-balance">CREDITS: <span id="shop-balance">0</span></div>
 
+        <div class="shop-tabs">
+          <div class="shop-tab active" data-tab="skins">SKINS</div>
+          <div class="shop-tab" data-tab="boosts">BOOSTS</div>
+        </div>
+
+        <div class="shop-balance">CREDITS: <span id="shop-balance">0</span></div>
         <div class="shop-main-layout">
-          <div class="shop-grid" id="skin-grid"></div>
+          <div class="shop-grid" id="shop-grid"></div>
         </div>
         <div id="shop-msg"
           style="color: var(--neon-red); text-align: center; font-size: 0.8rem; margin-top: 0.5rem; font-weight: 700;">
         </div>
       </div>
 
-      <!-- Confirmation Popup -->
       <div id="confirm-modal" class="modal-panel confirm-dialog">
         <h2 id="confirm-title">PURCHASE</h2>
         <p id="confirm-msg"></p>
+        <div id="confirm-qty-container" style="display: none; margin: 1rem 0;">
+          <span class="qty-label">QUANTITY:</span>
+          <input type="number" id="confirm-qty-input" value="1" min="1" max="99" class="qty-input">
+        </div>
         <div class="modal-footer">
           <button id="confirm-cancel" class="btn-secondary">CANCEL</button>
           <button id="confirm-ok" class="btn-primary">CONFIRM</button>
@@ -116,6 +129,13 @@
 
       <!-- Start & Map Selection Screen -->
       <div id="start-screen" class="screen-overlay">
+        <!-- Game Mode Selection -->
+        <h3 class="mode-label">GAME MODE</h3>
+        <div class="mode-selector-container">
+          <div class="mode-option" data-mode="classic">CLASSIC</div>
+          <div class="mode-option active" data-mode="advance">ADVANCE</div>
+        </div>
+
         <div class="map-selector-container">
           <div class="map-option active" data-map="5" data-name="Sunny Highlands">☀️</div>
           <div class="map-option" data-map="0" data-name="Neon City">🏙️</div>

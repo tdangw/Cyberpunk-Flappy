@@ -138,13 +138,70 @@ export class SkinManager {
     getAllSkins(): SkinDefinition[] { return SKINS; }
     getSkinById(id: string): SkinDefinition | undefined { return SKINS.find((skin) => skin.id === id); }
     drawSkin(ctx: CanvasRenderingContext2D, skinId: string, bird: BirdState, isDashing: boolean, frames: number): void {
-        const skin = this.getSkinById(skinId);
-        if (skin) {
-            ctx.save(); ctx.translate(bird.x, bird.y); ctx.rotate(bird.rotation);
-            if (bird.invulnerableTimer > 0 && !isDashing) ctx.globalAlpha = 0.6 + Math.sin(frames * 0.2) * 0.3;
-            skin.drawFunction(ctx, bird, isDashing, frames);
-            ctx.restore();
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rotation);
+
+        if (bird.invulnerableTimer > 0 && !isDashing) {
+            ctx.globalAlpha = 0.6 + Math.sin(frames * 0.2) * 0.3;
         }
+
+        if (skinId === 'default') {
+            // Draw Classic Bird (Yellow)
+            ctx.fillStyle = '#facc15'; // Yellow
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 15, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eye
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(6, -6, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(8, -6, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wing Animation (Fixed Pivot)
+            ctx.fillStyle = '#fff';
+
+            // Flap range: -0.5 to 0.5 (radians roughly)
+            // Phase shifted for natural feel
+            const flap = Math.sin(bird.wingAngle + Math.PI) * 0.5;
+
+            ctx.save();
+            // Translate to shoulder pivot point (relative to bird center 0,0)
+            const pivotX = -2;
+            const pivotY = 2;
+            ctx.translate(pivotX, pivotY);
+            // Rotate wing around shoulder
+            ctx.rotate(flap * 0.5); // reduced amplitude for realism
+
+            // Draw wing shape (relative to pivot 0,0)
+            ctx.beginPath();
+            ctx.ellipse(-6, 0, 8, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Beak
+            ctx.fillStyle = '#f97316'; // Orange
+            ctx.beginPath();
+            ctx.moveTo(10, 0);
+            ctx.lineTo(22, 4); // Slightly longer beak
+            ctx.lineTo(10, 8);
+            ctx.fill();
+        } else {
+            const skin = this.getSkinById(skinId);
+            if (skin) {
+                skin.drawFunction(ctx, bird, isDashing, frames);
+            } else {
+                // Fallback if skin not found (e.g. data corruption), draw Sphere-0
+                const fallback = this.getAllSkins()[0];
+                if (fallback) fallback.drawFunction(ctx, bird, isDashing, frames);
+            }
+        }
+        ctx.restore();
     }
     drawPreview(skinId: string): HTMLCanvasElement {
         const canvas = document.createElement('canvas'); canvas.width = 60; canvas.height = 60;

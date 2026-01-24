@@ -9,10 +9,13 @@ export class InputManager {
     private onJump?: () => void;
     private onDashStart?: () => void;
     private onDashEnd?: () => void;
+    private onEsc?: () => void;
 
     constructor() {
         this.setupListeners();
     }
+
+    private lastTouchTime = 0;
 
     private setupListeners(): void {
         // Keyboard events
@@ -30,6 +33,9 @@ export class InputManager {
 
         // Pointer events (Mobile/Touch focus)
         window.addEventListener('mousedown', (e) => {
+            // Ignore mouse events that fire immediately after touch events (ghost clicks)
+            if (Date.now() - this.lastTouchTime < 500) return;
+
             if (this.isUIElement(e.target as HTMLElement)) return;
             // Only handle left click here; right click is handled by contextmenu
             if (e.button === 0) {
@@ -40,11 +46,20 @@ export class InputManager {
 
         window.addEventListener('touchstart', (e) => {
             if (this.isUIElement(e.target as HTMLElement)) return;
+
+            // Prevent default to stop scrolling and zooming, and stop ghost mouse events
+            if (e.cancelable) e.preventDefault();
+            this.lastTouchTime = Date.now();
+
             const touch = e.touches[0];
             this.processPointerDown(touch.clientX);
         }, { passive: false });
 
-        window.addEventListener('touchend', () => this.onDashEnd?.());
+        window.addEventListener('touchend', (e) => {
+            // Prevent default to stop mouseup from firing
+            if (e.cancelable) e.preventDefault();
+            this.onDashEnd?.();
+        });
 
         // Context Menu (Right Click) for Dash
         window.addEventListener('contextmenu', (e) => {
@@ -80,6 +95,9 @@ export class InputManager {
         if (key === 'Control' || key === 'Shift') {
             this.onDashStart?.();
         }
+        if (key === 'Escape') {
+            this.onEsc?.();
+        }
     }
 
     private handleKeyUp(key: string): void {
@@ -91,6 +109,7 @@ export class InputManager {
     setJumpCallback(callback: () => void): void { this.onJump = callback; }
     setDashStartCallback(callback: () => void): void { this.onDashStart = callback; }
     setDashEndCallback(callback: () => void): void { this.onDashEnd = callback; }
+    setEscCallback(callback: () => void): void { this.onEsc = callback; }
 
     isKeyPressed(key: string): boolean {
         return this.keysPressed.has(key);

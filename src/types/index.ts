@@ -11,6 +11,7 @@ export interface GameConfig {
     sfxVolume: number;
     bgmEnabled: boolean;
     sfxEnabled: boolean;
+    pipeSpacing: number;
 }
 
 export interface StageDefinition {
@@ -20,6 +21,7 @@ export interface StageDefinition {
     groundColor: string;
     pipeStyle: string;
     decorations: string;
+    pipePattern?: string; // Optional for compatibility / new feature
 }
 
 export interface MapDefinition {
@@ -34,6 +36,10 @@ export interface PlayerData {
     ownedSkins: string[];
     equippedSkin: string;
     highScore?: number;
+    classicHighScore?: number;
+    equippedBoostId?: string;
+    boostRemainingMeters?: number;
+    inventoryBoosts: { [key: string]: number };
 }
 
 export interface Particle {
@@ -86,6 +92,10 @@ export interface BirdState {
     wingAngle: number;
     stabilizeTimer: number;
     invulnerableTimer: number;
+    // Boost State Extension
+    nitroType?: string;
+    nitroRemaining?: number;
+    nitroCapacity?: number;
 }
 
 export type GameState = 'START' | 'PLAYING' | 'PAUSED' | 'DYING' | 'GAMEOVER';
