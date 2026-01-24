@@ -19,6 +19,8 @@ export class UIManager {
     private confirmCallback: (() => void) | null = null;
     private tooltipEl: HTMLElement | null = null;
     private currentShopTab: 'skins' | 'boosts' = 'skins';
+    private lastStartTouchTime: number = 0;
+    private startScreenCooldown: number = 0;
 
     constructor(game: Game) {
         this.game = game;
@@ -156,6 +158,10 @@ export class UIManager {
         // Optimized Start Screen Listener
         const startScreen = document.getElementById('start-screen');
         const startHandler = (e: Event) => {
+            if (Date.now() - this.startScreenCooldown < 300) return;
+            if (e.type === 'touchstart') this.lastStartTouchTime = Date.now();
+            if (e.type === 'mousedown' && Date.now() - this.lastStartTouchTime < 500) return;
+
             const target = e.target as HTMLElement;
             // If user clicked a button (map, mode, settings), don't start the game
             if (target.closest('.map-option, .mode-option, .btn-icon, .modal-panel')) return;
@@ -803,6 +809,7 @@ export class UIManager {
         const screen = document.getElementById('start-screen');
         if (screen) {
             screen.style.display = 'flex';
+            this.startScreenCooldown = Date.now(); // Set cooldown
             this.setupTutorialIcons();
         }
     }
