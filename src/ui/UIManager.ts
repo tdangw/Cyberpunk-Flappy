@@ -798,7 +798,49 @@ export class UIManager {
 
     private showStartScreen(): void {
         const screen = document.getElementById('start-screen');
-        if (screen) screen.style.display = 'flex';
+        if (screen) {
+            screen.style.display = 'flex';
+            this.setupTutorialIcons();
+        }
+    }
+
+    private setupTutorialIcons(): void {
+        const jumpIcon = document.getElementById('tut-jump-icon');
+        const dashIcon = document.getElementById('tut-dash-icon');
+        const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const isClassic = this.game.getState() === 'START' && (document.querySelector('.mode-option[data-mode="classic"].active') !== null);
+
+        if (jumpIcon) {
+            if (isTouch) {
+                jumpIcon.textContent = '👆';
+                jumpIcon.className = 'tut-icon touch-icon';
+            } else {
+                jumpIcon.textContent = 'SPACE';
+                jumpIcon.className = 'tut-icon key-icon';
+            }
+        }
+
+        if (dashIcon) {
+            const dashItem = document.getElementById('tut-dash');
+            const separator = document.querySelector('.tut-separator') as HTMLElement;
+
+            if (isClassic) {
+                if (dashItem) dashItem.style.display = 'none';
+                if (separator) separator.style.display = 'none';
+            } else {
+                if (dashItem) dashItem.style.display = 'flex';
+                if (separator) separator.style.display = 'block';
+
+                if (isTouch) {
+                    dashIcon.textContent = 'Touch R';
+                    dashIcon.className = 'tut-icon touch-icon';
+                    dashIcon.style.fontSize = '0.6rem';
+                } else {
+                    dashIcon.textContent = 'SHIFT';
+                    dashIcon.className = 'tut-icon key-icon';
+                }
+            }
+        }
     }
 
     private hideSplashScreen(): void {
