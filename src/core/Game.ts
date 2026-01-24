@@ -150,7 +150,6 @@ export class Game {
             if (!pipe.passed && this.bird.x > pipe.x + pipe.w) {
                 pipe.passed = true;
                 this.score++;
-                this.audioManager.play('score');
                 this.updateScoreUI();
             }
         });
