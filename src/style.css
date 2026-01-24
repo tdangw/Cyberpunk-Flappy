@@ -106,7 +106,7 @@ canvas {
 /* HUD POSITIONING */
 #top-hud {
   position: absolute;
-  top: 1rem;
+  top: 1.5rem;
   left: 2rem;
   right: 2rem;
   display: flex;
@@ -117,35 +117,40 @@ canvas {
 }
 
 #coin-display {
+  flex: 1;
   color: var(--neon-gold);
   font-size: 1.1rem;
   text-shadow: 0 0 10px var(--neon-gold);
   font-weight: 700;
-  height: 2rem;
+  height: 2.2rem;
   display: flex;
   align-items: center;
   pointer-events: auto;
 }
 
 #score-container {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
+  z-index: 101;
 }
 
 #score {
   color: var(--neon-blue);
-  font-size: 2rem;
+  font-size: 2.2rem;
   text-shadow: 0 0 15px var(--neon-blue);
-  font-weight: 900;
+  font-weight: 950;
   line-height: 1;
-  margin-bottom: -5px;
 }
 
 #action-buttons {
+  flex: 1;
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   pointer-events: auto;
-  margin-right: 0.75rem;
 }
 
 .btn-icon {
