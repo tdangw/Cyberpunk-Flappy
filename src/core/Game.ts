@@ -397,7 +397,14 @@ export class Game {
     pause(): void { if (this.state === 'PLAYING') this.state = 'PAUSED'; }
     resume(forceStart = false): void {
         if (this.state === 'PAUSED' || (forceStart && this.state === 'START')) {
+            const wasStart = this.state === 'START';
             this.state = 'PLAYING';
+
+            // Nếu bắt đầu từ màn hình chờ, thực hiện nhảy ngay lập tức
+            if (forceStart && wasStart) {
+                this.bird.flap();
+                this.audioManager.play('jump');
+            }
         }
     }
     updateConfig(newConfig: Partial<GameConfig>): void {
