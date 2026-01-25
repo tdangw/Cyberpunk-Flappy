@@ -41,6 +41,7 @@ export class UIManager {
         this.updateAllUI();
         this.updateAudioUI();
         this.checkTampering();
+        this.replaceIcons();
 
         // Listen for real-time security alerts
         window.addEventListener('securityAlert', () => this.showSecurityAlert());
@@ -115,15 +116,17 @@ export class UIManager {
             modal.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
         });
 
-        const closeOnClickOutside = (e: Event) => {
+        // Mobile Tooltip Fix: Hide tooltip if touching outside interactive elements
+        window.addEventListener('touchstart', (e) => {
             const target = e.target as HTMLElement;
-            const activeModal = document.querySelector('.modal-panel.modal-active');
-            if (activeModal && !target.closest('.modal-panel') && !target.closest('.btn-icon')) {
-                this.closeActiveModals();
+            if (!target.closest('.skin-card') && !target.closest('.mode-option') && !target.closest('.boost-card')) {
+                this.hideTooltip();
             }
-        };
-        window.addEventListener('mousedown', closeOnClickOutside);
-        window.addEventListener('touchstart', closeOnClickOutside, { passive: true });
+        }, { passive: true });
+
+        // Close on click outside (Modals)
+        window.addEventListener('mousedown', (e) => this.closeOnClickOutside(e));
+        window.addEventListener('touchstart', (e) => this.closeOnClickOutside(e), { passive: false });
 
         this.setupSettingsControls();
         this.setupAudioControls();
@@ -287,6 +290,15 @@ export class UIManager {
         });
 
         setInterval(() => this.updateEnergyBar(), 100);
+    }
+
+    private closeOnClickOutside(e: Event): void {
+        const target = e.target as HTMLElement;
+        const activeModal = document.querySelector('.modal-panel.modal-active');
+        // Close if clicking overlay (outside modal-panel) AND not clicking a button implementation
+        if (activeModal && !target.closest('.modal-panel') && !target.closest('.btn-icon')) {
+            this.closeActiveModals();
+        }
     }
 
     private setupSettingsControls(): void {
@@ -628,8 +640,9 @@ export class UIManager {
                 this.saveManager.addBoostToInventory(boost.id, quantity);
                 this.renderShopGrid();
                 this.updateAllUI();
+                this.showCentralNotification(`${boost.name} x${quantity} PURCHASED!`, 'success');
             } else {
-                this.showError('INSUFFICIENT CREDITS');
+                this.showCentralNotification('INSUFFICIENT CREDITS', 'error');
             }
         }, true);
     }
@@ -645,17 +658,58 @@ export class UIManager {
             this.saveManager.setEquippedBoost(boost.id, boost.capacity);
             this.renderShopGrid();
             this.game.restart(); // Applies to bird
+            this.showCentralNotification('BOOST ACTIVATED', 'success');
         } else {
-            this.showError('NO STOCK - BUY FIRST');
+            this.showCentralNotification('NO STOCK - BUY FIRST', 'error');
         }
     }
 
+    private showCentralNotification(msg: string, type: 'success' | 'error' = 'success'): void {
+        const popup = document.getElementById('notification-popup');
+        const icon = document.getElementById('notif-icon');
+        const txt = document.getElementById('notif-message');
+
+        if (!popup || !icon || !txt) return;
+
+        popup.className = `notification-popup show ${type}`; // Reset classes
+
+        // Use Image Icon
+        icon.innerHTML = `<img src="${IconDrawer.getSimpleIcon(type)}" alt="${type}">`;
+
+        txt.textContent = msg;
+
+        // Auto hide after 1.5s
+        if ((this as any).notifTimeout) clearTimeout((this as any).notifTimeout);
+        (this as any).notifTimeout = setTimeout(() => {
+            popup.classList.remove('show');
+        }, 1500);
+
+        // Also play sound if possible
+        if (type === 'success') this.audioManager.play('unlock');
+        else this.audioManager.play('hit'); // Error sound
+    }
+
+    private replaceIcons(): void {
+        // HUD Buttons
+        const setIcon = (id: string, type: any) => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = `<img src="${IconDrawer.getSimpleIcon(type)}" style="width: 70%; height: 70%; object-fit: contain; pointer-events: none;">`;
+        };
+        setIcon('fullscreen-btn', 'fullscreen');
+        setIcon('shop-btn', 'shop');
+        setIcon('settings-btn', 'settings');
+
+        // Map Selector
+        document.querySelectorAll('.map-option').forEach(opt => {
+            const mapIndex = opt.getAttribute('data-map');
+            if (mapIndex) {
+                opt.innerHTML = `<img src="${IconDrawer.getSimpleIcon(`map_${mapIndex}` as any)}" style="width: 70%; height: 70%; object-fit: contain; pointer-events: none;">`;
+            }
+        });
+    }
+
     private showError(msg: string): void {
-        const el = document.getElementById('shop-msg');
-        if (el) {
-            el.textContent = msg;
-            setTimeout(() => el.textContent = '', 2000);
-        }
+        this.showCentralNotification(msg, 'error');
     }
 
     private renderSkinGrid(allSkins: any[]): void {
@@ -784,9 +838,9 @@ export class UIManager {
                     this.renderShopGrid();
                     this.updateAllUI();
                     this.updateSkinsOwnedCount();
+                    this.showCentralNotification(`${skin.name} UNLOCKED!`, 'success');
                 } else {
-                    const msg = document.getElementById('shop-msg');
-                    if (msg) { msg.textContent = 'INSUFFICIENT CREDITS'; setTimeout(() => msg.textContent = '', 2000); }
+                    this.showCentralNotification('INSUFFICIENT CREDITS', 'error');
                 }
             });
         }

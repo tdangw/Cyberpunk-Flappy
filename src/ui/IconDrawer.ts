@@ -71,4 +71,301 @@ export class IconDrawer {
             default: return '#888';
         }
     }
+    static getSimpleIcon(type: 'success' | 'error' | 'shop' | 'settings' | 'fullscreen' | 'map_0' | 'map_1' | 'map_2' | 'map_3' | 'map_4' | 'map_5', size: number = 60): string {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d')!;
+
+        ctx.translate(size / 2, size / 2);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        switch (type) {
+            case 'success':
+                this.drawCheckmark(ctx, size);
+                break;
+            case 'error':
+                this.drawCross(ctx, size);
+                break;
+            case 'shop':
+                this.drawShop(ctx, size);
+                break;
+            case 'settings':
+                this.drawGear(ctx, size);
+                break;
+            case 'fullscreen':
+                this.drawFullscreen(ctx, size);
+                break;
+            case 'map_0': this.drawMapIcon(ctx, size, 'hightech'); break; // Neon City
+            case 'map_1': this.drawMapIcon(ctx, size, 'jungle'); break;   // Techno Jungle
+            case 'map_2': this.drawMapIcon(ctx, size, 'ocean'); break;    // Ocean Abyss
+            case 'map_3': this.drawMapIcon(ctx, size, 'volcano'); break;  // Volcano Core
+            case 'map_4': this.drawMapIcon(ctx, size, 'space'); break;    // Star Forge
+            case 'map_5': this.drawMapIcon(ctx, size, 'sunny'); break;    // Sunny Highlands
+        }
+
+        return canvas.toDataURL();
+    }
+
+    private static drawCheckmark(ctx: CanvasRenderingContext2D, size: number) {
+        const r = size * 0.4;
+        ctx.strokeStyle = '#39ff14'; // Neon Green
+        ctx.lineWidth = 4;
+        ctx.shadowColor = '#39ff14';
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.5, 0);
+        ctx.lineTo(-r * 0.1, r * 0.4);
+        ctx.lineTo(r * 0.5, -r * 0.4);
+        ctx.stroke();
+    }
+
+    private static drawCross(ctx: CanvasRenderingContext2D, size: number) {
+        const r = size * 0.4;
+        ctx.strokeStyle = '#ff003c'; // Neon Red
+        ctx.lineWidth = 4;
+        ctx.shadowColor = '#ff003c';
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.4, -r * 0.4);
+        ctx.lineTo(r * 0.4, r * 0.4);
+        ctx.moveTo(r * 0.4, -r * 0.4);
+        ctx.lineTo(-r * 0.4, r * 0.4);
+        ctx.stroke();
+    }
+
+    private static drawShop(ctx: CanvasRenderingContext2D, size: number) {
+        const color = '#00fff7'; // Neon Blue
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+
+        const s = size * 0.5; // Scale factor relative to half size
+
+        // Centering adjustment
+        ctx.translate(-size * 0.05, size * 0.05);
+
+        ctx.beginPath();
+        // Handle start (left)
+        ctx.moveTo(-s, -s * 0.8);
+        ctx.lineTo(-s * 0.7, -s * 0.8);
+        // Back of cart (downwards)
+        ctx.lineTo(-s * 0.5, s * 0.4);
+        // Bottom of basket
+        ctx.lineTo(s * 0.6, s * 0.4);
+        // Front of basket (upwards angled)
+        ctx.lineTo(s * 0.8, -s * 0.4);
+        // Top of basket (back to handle/back connection)
+        ctx.lineTo(-s * 0.6, -s * 0.4);
+        ctx.stroke();
+
+        // Internal Grid Lines (Horizontal)
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.55, -s * 0.1);
+        ctx.lineTo(s * 0.7, -s * 0.1);
+        ctx.stroke();
+
+        // Internal Grid Lines (Vertical)
+        ctx.beginPath();
+        ctx.moveTo(0, s * 0.4); // Middle bottom
+        ctx.lineTo(0.1 * s, -s * 0.4); // Middle top
+        ctx.stroke();
+
+        // Wheels
+        ctx.fillStyle = color;
+        const wheelR = size * 0.08;
+
+        ctx.beginPath();
+        ctx.arc(-s * 0.2, s * 0.7, wheelR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(s * 0.4, s * 0.7, wheelR, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    private static drawGear(ctx: CanvasRenderingContext2D, size: number) {
+        ctx.strokeStyle = '#00fff7'; // Cyan
+        ctx.fillStyle = '#00fff7';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#00fff7';
+        ctx.shadowBlur = 5;
+
+        const outerR = size * 0.35;
+        const innerR = size * 0.25;
+        const teeth = 8;
+
+        ctx.beginPath();
+        for (let i = 0; i < teeth * 2; i++) {
+            const angle = (Math.PI * 2 * i) / (teeth * 2);
+            const r = (i % 2 === 0) ? outerR : innerR * 1.1;
+            const x = Math.cos(angle) * r;
+            const y = Math.sin(angle) * r;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    private static drawFullscreen(ctx: CanvasRenderingContext2D, size: number) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 5;
+
+        const s = size * 0.2;
+        const d = size * 0.4; // dist from center
+
+        ctx.beginPath();
+        // TL
+        ctx.moveTo(-d, -d + s); ctx.lineTo(-d, -d); ctx.lineTo(-d + s, -d);
+        // TR
+        ctx.moveTo(d, -d + s); ctx.lineTo(d, -d); ctx.lineTo(d - s, -d);
+        // BR
+        ctx.moveTo(d, d - s); ctx.lineTo(d, d); ctx.lineTo(d - s, d);
+        // BL
+        ctx.moveTo(-d, d - s); ctx.lineTo(-d, d); ctx.lineTo(-d + s, d);
+        ctx.stroke();
+    }
+
+    private static drawMapIcon(ctx: CanvasRenderingContext2D, size: number, type: string) {
+        const s = size * 0.3;
+
+        if (type === 'sunny') { // Map 5
+            ctx.fillStyle = '#facc15'; // Sun
+            ctx.shadowColor = '#facc15'; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.arc(0, -5, s, 0, Math.PI * 2); ctx.fill();
+            // Hills
+            ctx.fillStyle = '#4ade80'; // Green
+            ctx.beginPath(); ctx.moveTo(-s * 2, size / 2);
+            ctx.quadraticCurveTo(-s, 0, 0, size / 2);
+            ctx.quadraticCurveTo(s, 0, s * 2, size / 2);
+            ctx.fill();
+        }
+        else if (type === 'hightech') { // Neon City Map 0
+            ctx.fillStyle = '#00fff7';
+            ctx.shadowColor = '#00fff7'; ctx.shadowBlur = 10;
+            // Buildings
+            ctx.fillRect(-15, 0, 10, 20);
+            ctx.fillRect(-2, -10, 8, 30);
+            ctx.fillRect(10, 5, 10, 15);
+        }
+        else if (type === 'jungle') { // Jungle Map 1
+            ctx.strokeStyle = '#39ff14';
+            ctx.shadowColor = '#39ff14'; ctx.shadowBlur = 5; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, 20); ctx.lineTo(0, -15); ctx.stroke();
+            // Leaves
+            ctx.beginPath(); ctx.ellipse(-5, -5, 8, 3, Math.PI / 4, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(5, -10, 8, 3, -Math.PI / 4, 0, Math.PI * 2); ctx.stroke();
+        }
+        else if (type === 'ocean') { // Ocean Map 2
+            const s = size * 0.4;
+            ctx.strokeStyle = '#0ea5e9'; // Sky Blue
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.shadowColor = '#0ea5e9'; ctx.shadowBlur = 8;
+
+            // Wave 1
+            ctx.beginPath();
+            ctx.moveTo(-s, 0);
+            ctx.bezierCurveTo(-s / 2, -s / 2, 0, s / 2, s, -5);
+            ctx.stroke();
+
+            // Wave 2 (lower)
+            ctx.beginPath();
+            ctx.moveTo(-s + 5, 12);
+            ctx.bezierCurveTo(-s / 2, 12 - s / 3, 0, 12 + s / 3, s - 5, 8);
+            ctx.stroke();
+
+            // Bubbles
+            ctx.shadowBlur = 5;
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(-10, -15, 3, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(15, -10, 4, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(5, -25, 2, 0, Math.PI * 2); ctx.stroke();
+        }
+        else if (type === 'volcano') { // Volcano Map 3
+            const s = size * 0.35;
+            // Base
+            ctx.fillStyle = '#b91c1c'; // Dark Red
+            ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.moveTo(-s, s);
+            ctx.lineTo(-s / 3, -s / 2); // Left slope
+            // Crater
+            ctx.quadraticCurveTo(0, -s / 2 + 5, s / 3, -s / 2);
+            ctx.lineTo(s, s); // Right slope
+            ctx.closePath();
+            ctx.fill();
+
+            // Lava Flow
+            ctx.fillStyle = '#fca5a5'; // Light Red/Orange
+            ctx.beginPath();
+            ctx.moveTo(-2, -s / 2 + 3);
+            ctx.quadraticCurveTo(0, 0, 2, -s / 2 + 3);
+            ctx.fill();
+
+            // Eruption particles
+            ctx.fillStyle = '#ef4444';
+            for (let i = 0; i < 4; i++) {
+                const ox = (Math.random() - 0.5) * 15;
+                const oy = -s / 2 - 5 - Math.random() * 12;
+                const r = 2 + Math.random() * 2;
+                ctx.beginPath(); ctx.arc(ox, oy, r, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        else if (type === 'space') { // Star Forge Map 4
+            // Ringed Planet
+            const r = size * 0.2;
+
+            ctx.shadowColor = '#d8b4fe'; ctx.shadowBlur = 10;
+
+            // Planet body
+            ctx.fillStyle = '#a855f7'; // Purple
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ring (Ellipse)
+            ctx.save();
+            ctx.strokeStyle = '#e9d5ff'; // Light Purple
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 2.2, r * 0.6, -Math.PI / 6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            // Small stars details
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 5;
+            const stars = [{ x: -18, y: -18, s: 2 }, { x: 18, y: 15, s: 1.5 }, { x: 20, y: -15, s: 2 }, { x: -20, y: 10, s: 1 }];
+            stars.forEach(st => {
+                ctx.beginPath();
+                ctx.moveTo(st.x, st.y - st.s * 2);
+                ctx.quadraticCurveTo(st.x, st.y, st.x + st.s * 2, st.y);
+                ctx.quadraticCurveTo(st.x, st.y, st.x, st.y + st.s * 2);
+                ctx.quadraticCurveTo(st.x, st.y, st.x - st.s * 2, st.y);
+                ctx.fill();
+            });
+        }
+    }
 }
