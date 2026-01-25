@@ -13,7 +13,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     sfxVolume: 0.6,
     bgmEnabled: true,
     sfxEnabled: true,
-    dashControl: 'touch',
+    dashControl: 'button_right',
     showFPS: false,
 };
 

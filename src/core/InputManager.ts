@@ -11,7 +11,7 @@ export class InputManager {
     private onDashEnd?: () => void;
     private onEsc?: () => void;
 
-    private dashControl: 'touch' | 'button_left' | 'button_right' = 'touch';
+    private dashControl: 'touch' | 'button_left' | 'button_right' = 'button_right';
     private isClassic: boolean = false;
 
     constructor() {
