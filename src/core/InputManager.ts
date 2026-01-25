@@ -11,14 +11,19 @@ export class InputManager {
     private onDashEnd?: () => void;
     private onEsc?: () => void;
 
-    private useDashButton: boolean = false;
+    private dashControl: 'touch' | 'button_left' | 'button_right' = 'touch';
+    private isClassic: boolean = false;
 
     constructor() {
         this.setupListeners();
     }
 
-    public setUseDashButton(val: boolean): void {
-        this.useDashButton = val;
+    public setDashControl(val: 'touch' | 'button_left' | 'button_right'): void {
+        this.dashControl = val;
+    }
+
+    public setClassicMode(val: boolean): void {
+        this.isClassic = val;
     }
 
     private lastTouchTime = 0;
@@ -45,7 +50,7 @@ export class InputManager {
             if (this.isUIElement(e.target as HTMLElement)) return;
             // Only handle left click here; right click is handled by contextmenu
             if (e.button === 0) {
-                this.processPointerDown(e.clientX, this.useDashButton);
+                this.processPointerDown(e.clientX);
             }
         });
         window.addEventListener('mouseup', () => this.onDashEnd?.());
@@ -62,7 +67,7 @@ export class InputManager {
             this.lastTouchTime = Date.now();
 
             const touch = e.touches[0];
-            this.processPointerDown(touch.clientX, this.useDashButton);
+            this.processPointerDown(touch.clientX);
         }, { passive: false });
 
         window.addEventListener('touchend', (e) => {
@@ -90,18 +95,23 @@ export class InputManager {
         return !!target.closest('.btn-icon, .modal-panel, .map-option, .shop-card-btn, .close-modal, .btn-primary, .btn-secondary, .btn-toggle, .screen-overlay, .dash-button-hud');
     }
 
-    private processPointerDown(clientX: number, useDashButton: boolean = false): void {
-        const isRightSide = clientX > window.innerWidth / 2;
-
-        if (useDashButton) {
-            // In Dash Mode, tapping anywhere is a jump
+    private processPointerDown(clientX: number): void {
+        // Classic mode strictly disables dash controls
+        if (this.isClassic) {
             this.onJump?.();
-        } else {
+            return;
+        }
+
+        if (this.dashControl === 'touch') {
+            const isRightSide = clientX > window.innerWidth / 2;
             if (isRightSide) {
                 this.onDashStart?.();
             } else {
                 this.onJump?.();
             }
+        } else {
+            // In Button modes (Left or Right), tapping anywhere else is a jump
+            this.onJump?.();
         }
     }
 
@@ -114,7 +124,7 @@ export class InputManager {
         if (key === ' ' || key === 'ArrowUp') {
             this.onJump?.();
         }
-        if (key === 'Control' || key === 'Shift') {
+        if (!this.isClassic && (key === 'Control' || key === 'Shift')) {
             this.onDashStart?.();
         }
         if (key === 'Escape') {

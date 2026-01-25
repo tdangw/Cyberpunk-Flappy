@@ -6,12 +6,12 @@ import type { SkinDefinition, BirdState } from '../types';
  */
 
 // --- HELPER FOR VARIATIONS ---
-function createVariations(baseId: string, baseName: string, baseDesc: string, baseFeatures: string[], colors: string[], drawFn: any): SkinDefinition[] {
+function createVariations(baseId: string, baseName: string, baseDesc: string, baseFeatures: string[], colors: string[], drawFn: any, price: number = 500): SkinDefinition[] {
     return colors.map((color, i) => {
         return {
             id: `${baseId}-${i}`,
             name: baseName,
-            price: 500,
+            price: price,
             description: baseDesc,
             features: baseFeatures,
             drawFunction: (ctx, bird, isDashing, frames) => drawFn(ctx, bird, isDashing, frames, color)
@@ -62,17 +62,88 @@ function drawShark(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: bo
     ctx.beginPath(); ctx.moveTo(-25, 0); ctx.lineTo(-35, -10 + wobble); ctx.lineTo(-35, 10 - wobble); ctx.closePath(); ctx.fill(); ctx.stroke();
 }
 
-function drawDragon(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
+function drawButterfly(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 10; ctx.shadowColor = glow;
-    for (let i = 5; i >= 0; i--) {
-        const x = -i * 10; const size = 15 - i * 2;
-        const y = Math.sin(bird.wingAngle * 0.5 + i * 0.5) * 6;
-        ctx.fillStyle = i === 0 ? color : `rgba(20, 20, 30, ${1 - i * 0.15})`;
-        ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = glow; ctx.lineWidth = 1; ctx.stroke();
-        if (i === 0) drawEye(ctx, x + 8, y - 3);
-    }
+    ctx.shadowBlur = 12; ctx.shadowColor = glow;
+
+    // 1. Phác thảo thân bướm (Segmented Body)
+    ctx.fillStyle = '#0a0a0a';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 18, 4, 0, 0, Math.PI * 2); // Thân chính
+    ctx.fill();
+    ctx.strokeStyle = glow; ctx.lineWidth = 1; ctx.stroke();
+
+    // Đầu và Râu (Head & Antennae)
+    ctx.beginPath();
+    ctx.arc(12, -2, 4, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+    // Râu bướm (Antennae)
+    ctx.beginPath();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+    ctx.moveTo(14, -4); ctx.quadraticCurveTo(20, -15, 25, -20);
+    ctx.moveTo(14, -4); ctx.quadraticCurveTo(18, -12, 18, -25);
+    ctx.stroke();
+
+    // 2. Cánh bướm (Realistic Wings with Scalloped Edges)
+    const flap = Math.sin(bird.wingAngle * 1.5) * 0.8;
+    ctx.globalAlpha = 0.7;
+
+    const drawDetailedWing = (isUpper: boolean) => {
+        ctx.save();
+        const yDir = isUpper ? -1 : 1;
+        ctx.translate(-2, 2 * yDir);
+        ctx.rotate(flap * yDir + (isUpper ? -0.4 : 0.4));
+
+        ctx.beginPath();
+        if (isUpper) {
+            // Cánh trên lớn, hình răng cưa
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-10, -35, -45, -30, -50, -5);
+            ctx.bezierCurveTo(-45, 0, -10, 5, 0, 0);
+        } else {
+            // Cánh dưới gọn gàng
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-5, 25, -35, 30, -35, 10);
+            ctx.bezierCurveTo(-30, 0, -10, -5, 0, 0);
+        }
+
+        // Tạo dải màu Gradient cho cánh
+        const grad = ctx.createRadialGradient(0, 0, 5, -20, isUpper ? -15 : 15, 40);
+        grad.addColorStop(0, '#fff');
+        grad.addColorStop(0.3, color);
+        grad.addColorStop(1, '#000');
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
+
+        // Vẽ Gân cánh (Wing Veins)
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 0.8;
+        for (let i = 0; i < 5; i++) {
+            ctx.moveTo(0, 0);
+            const angle = (i - 2) * 0.3;
+            const length = isUpper ? 40 : 25;
+            ctx.lineTo(Math.cos(angle + (isUpper ? -2.2 : 2.2)) * length, Math.sin(angle + (isUpper ? -1.8 : 1.8)) * length);
+        }
+        ctx.stroke();
+
+        // Điểm sáng ở rìa cánh
+        ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.5;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(-40 + i * 5, isUpper ? -20 + i * 2 : 20 - i * 2, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    };
+
+    drawDetailedWing(true);  // Cánh trên
+    drawDetailedWing(false); // Cánh dưới
+
+    ctx.globalAlpha = 1.0;
+    drawEye(ctx, 14, -3);
 }
 
 function drawChicken(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
@@ -769,7 +840,7 @@ export const SKINS: SkinDefinition[] = [
     ...createVariations('sphere', 'Neon Sphere', 'Standard magnetic containment unit with eyes and energy core.', ['Balanced'], DISTINCT_COLORS, drawSphere),
     ...createVariations('pigeon', 'Cyber Pigeon', 'Urban recon drone. High agility.', ['Agile'], DISTINCT_COLORS, drawPigeon),
     ...createVariations('shark', 'Cyber Shark', 'Apex predator of the data streams.', ['Fast'], DISTINCT_COLORS, drawShark),
-    ...createVariations('dragon', 'Jade Wyrm', 'Ancient digital serpent with glowing segments.', ['Long'], DISTINCT_COLORS, drawDragon),
+    ...createVariations('butterfly', 'Cyber Butterfly', 'Bio-luminescent winged unit for silent data infiltration.', ['Flow'], DISTINCT_COLORS, drawButterfly),
     ...createVariations('chicken', 'Sky Pecker', 'Orbital poultry craft with pulse wings.', ['Hover'], DISTINCT_COLORS, drawChicken),
     ...createVariations('fish', 'Deep-Net Fish', 'Data stream inhabitant with oscillating tail.', ['Swim'], DISTINCT_COLORS, drawFish),
     ...createVariations('chimera', 'Cyber Chimera', 'Forbidden experimental hybrid predator.', ['Exotic'], DISTINCT_COLORS, drawChimera),
@@ -782,10 +853,10 @@ export const SKINS: SkinDefinition[] = [
     ...createVariations('duck', 'Cyber Duck', 'Tactical waterfowl with buoyant plating.', ['Quack'], DISTINCT_COLORS, drawDuck),
     ...createVariations('beetle', 'Iron Beetle', 'Heavy armored insect with hydraulic shell.', ['Heavy'], DISTINCT_COLORS, drawBeetle),
     ...createVariations('clownfish', 'Neon Clown', 'Playful reef inhabitant with energy bands.', ['Reef'], DISTINCT_COLORS, drawClownfish),
-    ...createVariations('swordsurfer', 'Cyber Blade Walker', 'Legendary warrior surfing the data tides on a gravity-blade.', ['Legendary'], DISTINCT_COLORS, drawSwordSurfer),
-    ...createVariations('reaper', 'Phantom Reaper', 'Demonic scythe-master with a tattered soul-cloak.', ['Grim'], DISTINCT_COLORS, drawReaper),
-    ...createVariations('lancer', 'Plasma Lancer', 'Futuristic spear-rider with energy scarf.', ['Elite'], DISTINCT_COLORS, drawLancer),
-    ...createVariations('samurai', 'Void Samurai', 'Traditional minimalist shadow-walker.', ['Swift'], DISTINCT_COLORS, drawSamurai),
+    ...createVariations('swordsurfer', 'Cyber Blade Walker', 'Legendary warrior surfing the data tides on a gravity-blade.', ['Legendary'], DISTINCT_COLORS, drawSwordSurfer, 1000),
+    ...createVariations('reaper', 'Phantom Reaper', 'Demonic scythe-master with a tattered soul-cloak.', ['Grim'], DISTINCT_COLORS, drawReaper, 1000),
+    ...createVariations('lancer', 'Plasma Lancer', 'Futuristic spear-rider with energy scarf.', ['Elite'], DISTINCT_COLORS, drawLancer, 1000),
+    ...createVariations('samurai', 'Void Samurai', 'Traditional minimalist shadow-walker.', ['Swift'], DISTINCT_COLORS, drawSamurai, 1000),
 ];
 
 export class SkinManager {

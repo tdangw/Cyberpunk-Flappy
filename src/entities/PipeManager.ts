@@ -136,6 +136,11 @@ export class PipeManager {
 
     reset(): void { this.pipes = []; this.coins = []; }
 
+    clearNearPipes(birdX: number): void {
+        this.pipes = this.pipes.filter(p => p.x < birdX - 50 || p.x > birdX + 400);
+        this.coins = this.coins.filter(c => c.x < birdX - 50 || c.x > birdX + 400);
+    }
+
     render(ctx: CanvasRenderingContext2D): void {
         this.pipes.forEach((p) => this.drawPipe(ctx, p));
         this.coins.forEach((c) => {

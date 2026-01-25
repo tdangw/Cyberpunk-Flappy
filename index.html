@@ -39,11 +39,12 @@
             <button id="toggle-sfx" class="btn-toggle">ON</button>
           </div>
           <div class="setting-row">
-            <span class="setting-label">Dash Control</span>
+            <span class="setting-label">System Hub</span>
             <div class="selector-group">
-              <button id="dash-mode-touch" class="selector-btn active">TOUCH</button>
-              <button id="dash-mode-button" class="selector-btn">BUTTON</button>
-              <button id="toggle-fps-btn" class="selector-btn">FPS</button>
+              <button id="mode-touch" class="selector-btn">TOUCH</button>
+              <button id="mode-left" class="selector-btn">DASH<br>LEFT</button>
+              <button id="mode-right" class="selector-btn">DASH<br>RIGHT</button>
+              <button id="mode-fps" class="selector-btn">FPS</button>
             </div>
           </div>
 
@@ -226,8 +227,19 @@
               <span class="label">CREDITS</span><span id="finalCoins" class="value">0</span>
             </div>
           </div>
-          <div class="modal-footer">
-            <button id="restartBtn" class="btn-primary">RETRY</button>
+          <div class="modal-footer" style="flex-direction: column; gap: 0.8rem;">
+            <div id="revive-timer-container"
+              style="display: none; width: 100%; height: 4px; background: #333; position: relative; overflow: hidden; border-radius: 2px;">
+              <div id="revive-timer-bar"
+                style="width: 100%; height: 100%; background: var(--neon-blue); position: absolute; left: 0; transition: width linear;">
+              </div>
+            </div>
+            <button id="reviveBtn" class="btn-primary" style="width: 100%; position: relative;">
+              REVIVE (AD)
+              <span id="revive-cost-tag" style="position: absolute; right: 1rem; font-size: 0.6rem; opacity: 0.7;">3$
+                🪙</span>
+            </button>
+            <button id="restartBtn" class="btn-secondary" style="width: 100%;">RETRY</button>
           </div>
         </div>
       </div>

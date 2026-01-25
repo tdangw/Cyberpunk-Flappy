@@ -21,6 +21,7 @@ export class UIManager {
     private currentShopTab: 'skins' | 'boosts' = 'skins';
     private lastStartTouchTime: number = 0;
     private startScreenCooldown: number = 0;
+    private reviveTimer: any = null;
 
     constructor(game: Game) {
         this.game = game;
@@ -111,22 +112,45 @@ export class UIManager {
             modal.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
         });
 
-        window.addEventListener('mousedown', (e) => {
+        const closeOnClickOutside = (e: Event) => {
             const target = e.target as HTMLElement;
             const activeModal = document.querySelector('.modal-panel.modal-active');
-
-            // Nếu click trúng nút mở hoặc click bên trong modal thì không đóng
             if (activeModal && !target.closest('.modal-panel') && !target.closest('.btn-icon')) {
                 this.closeActiveModals();
             }
-        });
+        };
+        window.addEventListener('mousedown', closeOnClickOutside);
+        window.addEventListener('touchstart', closeOnClickOutside, { passive: true });
 
         this.setupSettingsControls();
         this.setupAudioControls();
         this.setupConfirmControls();
 
         // Retry Button
-        bindAction('restartBtn', () => { this.playClick(); this.hideGameOver(); this.showStartScreen(); this.game.restart(); });
+        bindAction('restartBtn', () => {
+            this.playClick();
+            this.stopReviveTimer();
+            this.hideGameOver();
+            this.showStartScreen();
+            this.game.restart();
+        });
+
+        // Revive Button
+        bindAction('reviveBtn', () => {
+            const cost = 3; // Fixed cost for now
+            if (this.saveManager.getCoins() >= cost) {
+                this.playClick();
+                this.saveManager.spendCoins(cost);
+                this.stopReviveTimer();
+                this.hideGameOver();
+                this.game.revive();
+            } else {
+                this.showError('INSUFFICIENT CREDITS');
+                const btn = document.getElementById('reviveBtn');
+                btn?.classList.add('shake-error');
+                setTimeout(() => btn?.classList.remove('shake-error'), 500);
+            }
+        });
 
         bindAction('fullscreen-btn', () => { this.playClick(); this.toggleFullscreen(); });
 
@@ -189,7 +213,7 @@ export class UIManager {
         });
 
         window.addEventListener('gameOver', ((e: CustomEvent) => {
-            this.showGameOver(e.detail.score, e.detail.coins, e.detail.isClassic, e.detail.bestDistance);
+            this.showGameOver(e.detail.score, e.detail.coins, e.detail.isClassic, e.detail.bestDistance, e.detail.canRevive);
         }) as EventListener);
 
         window.addEventListener('updateUI', () => this.updateAllUI());
@@ -294,27 +318,23 @@ export class UIManager {
             this.audioManager.setSFXEnabled(!this.audioManager.getSettings().sfxEnabled);
             this.updateAudioUI();
         });
-        document.getElementById('toggle-dash-mode')?.addEventListener('click', () => {
+        // Dash Control Selectors
+        document.getElementById('mode-touch')?.addEventListener('click', () => {
             this.playClick();
-            const current = this.game.getConfig().useDashButton;
-            this.game.updateConfig({ useDashButton: !current });
+            this.game.updateConfig({ dashControl: 'touch' });
             this.updateControlUI();
         });
-
-        // New Selector Logic
-        document.getElementById('dash-mode-touch')?.addEventListener('click', () => {
+        document.getElementById('mode-left')?.addEventListener('click', () => {
             this.playClick();
-            this.game.updateConfig({ useDashButton: false });
+            this.game.updateConfig({ dashControl: 'button_left' });
             this.updateControlUI();
         });
-        document.getElementById('dash-mode-button')?.addEventListener('click', () => {
+        document.getElementById('mode-right')?.addEventListener('click', () => {
             this.playClick();
-            this.game.updateConfig({ useDashButton: true });
+            this.game.updateConfig({ dashControl: 'button_right' });
             this.updateControlUI();
         });
-
-        // FPS Single Toggle
-        document.getElementById('toggle-fps-btn')?.addEventListener('click', () => {
+        document.getElementById('mode-fps')?.addEventListener('click', () => {
             this.playClick();
             const current = this.game.getConfig().showFPS;
             this.game.updateConfig({ showFPS: !current });
@@ -351,26 +371,24 @@ export class UIManager {
     }
 
     private updateControlUI(): void {
-        const useDash = this.game.getConfig().useDashButton;
-        const btnTouch = document.getElementById('dash-mode-touch');
-        const btnButton = document.getElementById('dash-mode-button');
+        const config = this.game.getConfig();
+        const isClassic = this.game.isClassic();
         const container = document.getElementById('game-container');
+        const dashContainer = document.getElementById('dash-btn-container');
 
-        if (btnTouch && btnButton) {
-            if (useDash) {
-                btnButton.classList.add('active');
-                btnTouch.classList.remove('active');
-            } else {
-                btnTouch.classList.add('active');
-                btnButton.classList.remove('active');
-            }
-        }
+        // Update Active States in Settings
+        const btnTouch = document.getElementById('mode-touch');
+        const btnLeft = document.getElementById('mode-left');
+        const btnRight = document.getElementById('mode-right');
+        const btnFPS = document.getElementById('mode-fps');
 
-        const useFPS = this.game.getConfig().showFPS;
-        const btnFPS = document.getElementById('toggle-fps-btn');
+        [btnTouch, btnLeft, btnRight].forEach(b => b?.classList.remove('active'));
+        if (config.dashControl === 'touch') btnTouch?.classList.add('active');
+        else if (config.dashControl === 'button_left') btnLeft?.classList.add('active');
+        else if (config.dashControl === 'button_right') btnRight?.classList.add('active');
 
         if (btnFPS) {
-            if (useFPS) {
+            if (config.showFPS) {
                 btnFPS.classList.add('active');
                 container?.classList.add('has-fps');
             } else {
@@ -379,10 +397,24 @@ export class UIManager {
             }
         }
 
-        if (useDash) {
-            container?.classList.add('has-dash-btn');
-        } else {
-            container?.classList.remove('has-dash-btn');
+        // Dashboard HUD Visibility and Position
+        if (dashContainer) {
+            // Classic mode OR Touch mode hides the physical button
+            if (isClassic || config.dashControl === 'touch') {
+                dashContainer.style.display = 'none';
+                container?.classList.remove('has-dash-btn');
+            } else {
+                dashContainer.style.display = 'block';
+                container?.classList.add('has-dash-btn');
+
+                if (config.dashControl === 'button_left') {
+                    dashContainer.style.left = '2rem';
+                    dashContainer.style.right = 'auto';
+                } else if (config.dashControl === 'button_right') {
+                    dashContainer.style.left = 'auto';
+                    dashContainer.style.right = '2rem';
+                }
+            }
         }
     }
 
@@ -697,7 +729,7 @@ export class UIManager {
         set('spacingRange', 'val-spacing', config.pipeSpacing);
     }
 
-    private showGameOver(score: number, coins: number, isClassic: boolean = false, bestDist: number = 0): void {
+    private showGameOver(score: number, coins: number, isClassic: boolean = false, bestDist: number = 0, canRevive: boolean = false): void {
         const msg = document.getElementById('message');
         const s = document.getElementById('finalScore');
         const b = document.getElementById('finalBest');
@@ -718,8 +750,58 @@ export class UIManager {
             }
         }
 
+        // Handle Revive UI
+        const reviveBtn = document.getElementById('reviveBtn');
+        const reviveTimerCont = document.getElementById('revive-timer-container');
+        if (reviveBtn && reviveTimerCont) {
+            if (canRevive) {
+                reviveBtn.style.display = 'block';
+                reviveTimerCont.style.display = 'block';
+                this.startReviveTimer();
+            } else {
+                reviveBtn.style.display = 'none';
+                reviveTimerCont.style.display = 'none';
+            }
+        }
+
         if (msg) msg.style.display = 'flex';
         this.updateAllUI();
+    }
+
+    private startReviveTimer(): void {
+        this.stopReviveTimer();
+        const bar = document.getElementById('revive-timer-bar');
+        const reviveBtn = document.getElementById('reviveBtn');
+        if (!bar) return;
+
+        bar.style.transition = 'none';
+        bar.style.width = '100%';
+
+        setTimeout(() => {
+            bar.style.transition = 'width 5s linear';
+            bar.style.width = '0%';
+        }, 10);
+
+        this.reviveTimer = setTimeout(() => {
+            if (reviveBtn) {
+                reviveBtn.style.opacity = '0.5';
+                reviveBtn.style.pointerEvents = 'none';
+            }
+            const timerCont = document.getElementById('revive-timer-container');
+            if (timerCont) timerCont.style.display = 'none';
+        }, 5000);
+    }
+
+    private stopReviveTimer(): void {
+        if (this.reviveTimer) {
+            clearTimeout(this.reviveTimer);
+            this.reviveTimer = null;
+        }
+        const reviveBtn = document.getElementById('reviveBtn');
+        if (reviveBtn) {
+            reviveBtn.style.opacity = '1';
+            reviveBtn.style.pointerEvents = 'auto';
+        }
     }
 
     private setupMapSelector(): void {

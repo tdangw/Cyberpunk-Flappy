@@ -201,6 +201,15 @@ export class Bird implements BirdState {
 
     isInvulnerable(): boolean { return this.isDashing || this.invulnerableTimer > 0; }
 
+    resetStateForRevive(): void {
+        this.speed = 0;
+        this.rotation = 0;
+        this.isDashing = false;
+        this.stabilizeTimer = 0;
+        this.invulnerableTimer = 180; // Long invulnerability (approx 3s at 60fps)
+        this.y = Math.max(100, Math.min(this.y, CANVAS.HEIGHT - 250)); // Safety reposition
+    }
+
     reset(): void {
         this.x = 200; this.y = 350; this.speed = 0; this.rotation = 0;
         this.isDashing = false; this.wingAngle = 0; this.stabilizeTimer = 0; this.invulnerableTimer = 0;

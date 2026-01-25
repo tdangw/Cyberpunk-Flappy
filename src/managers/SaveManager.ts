@@ -60,7 +60,7 @@ export class SaveManager {
 
     private getDefaultData(): PlayerData {
         return {
-            coins: 0,
+            coins: 10000,
             ownedSkins: ['sphere-0'],
             equippedSkin: 'sphere-0',
             highScore: 0,

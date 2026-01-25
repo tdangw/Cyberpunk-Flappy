@@ -2,6 +2,8 @@
  * Core type definitions for Flappy Cyber game
  */
 
+export type DashControlType = 'touch' | 'button_left' | 'button_right';
+
 export interface GameConfig {
     speed: number;
     gravity: number;
@@ -12,7 +14,7 @@ export interface GameConfig {
     bgmEnabled: boolean;
     sfxEnabled: boolean;
     pipeSpacing: number;
-    useDashButton: boolean;
+    dashControl: DashControlType;
     showFPS: boolean;
 }
 

@@ -42,6 +42,7 @@ export class Game {
     private screenShake = 0;
     private lastTime = 0;
     private isSafeResuming = false;
+    private reviveCount = 0;
     // Perf metrics
     private fps = 60;
     private frameCount = 0;
@@ -121,6 +122,8 @@ export class Game {
                 if (!this.isClassicMode) {
                     this.particleSystem.emit(this.bird.x, this.bird.y, 5, '#fff');
                 }
+            } else if (this.state === 'GAMEOVER') {
+                // Potential quick restart or UI handle
             }
         });
 
@@ -313,6 +316,15 @@ export class Game {
         this.gameOver();
     }
 
+    public revive(): void {
+        if (this.state !== 'GAMEOVER') return;
+        this.reviveCount++;
+        this.state = 'START';
+        this.bird.resetStateForRevive();
+        this.pipeManager.clearNearPipes(this.bird.x);
+        this.resumeWithCountdown();
+    }
+
     private render(): void {
         this.ctx.save();
         if (this.screenShake > 0 && !this.isClassicMode) {
@@ -374,8 +386,8 @@ export class Game {
 
         setTimeout(() => {
             if (this.state === 'GAMEOVER') {
-                // Phát âm thanh gameover riêng biệt khi hiện popup
                 this.audioManager.play('gameover');
+                const canRevive = this.reviveCount < 1 && !this.isClassicMode;
 
                 window.dispatchEvent(new CustomEvent('gameOver', {
                     detail: {
@@ -383,7 +395,8 @@ export class Game {
                         coins: this.sessionCoins,
                         isClassic: this.isClassicMode,
                         distance: currentDist,
-                        bestDistance: this.saveManager.getMaxDistance()
+                        bestDistance: this.saveManager.getMaxDistance(),
+                        canRevive: canRevive
                     }
                 }));
             }
@@ -394,6 +407,7 @@ export class Game {
         this.state = 'START';
         this.score = 0;
         this.sessionCoins = 0;
+        this.reviveCount = 0;
         this.frames = 0;
         this.distanceTraveled = 0;
         this.lastThemeName = '';
@@ -450,7 +464,7 @@ export class Game {
         this.config = { ...this.config, ...newConfig };
         this.bird.setConfig(this.config);
         this.pipeManager.setConfig(this.config);
-        this.inputManager.setUseDashButton(this.config.useDashButton);
+        this.inputManager.setDashControl(this.config.dashControl);
     }
     getConfig(): GameConfig { return { ...this.config }; }
     getScore(): number { return this.score; }
@@ -458,6 +472,7 @@ export class Game {
     getCurrentThemeName(): string { return this.renderer.getCurrentTheme().theme; }
     getState(): GameStateType { return this.state; }
     public getInputManager(): InputManager { return this.inputManager; }
+    public isClassic(): boolean { return this.isClassicMode; }
     public getFPS(): number { return this.fps; }
     private updateScoreUI(): void { window.dispatchEvent(new CustomEvent('updateUI')); }
     private updateCoinUI(): void { window.dispatchEvent(new CustomEvent('updateUI')); }
@@ -487,6 +502,7 @@ export class Game {
 
     setGameMode(mode: 'classic' | 'advance'): void {
         this.isClassicMode = mode === 'classic';
+        this.inputManager.setClassicMode(this.isClassicMode);
 
         // Toggle UI visibility via global class
         const container = document.getElementById('game-container');

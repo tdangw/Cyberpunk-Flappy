@@ -326,8 +326,8 @@ export class Renderer {
             if (i < 0) continue;
 
             const distPx = i * PIXELS_PER_KM;
-            // Align "0km" exactly with Bird's start X (approx 100px)
-            const screenX = distPx - distanceTraveled + 100;
+            // Align "0km" exactly with Bird's start X (200px)
+            const screenX = distPx - distanceTraveled + 200;
 
             if (screenX < -150 || screenX > CANVAS.WIDTH + 150) continue;
 

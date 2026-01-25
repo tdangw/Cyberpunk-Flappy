@@ -953,16 +953,15 @@ h2 {
 .selector-group {
   display: flex;
   flex: 1;
-  gap: 0.8rem;
-  margin-right: 5rem;
-  /* Precisely matches the slider track ending point */
+  gap: 0.6rem;
+  margin-right: 0;
 }
 
 .selector-btn {
   background: #111 !important;
   border: 1px solid #333 !important;
   color: #666 !important;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.4rem;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
   font-weight: 800;
@@ -1105,7 +1104,7 @@ h2 {
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-  z-index: 500;
+  z-index: 2000;
   animation: fadeIn 0.3s ease-out;
 }
 
