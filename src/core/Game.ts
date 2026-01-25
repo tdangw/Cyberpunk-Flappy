@@ -273,7 +273,17 @@ export class Game {
             const gapBot = pipe.top + this.config.pipeGap;
             if (birdRect.r > pipe.x && birdRect.l < pipe.x + pipe.w) {
                 if (birdRect.t < pipe.top || birdRect.b > gapBot) {
-                    if (!this.bird.isInvulnerable()) this.triggerDying();
+                    if (this.bird.isInvulnerable()) {
+                        // Sticky Invulnerability:
+                        // If the safety timer is running out but we are STILL inside a pipe hazard,
+                        // extend the timer slightly to ensure we don't die instantly upon appearing.
+                        // This allows the "Anti-Drop" pop to carry us out of danger.
+                        if (!this.bird.isDashing && this.bird.getInvulnerableTimer() < 5) {
+                            this.bird.extendInvulnerability(5);
+                        }
+                    } else {
+                        this.triggerDying();
+                    }
                 }
             }
             if (!pipe.passed && this.bird.x > pipe.x + pipe.w) {

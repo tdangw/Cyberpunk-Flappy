@@ -570,7 +570,6 @@ h2 {
 }
 
 /* TUTORIAL GUIDE */
-/* TUTORIAL GUIDE */
 .tutorial-guide {
   display: flex;
   align-items: center;
@@ -658,20 +657,8 @@ h2 {
   opacity: 0.5;
 }
 
-.tut-label {
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 2px;
-  opacity: 0.8;
-}
 
-.tut-separator {
-  width: 1px;
-  height: 2.5rem;
-  background: rgba(0, 255, 247, 0.1);
-}
-
+/* Animation for floating icons */
 @keyframes floatIcon {
 
   0%,
@@ -682,21 +669,6 @@ h2 {
   50% {
     transform: translateY(-5px);
   }
-}
-
-/* Specific icon styles for keys */
-.key-icon {
-  width: auto;
-  min-width: 3.5rem;
-  padding: 0 0.5rem;
-  border-bottom-width: 5px;
-  /* KB look */
-}
-
-/* Touch Icon Style */
-.touch-icon {
-  border-radius: 50%;
-  border-style: dashed;
 }
 
 

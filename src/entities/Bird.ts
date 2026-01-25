@@ -102,8 +102,18 @@ export class Bird implements BirdState {
         this.isDashing = false;
         this.stopRequested = false;
         this.dashAwaitingMeters = 0;
-        this.stabilizeTimer = ENERGY.STABILIZE_DURATION;
-        this.invulnerableTimer = ENERGY.STABILIZE_DURATION;
+
+        // Anti-Drop Mechanism: Give a small upward pop to prevent falling instantly
+        // This gives the player reaction time after a dash ends.
+        this.speed = -this.config.jump * 0.5;
+
+        this.stabilizeTimer = 0; // Allow immediate control
+
+        // Extended Invulnerability: 
+        // 12 frames (approx 0.2s) of safety after dash ends to prevent 
+        // INSTANT death if the dash stops exactly inside a pipe or hazard.
+        this.invulnerableTimer = Math.max(12, ENERGY.STABILIZE_DURATION);
+
         this.checkNitroFallback();
     }
 
@@ -199,14 +209,26 @@ export class Bird implements BirdState {
         }
     }
 
-    isInvulnerable(): boolean { return this.isDashing || this.invulnerableTimer > 0; }
+    isInvulnerable(): boolean {
+        // If dashing, ALWAYS safe.
+        // If timer > 0 (post-dash or revive), ALSO safe.
+        return this.isDashing || this.invulnerableTimer > 0;
+    }
+
+    getInvulnerableTimer(): number {
+        return this.invulnerableTimer;
+    }
+
+    extendInvulnerability(frames: number): void {
+        this.invulnerableTimer = Math.max(this.invulnerableTimer, frames);
+    }
 
     resetStateForRevive(): void {
         this.speed = 0;
         this.rotation = 0;
         this.isDashing = false;
         this.stabilizeTimer = 0;
-        this.invulnerableTimer = 180; // Long invulnerability (approx 3s at 60fps)
+        this.invulnerableTimer = 300; // Extended invulnerability (approx 5s at 60fps)
         this.y = Math.max(100, Math.min(this.y, CANVAS.HEIGHT - 250)); // Safety reposition
     }
 
