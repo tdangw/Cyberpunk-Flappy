@@ -873,8 +873,62 @@ export class SkinManager {
         ctx.translate(bird.x, bird.y);
         ctx.rotate(bird.rotation);
 
-        if (bird.invulnerableTimer > 0 && !isDashing) {
-            ctx.globalAlpha = 0.6 + Math.sin(frames * 0.2) * 0.3;
+        if (bird.invulnerableTimer > 0 || isDashing) {
+            // Giữ độ hiển thị ổn định cho chim
+            if (bird.invulnerableTimer > 0 && !isDashing) {
+                ctx.globalAlpha = 0.9;
+            }
+
+            // --- VẼ KHIÊN BẢO VỆ TỔ ONG (HONEYCOMB SHIELD) ---
+            ctx.save();
+            const shieldRadius = bird.radius * 3.0;
+            const shieldColor = isDashing ? '#fff' : '#00d2ff';
+
+            // 1. Viền ngoài NET LIỀN (Solid Circle) với Glow rực rỡ
+            ctx.beginPath();
+            ctx.arc(0, 0, shieldRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = shieldColor;
+            ctx.lineWidth = 2.5;
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = shieldColor;
+            ctx.globalAlpha = 0.4;
+            ctx.stroke();
+
+            // 2. Lớp màng bảo vệ mờ ảo
+            ctx.beginPath();
+            ctx.arc(0, 0, shieldRadius - 2, 0, Math.PI * 2);
+            ctx.fillStyle = shieldColor;
+            ctx.globalAlpha = 0.06;
+            ctx.fill();
+
+            // 3. Họa tiết Tổ ong (Xoay cực kỳ chậm)
+            ctx.save();
+            ctx.rotate(frames * -0.0015); // Xoay cực chậm
+            ctx.globalAlpha = 0.12;
+            ctx.strokeStyle = shieldColor;
+            ctx.lineWidth = 0.6;
+
+            const hexSize = 10;
+            for (let q = -5; q <= 5; q++) {
+                for (let r = -5; r <= 5; r++) {
+                    const hx = hexSize * 1.5 * q;
+                    const hy = hexSize * Math.sqrt(3) * (r + q / 2);
+
+                    if (hx * hx + hy * hy < (shieldRadius - 4) * (shieldRadius - 4)) {
+                        ctx.beginPath();
+                        for (let i = 0; i < 6; i++) {
+                            const angle = (Math.PI / 3) * i;
+                            const x = hx + hexSize * Math.cos(angle);
+                            const y = hy + hexSize * Math.sin(angle);
+                            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                }
+            }
+            ctx.restore();
+            ctx.restore();
         }
 
         if (skinId === 'default') {

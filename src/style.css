@@ -338,11 +338,18 @@ canvas {
   z-index: 1000;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.9);
   padding: 1.5rem 2rem;
-  /* Reduced padding */
   max-width: 95vw;
   max-height: 95vh;
-  overflow-y: auto;
-  border-radius: 0.8rem;
+  overflow: hidden;
+  /* Hide panel-level scroll */
+}
+
+.modal-panel::-webkit-scrollbar {
+  display: none;
+}
+
+.modal-panel::-webkit-scrollbar {
+  display: none;
 }
 
 @media (max-height: 500px) {
@@ -602,9 +609,14 @@ h2 {
 .full-shop {
   width: 50rem;
   max-width: 95vw;
-  height: 32rem;
+  height: 36rem;
   max-height: 95vh;
-  padding: 1.5rem;
+  padding: 1.2rem;
+}
+
+.full-shop.modal-active {
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-height: 500px) {
@@ -655,23 +667,33 @@ h2 {
   box-shadow: 0 0 15px var(--neon-blue);
 }
 
-.shop-balance {
-  position: absolute;
-  top: 1.2rem;
-  left: 2.5rem;
-  font-size: 0.85rem;
-  color: var(--neon-gold);
-  font-weight: 900;
+.shop-main-layout {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 0.2rem 0.5rem;
+  margin-top: 0.5rem;
+  height: 19rem;
+  /* Fixed height to show roughly 2 rows */
+}
+
+.shop-main-layout::-webkit-scrollbar {
+  display: none;
 }
 
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.2rem;
-  height: 20rem;
-  overflow-y: auto;
-  padding: 0.5rem;
-  scrollbar-width: none;
+  gap: 0.8rem;
+}
+
+.shop-balance {
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--neon-gold);
+  font-weight: 900;
+  display: flex;
+  justify-content: space-between;
 }
 
 .shop-grid::-webkit-scrollbar {
@@ -682,11 +704,12 @@ h2 {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid #333;
   border-radius: 0.75rem;
-  padding: 1rem;
+  padding: 0.8rem;
+  /* Slightly more compact */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   transition: 0.2s;
   position: relative;
 }
@@ -749,10 +772,155 @@ h2 {
   border: none;
 }
 
-.btn-outline {
+/* PAGINATION */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+}
+
+.page-btn {
+  background: #222a35;
+  border: none;
+  border-radius: 0.4rem;
+  color: #fff;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #333d4d;
+  color: var(--neon-blue);
+}
+
+.page-btn.active {
   background: var(--neon-blue);
   color: #000;
-  border: none;
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-dots {
+  color: #555;
+  padding: 0 0.5rem;
+}
+
+/* REVIVE BUTTON RE-DESIGN - Integrated Timer */
+#reviveBtn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 0.8rem 1.5rem;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  background: rgba(10, 10, 20, 0.9);
+  border: 2px solid var(--neon-blue);
+  border-radius: 0.5rem;
+  color: var(--neon-blue);
+  text-shadow: 0 0 10px var(--neon-blue);
+  font-weight: 950;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(0, 255, 247, 0.2);
+  cursor: pointer;
+}
+
+/* Integrated Timebar (Pseudo-element) */
+#reviveBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: var(--neon-blue);
+  box-shadow: 0 0 25px var(--neon-blue);
+  opacity: 0.55;
+  /* Higher visibility */
+  transform: scaleX(1);
+  transform-origin: left;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Receding effect: Right to Left */
+#reviveBtn.timer-active::before {
+  transform: scaleX(0);
+  transition: transform 5s linear;
+}
+
+/* Trạng thái khi hết giờ */
+#reviveBtn.revive-expired {
+  background: #1a1a1a !important;
+  border-color: #333 !important;
+  color: #555 !important;
+  text-shadow: none !important;
+  pointer-events: none;
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+#reviveBtn.revive-expired #revive-cost-tag {
+  color: #555 !important;
+  text-shadow: none !important;
+}
+
+/* Đảm bảo nội dung luôn hiển thị trên thanh năng lượng */
+#reviveBtn span {
+  position: relative;
+  z-index: 5;
+}
+
+#revive-cost-tag {
+  font-size: 0.95rem !important;
+  color: var(--neon-gold);
+  font-weight: 950;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--neon-blue);
+  color: var(--neon-blue);
+  padding: 0.8rem 1.5rem;
+  border-radius: 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s;
+  text-transform: uppercase;
+}
+
+.btn-outline:hover {
+  background: rgba(0, 255, 247, 0.1);
+  box-shadow: 0 0 15px rgba(0, 255, 247, 0.3);
+}
+
+#reviveAdBtn.revive-expired {
+  border-color: #333 !important;
+  color: #555 !important;
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 /* SHOP STATES */
@@ -1097,8 +1265,7 @@ h2 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.4);
   display: none;
   flex-direction: column;
   align-items: center;

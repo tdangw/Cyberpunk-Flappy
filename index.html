@@ -102,6 +102,7 @@
         <div class="shop-main-layout">
           <div class="shop-grid" id="shop-grid"></div>
         </div>
+        <div id="shop-pagination" class="pagination-container"></div>
         <div id="shop-msg"
           style="color: var(--neon-red); text-align: center; font-size: 0.8rem; margin-top: 0.5rem; font-weight: 700;">
         </div>
@@ -228,16 +229,12 @@
             </div>
           </div>
           <div class="modal-footer" style="flex-direction: column; gap: 0.8rem;">
-            <div id="revive-timer-container"
-              style="display: none; width: 100%; height: 4px; background: #333; position: relative; overflow: hidden; border-radius: 2px;">
-              <div id="revive-timer-bar"
-                style="width: 100%; height: 100%; background: var(--neon-blue); position: absolute; left: 0; transition: width linear;">
-              </div>
-            </div>
-            <button id="reviveBtn" class="btn-primary" style="width: 100%; position: relative;">
-              REVIVE (AD)
-              <span id="revive-cost-tag" style="position: absolute; right: 1rem; font-size: 0.6rem; opacity: 0.7;">3$
-                🪙</span>
+            <button id="reviveBtn" class="btn-primary" style="width: 100%;">
+              <span>QUICK REVIVE</span>
+              <span id="revive-cost-tag">3$ 🪙</span>
+            </button>
+            <button id="reviveAdBtn" class="btn-outline" style="width: 100%;">
+              <span>FREE REVIVE (AD)</span>
             </button>
             <button id="restartBtn" class="btn-secondary" style="width: 100%;">RETRY</button>
           </div>

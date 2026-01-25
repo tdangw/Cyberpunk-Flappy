@@ -42,7 +42,8 @@ export class Game {
     private screenShake = 0;
     private lastTime = 0;
     private isSafeResuming = false;
-    private reviveCount = 0;
+    private adReviveUsed = false;
+    private paidReviveCount = 0;
     // Perf metrics
     private fps = 60;
     private frameCount = 0;
@@ -316,9 +317,15 @@ export class Game {
         this.gameOver();
     }
 
-    public revive(): void {
+    public revive(type: 'ad' | 'paid'): void {
         if (this.state !== 'GAMEOVER') return;
-        this.reviveCount++;
+
+        if (type === 'ad') {
+            this.adReviveUsed = true;
+        } else {
+            this.paidReviveCount++;
+        }
+
         this.state = 'START';
         this.bird.resetStateForRevive();
         this.pipeManager.clearNearPipes(this.bird.x);
@@ -386,8 +393,8 @@ export class Game {
 
         setTimeout(() => {
             if (this.state === 'GAMEOVER') {
-                this.audioManager.play('gameover');
-                const canRevive = this.reviveCount < 1 && !this.isClassicMode;
+                const canAdRevive = !this.adReviveUsed && !this.isClassicMode;
+                const canQuickRevive = this.paidReviveCount < 3 && !this.isClassicMode;
 
                 window.dispatchEvent(new CustomEvent('gameOver', {
                     detail: {
@@ -396,7 +403,8 @@ export class Game {
                         isClassic: this.isClassicMode,
                         distance: currentDist,
                         bestDistance: this.saveManager.getMaxDistance(),
-                        canRevive: canRevive
+                        canAdRevive: canAdRevive,
+                        canQuickRevive: canQuickRevive
                     }
                 }));
             }
@@ -407,7 +415,8 @@ export class Game {
         this.state = 'START';
         this.score = 0;
         this.sessionCoins = 0;
-        this.reviveCount = 0;
+        this.adReviveUsed = false;
+        this.paidReviveCount = 0;
         this.frames = 0;
         this.distanceTraveled = 0;
         this.lastThemeName = '';

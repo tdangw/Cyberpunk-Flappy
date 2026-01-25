@@ -19,6 +19,8 @@ export class UIManager {
     private confirmCallback: (() => void) | null = null;
     private tooltipEl: HTMLElement | null = null;
     private currentShopTab: 'skins' | 'boosts' = 'skins';
+    private currentShopPage: number = 1;
+    private readonly itemsPerPage: number = 20; // 5 rows x 4 items
     private lastStartTouchTime: number = 0;
     private startScreenCooldown: number = 0;
     private reviveTimer: any = null;
@@ -89,6 +91,7 @@ export class UIManager {
                 document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
                 (e.target as HTMLElement).classList.add('active');
                 this.currentShopTab = (e.target as HTMLElement).getAttribute('data-tab') as any;
+                this.currentShopPage = 1; // Reset to page 1 on tab switch
                 this.renderShopGrid();
             };
             tab.addEventListener('click', handler);
@@ -135,20 +138,40 @@ export class UIManager {
             this.game.restart();
         });
 
-        // Revive Button
+        // Revive Button (Quick)
         bindAction('reviveBtn', () => {
-            const cost = 3; // Fixed cost for now
+            const cost = 3;
             if (this.saveManager.getCoins() >= cost) {
                 this.playClick();
                 this.saveManager.spendCoins(cost);
+                this.updateAllUI(); // Cập nhật xu ngay lập tức!
                 this.stopReviveTimer();
                 this.hideGameOver();
-                this.game.revive();
+                this.game.revive('paid');
             } else {
                 this.showError('INSUFFICIENT CREDITS');
                 const btn = document.getElementById('reviveBtn');
                 btn?.classList.add('shake-error');
                 setTimeout(() => btn?.classList.remove('shake-error'), 500);
+            }
+        });
+
+        // Revive Button (AD)
+        bindAction('reviveAdBtn', () => {
+            this.playClick();
+            this.stopReviveTimer();
+            // Simulate watching Ad
+            const btn = document.getElementById('reviveAdBtn');
+            if (btn) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<span>WATCHING AD...</span>';
+                btn.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    this.hideGameOver();
+                    this.game.revive('ad');
+                    btn.innerHTML = originalText;
+                    btn.style.pointerEvents = 'auto';
+                }, 1500);
             }
         });
 
@@ -213,7 +236,14 @@ export class UIManager {
         });
 
         window.addEventListener('gameOver', ((e: CustomEvent) => {
-            this.showGameOver(e.detail.score, e.detail.coins, e.detail.isClassic, e.detail.bestDistance, e.detail.canRevive);
+            this.showGameOver(
+                e.detail.score,
+                e.detail.coins,
+                e.detail.isClassic,
+                e.detail.bestDistance,
+                e.detail.canAdRevive,
+                e.detail.canQuickRevive
+            );
         }) as EventListener);
 
         window.addEventListener('updateUI', () => this.updateAllUI());
@@ -515,21 +545,36 @@ export class UIManager {
     }
 
     private renderShopGrid(): void {
+        const gridEl = document.getElementById('shop-grid');
+        const paginationEl = document.getElementById('shop-pagination');
+        if (!gridEl || !paginationEl) return;
+
+        // Clear message when re-rendering
+        const msgEl = document.getElementById('shop-msg');
+        if (msgEl) msgEl.textContent = '';
+
         if (this.currentShopTab === 'skins') {
-            this.renderSkinGrid();
+            const skins = this.skinManager.getAllSkins();
+            this.renderSkinGrid(skins);
+            this.renderPagination(skins.length, paginationEl);
         } else {
-            this.renderBoostGrid();
+            this.renderBoostGrid(BOOSTS);
+            this.renderPagination(BOOSTS.length, paginationEl);
         }
     }
 
-    private renderBoostGrid(): void {
+    private renderBoostGrid(allBoosts: BoostDefinition[]): void {
         const gridEl = document.getElementById('shop-grid');
         if (!gridEl) return;
         gridEl.innerHTML = '';
 
         const equippedId = this.saveManager.getEquippedBoostId();
 
-        BOOSTS.forEach(boost => {
+        // Paginate items
+        const start = (this.currentShopPage - 1) * this.itemsPerPage;
+        const pageItems = allBoosts.slice(start, start + this.itemsPerPage);
+
+        pageItems.forEach(boost => {
             const count = this.saveManager.getBoostCount(boost.id);
             const isEquipped = equippedId === boost.id;
             const isDefault = boost.id === 'nitro_default';
@@ -581,7 +626,7 @@ export class UIManager {
 
             if (this.saveManager.spendCoins(total)) {
                 this.saveManager.addBoostToInventory(boost.id, quantity);
-                this.renderBoostGrid();
+                this.renderShopGrid();
                 this.updateAllUI();
             } else {
                 this.showError('INSUFFICIENT CREDITS');
@@ -598,7 +643,7 @@ export class UIManager {
 
         if (isDefault || count > 0) {
             this.saveManager.setEquippedBoost(boost.id, boost.capacity);
-            this.renderBoostGrid();
+            this.renderShopGrid();
             this.game.restart(); // Applies to bird
         } else {
             this.showError('NO STOCK - BUY FIRST');
@@ -613,16 +658,19 @@ export class UIManager {
         }
     }
 
-    private renderSkinGrid(): void {
+    private renderSkinGrid(allSkins: any[]): void {
         const gridEl = document.getElementById('shop-grid');
         if (!gridEl) return;
         gridEl.innerHTML = '';
 
-        const skins = this.skinManager.getAllSkins();
         const owned = this.saveManager.getOwnedSkins();
         const equipped = this.saveManager.getEquippedSkin();
 
-        skins.forEach(skin => {
+        // Paginate items
+        const start = (this.currentShopPage - 1) * this.itemsPerPage;
+        const pageItems = allSkins.slice(start, start + this.itemsPerPage);
+
+        pageItems.forEach(skin => {
             const card = document.createElement('div');
             const isOwned = owned.includes(skin.id);
             const isEquipped = equipped === skin.id;
@@ -663,6 +711,59 @@ export class UIManager {
         });
     }
 
+    private renderPagination(totalItems: number, container: HTMLElement): void {
+        const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+        container.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        const createBtn = (label: string | number, page: number, isActive = false, isDisabled = false) => {
+            const btn = document.createElement('button');
+            btn.className = `page-btn ${isActive ? 'active' : ''}`;
+            btn.innerHTML = label.toString();
+            btn.disabled = isDisabled;
+            if (!isDisabled && !isActive) {
+                btn.addEventListener('click', () => {
+                    this.playClick();
+                    this.currentShopPage = page;
+                    this.renderShopGrid();
+                });
+            }
+            return btn;
+        };
+
+        // Prev Button
+        container.appendChild(createBtn('<', this.currentShopPage - 1, false, this.currentShopPage === 1));
+
+        // Logic for "Smart" Page Numbering (1 ... 4 5 6 ... 10)
+        const delta = 2; // Number of pages around current
+        const range = [];
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= this.currentShopPage - delta && i <= this.currentShopPage + delta)) {
+                range.push(i);
+            }
+        }
+
+        let last = 0;
+        for (const i of range) {
+            if (last) {
+                if (i - last === 2) {
+                    container.appendChild(createBtn(last + 1, last + 1));
+                } else if (i - last !== 1) {
+                    const dots = document.createElement('span');
+                    dots.className = 'page-dots';
+                    dots.textContent = '...';
+                    container.appendChild(dots);
+                }
+            }
+            container.appendChild(createBtn(i, i, i === this.currentShopPage));
+            last = i;
+        }
+
+        // Next Button
+        container.appendChild(createBtn('>', this.currentShopPage + 1, false, this.currentShopPage === totalPages));
+    }
+
     private handleSkinAction(id: string): void {
         const skin = this.skinManager.getSkinById(id);
         if (!skin) return;
@@ -673,14 +774,14 @@ export class UIManager {
 
         if (owned.includes(id)) {
             this.saveManager.equipSkin(id);
-            this.renderSkinGrid();
+            this.renderShopGrid();
             this.updateAllUI();
         } else {
             this.showConfirm(`PURCHASE: ${skin.name}`, `Spend ${skin.price} credits to unlock this skin?`, () => {
                 if (this.saveManager.spendCoins(skin.price)) {
                     this.saveManager.unlockSkin(id);
                     this.saveManager.equipSkin(id);
-                    this.renderSkinGrid();
+                    this.renderShopGrid();
                     this.updateAllUI();
                     this.updateSkinsOwnedCount();
                 } else {
@@ -729,7 +830,7 @@ export class UIManager {
         set('spacingRange', 'val-spacing', config.pipeSpacing);
     }
 
-    private showGameOver(score: number, coins: number, isClassic: boolean = false, bestDist: number = 0, canRevive: boolean = false): void {
+    private showGameOver(score: number, coins: number, isClassic: boolean = false, bestDist: number = 0, canAdRevive: boolean = false, canQuickRevive: boolean = false): void {
         const msg = document.getElementById('message');
         const s = document.getElementById('finalScore');
         const b = document.getElementById('finalBest');
@@ -752,15 +853,13 @@ export class UIManager {
 
         // Handle Revive UI
         const reviveBtn = document.getElementById('reviveBtn');
-        const reviveTimerCont = document.getElementById('revive-timer-container');
-        if (reviveBtn && reviveTimerCont) {
-            if (canRevive) {
-                reviveBtn.style.display = 'block';
-                reviveTimerCont.style.display = 'block';
+        const reviveAdBtn = document.getElementById('reviveAdBtn');
+        if (reviveBtn && reviveAdBtn) {
+            reviveBtn.style.display = canQuickRevive ? 'flex' : 'none';
+            reviveAdBtn.style.display = canAdRevive ? 'flex' : 'none';
+
+            if (canQuickRevive || canAdRevive) {
                 this.startReviveTimer();
-            } else {
-                reviveBtn.style.display = 'none';
-                reviveTimerCont.style.display = 'none';
             }
         }
 
@@ -770,26 +869,29 @@ export class UIManager {
 
     private startReviveTimer(): void {
         this.stopReviveTimer();
-        const bar = document.getElementById('revive-timer-bar');
         const reviveBtn = document.getElementById('reviveBtn');
-        if (!bar) return;
+        const reviveAdBtn = document.getElementById('reviveAdBtn');
+        if (!reviveBtn || !reviveAdBtn) return;
 
-        bar.style.transition = 'none';
-        bar.style.width = '100%';
+        // Reset state
+        reviveBtn.classList.remove('revive-expired', 'timer-active');
+        reviveAdBtn.classList.remove('revive-expired');
 
+        // Force reflow
+        void (reviveBtn as HTMLElement).offsetHeight;
+
+        // Use a small delay to ensure the browser registers the class removal before adding it back
         setTimeout(() => {
-            bar.style.transition = 'width 5s linear';
-            bar.style.width = '0%';
-        }, 10);
+            reviveBtn.classList.add('timer-active');
+        }, 20);
 
         this.reviveTimer = setTimeout(() => {
-            if (reviveBtn) {
-                reviveBtn.style.opacity = '0.5';
-                reviveBtn.style.pointerEvents = 'none';
+            if (reviveBtn && reviveBtn.classList.contains('timer-active')) {
+                reviveBtn.classList.add('revive-expired');
+                reviveBtn.classList.remove('timer-active');
+                reviveAdBtn.classList.add('revive-expired');
             }
-            const timerCont = document.getElementById('revive-timer-container');
-            if (timerCont) timerCont.style.display = 'none';
-        }, 5000);
+        }, 5020);
     }
 
     private stopReviveTimer(): void {
@@ -798,9 +900,12 @@ export class UIManager {
             this.reviveTimer = null;
         }
         const reviveBtn = document.getElementById('reviveBtn');
+        const reviveAdBtn = document.getElementById('reviveAdBtn');
         if (reviveBtn) {
-            reviveBtn.style.opacity = '1';
-            reviveBtn.style.pointerEvents = 'auto';
+            reviveBtn.classList.remove('timer-active', 'revive-expired');
+        }
+        if (reviveAdBtn) {
+            reviveAdBtn.classList.remove('revive-expired');
         }
     }
 
