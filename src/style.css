@@ -342,32 +342,62 @@ canvas {
   padding: 1.5rem 2rem;
   max-width: 95vw;
   max-height: 95vh;
-  overflow: hidden;
-  /* Hide panel-level scroll */
+  /* Flex layout for scrolling content */
+  display: none;
+  /* Override by .modal-active which sets display: flex */
+  flex-direction: column;
 }
 
-.modal-panel::-webkit-scrollbar {
+.modal-active {
+  display: flex !important;
+  animation: zoomIn 0.3s ease-out;
+}
+
+/* Scrollable Content Area */
+.settings-content,
+.shop-main-layout {
+  flex: 1;
+  overflow-y: auto;
+  margin: 1rem 0;
+  padding-right: 0.5rem;
+  /* Space for scrollbar if needed, but we hide it */
+}
+
+/* Hide Scrollbar */
+.settings-content::-webkit-scrollbar,
+.shop-main-layout::-webkit-scrollbar {
   display: none;
 }
 
-.modal-panel::-webkit-scrollbar {
-  display: none;
+.settings-content,
+.shop-main-layout {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Ensure Footer stays at bottom */
+.modal-footer {
+  flex-shrink: 0;
+  margin-top: 0 !important;
+  /* Remove top margin as handled by flex gap/margin */
+  padding-top: 1rem;
 }
 
 @media (max-height: 500px) {
   .modal-panel {
-    padding: 1rem;
+    padding: 0.5rem 1rem;
+    width: 90vw;
+    height: 95vh;
   }
 
   h2 {
     font-size: 1.2rem;
-    margin-bottom: 0.75rem;
+    margin: 0.5rem 0;
   }
-}
 
-.modal-active {
-  display: block;
-  animation: zoomIn 0.3s ease-out;
+  .setting-row {
+    margin-bottom: 0.5rem;
+  }
 }
 
 @keyframes zoomIn {
@@ -1558,22 +1588,26 @@ h2 {
   justify-content: center;
   width: 100%;
   height: 100%;
-  transform: translateY(-5rem);
-  /* Negative value moves it UP towards the logo */
+  transform: translateY(-4rem);
+  /* CHANGE THIS VALUE to adjust vertical position. E.g: 0 for center, -10rem for higher, 5rem for lower. */
 }
 
 .main-play-btn {
   font-size: 2.2rem;
   padding: 1rem 6rem;
   background: rgba(0, 0, 0, 0.6);
-  border: 4px solid #fff;
-  color: #fff;
+  border: 4px solid var(--neon-blue);
+  /* Neon Border */
+  color: var(--neon-blue);
+  /* Neon Text */
   font-weight: 950;
   cursor: pointer;
   letter-spacing: 15px;
   position: relative;
   transition: 0.3s all;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px var(--neon-blue), inset 0 0 10px var(--neon-blue);
+  /* Neon Glow */
+  text-shadow: 0 0 10px var(--neon-blue);
   clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
   text-indent: 15px;
   margin-right: 5rem;

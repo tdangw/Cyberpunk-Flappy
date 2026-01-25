@@ -943,7 +943,7 @@ export class UIManager {
             if (reviveBtn && reviveBtn.classList.contains('timer-active')) {
                 reviveBtn.classList.add('revive-expired');
                 reviveBtn.classList.remove('timer-active');
-                reviveAdBtn.classList.add('revive-expired');
+                // Ad revive remains valid indefinitely after timer
             }
         }, 5020);
     }

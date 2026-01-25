@@ -227,9 +227,9 @@ export class IconDrawer {
     }
 
     private static drawFullscreen(ctx: CanvasRenderingContext2D, size: number) {
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = '#00fff7'; // Neon Blue
         ctx.lineWidth = 3;
-        ctx.shadowColor = '#fff';
+        ctx.shadowColor = '#00fff7';
         ctx.shadowBlur = 5;
 
         const s = size * 0.2;
@@ -333,39 +333,56 @@ export class IconDrawer {
                 ctx.beginPath(); ctx.arc(ox, oy, r, 0, Math.PI * 2); ctx.fill();
             }
         }
-        else if (type === 'space') { // Star Forge Map 4
-            // Ringed Planet
-            const r = size * 0.2;
+        else if (type === 'space') { // Star Forge Map 4 -> Now Earth Style
+            const r = size * 0.35;
+            const color = '#00fff7'; // Neon Blue
 
-            ctx.shadowColor = '#d8b4fe'; ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.fillStyle = color;
 
-            // Planet body
-            ctx.fillStyle = '#a855f7'; // Purple
+            // Earth Circle Outline
             ctx.beginPath();
             ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Ring (Ellipse)
-            ctx.save();
-            ctx.strokeStyle = '#e9d5ff'; // Light Purple
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.ellipse(0, 0, r * 2.2, r * 0.6, -Math.PI / 6, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
 
-            // Small stars details
+            // Simple "Continent" shapes inside (Cyber styled)
+            // Americas approximation
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.4, -r * 0.5);
+            ctx.bezierCurveTo(-r * 0.1, -r * 0.6, r * 0.2, -r * 0.2, r * 0.3, -r * 0.4); // North
+            ctx.bezierCurveTo(r * 0.1, 0, -r * 0.1, 0.2, r * 0.2, r * 0.6); // South tail
+            ctx.bezierCurveTo(-r * 0.2, r * 0.4, -r * 0.5, 0, -r * 0.4, -r * 0.5); // West side
+            ctx.globalAlpha = 0.3;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            ctx.stroke();
+
+            // Eurasia/Africa approximation
+            ctx.beginPath();
+            ctx.moveTo(r * 0.5, -r * 0.6);
+            ctx.quadraticCurveTo(r * 0.8, -r * 0.2, r * 0.5, r * 0.5);
+            ctx.quadraticCurveTo(r * 0.2, r * 0.2, r * 0.5, -r * 0.6);
+            ctx.globalAlpha = 0.3;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            ctx.stroke();
+
+            // Grid lines (Latitude / Longitude) for Cyber feel
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r, r * 0.4, 0, 0, Math.PI * 2); // Equator
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 0.4, r, 0, 0, Math.PI * 2); // Meridian
+            ctx.stroke();
+
+            // Satellites / Stars
             ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 5;
-            const stars = [{ x: -18, y: -18, s: 2 }, { x: 18, y: 15, s: 1.5 }, { x: 20, y: -15, s: 2 }, { x: -20, y: 10, s: 1 }];
-            stars.forEach(st => {
-                ctx.beginPath();
-                ctx.moveTo(st.x, st.y - st.s * 2);
-                ctx.quadraticCurveTo(st.x, st.y, st.x + st.s * 2, st.y);
-                ctx.quadraticCurveTo(st.x, st.y, st.x, st.y + st.s * 2);
-                ctx.quadraticCurveTo(st.x, st.y, st.x - st.s * 2, st.y);
-                ctx.fill();
-            });
+            ctx.beginPath(); ctx.arc(-r * 1.2, -r * 0.8, 2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(r * 1.1, r * 0.9, 1.5, 0, Math.PI * 2); ctx.fill();
         }
     }
 }

@@ -58,7 +58,7 @@ export class PipeManager {
     private createPipe(spawnCoins: boolean): void {
         const groundH = CANVAS.GROUND_HEIGHT;
         const configGap = this.config.pipeGap;
-        const gapVariance = (Math.random() - 0.5) * 40;
+        const gapVariance = (Math.random() - 0.5) * 20;
         const gap = configGap + gapVariance;
         const padding = 80;
         const minY = padding;
