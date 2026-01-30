@@ -982,6 +982,7 @@ export class UIManager {
     }
 
     private showGameOver(score: number, coins: number, isClassic: boolean = false, bestDist: number = 0, canAdRevive: boolean = false, canQuickRevive: boolean = false): void {
+        this.audioManager.play('gameover');
         const msg = document.getElementById('message');
         const s = document.getElementById('finalScore');
         const b = document.getElementById('finalBest');

@@ -253,17 +253,21 @@ canvas {
   touch-action: none;
 }
 
-.dash-button-hud:hover {
-  background: var(--neon-blue);
-  color: #000;
-  box-shadow: 0 0 25px var(--neon-blue);
-  transform: scale(1.05);
+@media (hover: hover) {
+  .dash-button-hud:hover {
+    background: var(--neon-blue);
+    color: #000;
+    box-shadow: 0 0 25px var(--neon-blue);
+    transform: scale(1.05);
+  }
 }
 
 .dash-button-hud:active {
-  transform: scale(0.9);
-  box-shadow: 0 0 10px var(--neon-blue);
-  background: #fff;
+  transform: scale(0.92);
+  background: var(--neon-blue);
+  color: #fff;
+  box-shadow: 0 0 35px var(--neon-blue), inset 0 0 15px rgba(255, 255, 255, 0.5);
+  transition: all 0.05s;
 }
 
 /* DASH BUTTON ACCENTS - 4 Corner Arcs */
@@ -1625,7 +1629,7 @@ h2 {
   /* Neon Text */
   font-weight: 950;
   cursor: pointer;
-  letter-spacing: 8px;
+  letter-spacing: 10px;
   position: relative;
   transition: 0.3s all;
   box-shadow: 0 0 20px var(--neon-blue), inset 0 0 10px var(--neon-blue);
@@ -1639,7 +1643,7 @@ h2 {
   /* For sweep effect */
 }
 
-/* RETRO SCANLINE SWEEP EFFECT */
+/* RETRO SCANLINE SWEEP EFFECT - Automatically runs on mobile/all */
 .main-play-btn::after {
   content: "";
   position: absolute;
@@ -1649,30 +1653,62 @@ h2 {
   height: 100%;
   background: linear-gradient(90deg,
       transparent,
-      rgba(255, 255, 255, 0.1),
-      rgba(255, 255, 255, 0.4),
-      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.3),
+      rgba(255, 255, 255, 0.05),
       transparent);
-  transition: 0.5s;
+  animation: playBtnSweep 3s infinite linear;
+  pointer-events: none;
 }
 
-.main-play-btn:hover::after {
-  left: 100%;
-  transition: 0.7s;
+.main-play-btn {
+  animation: playBtnPulse 2s infinite ease-in-out;
 }
 
-/* NEON RUNNING BORDER ON HOVER */
-.main-play-btn:hover {
-  background: #000;
-  color: #fff;
-  border-color: var(--neon-blue);
-  box-shadow: 0 0 30px var(--neon-blue);
-  transform: scale(1.05);
-  text-shadow: 0 0 10px var(--neon-blue);
+/* NEON RUNNING BORDER ON HOVER (Desktop Only) */
+@media (hover: hover) {
+  .main-play-btn:hover {
+    background: #000;
+    color: #fff;
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 30px var(--neon-blue);
+    transform: scale(1.05);
+    text-shadow: 0 0 10px var(--neon-blue);
+  }
 }
 
 .main-play-btn:active {
   transform: scale(0.95);
+  background: var(--neon-blue);
+  color: #fff;
+}
+
+@keyframes playBtnSweep {
+  0% {
+    left: -100%;
+  }
+
+  30% {
+    left: 100%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes playBtnPulse {
+  0% {
+    box-shadow: 0 0 20px var(--neon-blue), inset 0 0 10px var(--neon-blue);
+  }
+
+  50% {
+    box-shadow: 0 0 40px var(--neon-blue), inset 0 0 15px var(--neon-blue);
+  }
+
+  100% {
+    box-shadow: 0 0 20px var(--neon-blue), inset 0 0 10px var(--neon-blue);
+  }
 }
 
 /* CENTRAL NOTIFICATION POPUP */
