@@ -243,55 +243,53 @@ export class UIManager {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Animate Map Name to HUD (True FLIP - GPU Optimized)
+                // Animate Map Name to HUD (Ultra-Optimized for High FPS)
                 const themeNameEl = document.getElementById('selected-theme-name');
                 const hudLabel = document.getElementById('hud-map-name');
 
                 if (themeNameEl && hudLabel) {
-                    // 1. Setup Content
                     hudLabel.textContent = themeNameEl.textContent;
 
-                    // 2. Initial State: Visible at Final position but with no transition
+                    // 1. Initial State (No-transition snap)
                     hudLabel.style.transition = 'none';
                     hudLabel.style.opacity = '1';
-                    hudLabel.style.transform = 'translateX(-50%)'; // Reset to base
+                    hudLabel.style.transform = 'translateX(-50%)';
 
-                    // 3. Measure First (Title) and Last (HUD)
                     const firstRect = themeNameEl.getBoundingClientRect();
                     const lastRect = hudLabel.getBoundingClientRect();
                     const themeStyle = window.getComputedStyle(themeNameEl);
 
-                    // 4. Calculate Invert (Transformation required to make Last look like First)
                     const deltaX = firstRect.left + firstRect.width / 2 - (lastRect.left + lastRect.width / 2);
                     const deltaY = firstRect.top + firstRect.height / 2 - (lastRect.top + lastRect.height / 2);
                     const scale = firstRect.height / lastRect.height;
 
-                    // 5. Apply Invert Snap
+                    // Apply visual match to source (Snap)
                     hudLabel.style.transform = `translate(calc(-50% + ${deltaX}px), ${deltaY}px) scale(${scale})`;
                     hudLabel.style.color = themeStyle.color;
                     hudLabel.style.textShadow = themeStyle.textShadow;
                     hudLabel.style.letterSpacing = themeStyle.letterSpacing;
 
-                    // Hide original title smoothly
                     themeNameEl.style.transition = 'opacity 0.2s';
                     themeNameEl.style.opacity = '0';
 
-                    // 6. Force Reflow
-                    void hudLabel.offsetWidth;
+                    void hudLabel.offsetWidth; // Force Reflow
 
-                    // 7. Transition to HUD (Play) - Delayed
+                    // 2. Play Animation (Only Transform for GPU smoothness)
+                    // We change color/shadow instantly or very fast (0.3s) to avoid layout thrashing
                     setTimeout(() => {
-                        hudLabel.style.transition = 'transform 2s cubic-bezier(0.16, 1, 0.3, 1), color 2s, text-shadow 2s, letter-spacing 2s';
+                        hudLabel.style.transition = 'transform 2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s';
                         hudLabel.style.transform = 'translateX(-50%) scale(1)';
-                        hudLabel.style.color = 'rgba(255, 255, 255, 0.9)';
-                        hudLabel.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.8)';
-                        hudLabel.style.letterSpacing = '0.8px';
+
+                        // Switch style properties faster than motion to save CPU
+                        setTimeout(() => {
+                            hudLabel.style.color = 'rgba(255, 255, 255, 0.9)';
+                            hudLabel.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.8)';
+                            hudLabel.style.letterSpacing = '0.8px';
+                        }, 200);
                     }, 600);
 
-                    // 8. Final Cleanup (once animation is done)
                     setTimeout(() => {
                         hudLabel.classList.add('active');
-                        // Clean inline styles to let CSS take over
                         hudLabel.style.transition = '';
                         hudLabel.style.transform = '';
                         hudLabel.style.color = '';
