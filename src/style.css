@@ -52,57 +52,27 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   background: #06060a;
   overflow: hidden;
 }
 
 canvas {
-  width: 100%;
-  height: 100%;
-  max-width: 177.78vh;
-  /* 16:9 ratio */
-  max-height: 56.25vw;
-  /* 9:16 inverse */
-  object-fit: contain;
-  background: #000;
+  /* Size controlled by JS for Aspect Fit */
   box-shadow: 0 0 5rem rgba(0, 0, 0, 1);
-  border: 1px solid #111;
   z-index: 1;
   touch-action: none;
-  will-change: transform, contents;
+  /* Optimization for mobile touch */
 }
 
 .ui-layer {
-  position: absolute;
-  /* Match canvas scaling perfectly */
-  width: 100%;
-  height: 100%;
-  max-width: 177.78vh;
-  max-height: 56.25vw;
+  /* Size syncs with Canvas via JS */
   pointer-events: none;
   z-index: 10;
   display: flex;
   flex-direction: column;
 }
 
-@media (max-aspect-ratio: 16/9) {
-  .ui-layer {
-    width: 100vw;
-    height: 56.25vw;
-    /* maintain 16:9 */
-  }
-}
-
-@media (min-aspect-ratio: 16/9) {
-  .ui-layer {
-    height: 100vh;
-    width: 177.78vh;
-    /* maintain 16:9 */
-  }
-}
+/* Aspect ratio media queries removed - JS handles letterboxing */
 
 /* HUD POSITIONING */
 #top-hud {
@@ -186,13 +156,25 @@ canvas {
   width: 10rem;
 }
 
+#energy-label-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.2rem;
+}
+
 #energy-label {
   font-size: 0.5rem;
   color: #fff;
   font-weight: 700;
   text-transform: uppercase;
-  margin-bottom: 0.2rem;
-  display: block;
+}
+
+.nitro-badge {
+  font-size: 0.6rem;
+  font-weight: 900;
+  color: var(--neon-gold);
+  text-shadow: 0 0 5px var(--neon-gold);
 }
 
 #energy-container {
@@ -1093,6 +1075,46 @@ h2 {
   color: #000;
 }
 
+/* INVENTORY BLUE THEME OVERRIDES */
+#inventory-panel {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 40px rgba(0, 255, 247, 0.15), inset 0 0 20px rgba(0, 255, 247, 0.05);
+}
+
+#inventory-panel .shop-tab.active {
+  background: var(--neon-blue) !important;
+  color: #000 !important;
+  border-color: var(--neon-blue) !important;
+  box-shadow: 0 0 15px var(--neon-blue) !important;
+}
+
+#inventory-panel .shop-tab:hover {
+  border-color: var(--neon-blue) !important;
+}
+
+#inventory-panel h2 {
+  color: var(--neon-blue) !important;
+  text-shadow: 0 0 15px var(--neon-blue) !important;
+}
+
+#inventory-panel .shop-card-btn.equipped {
+  background: var(--neon-blue) !important;
+  box-shadow: 0 0 10px var(--neon-blue);
+}
+
+#inventory-panel .shop-card-btn.equip:hover {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+
+#inventory-panel .pagination-container .page-btn.active {
+  background: var(--neon-blue) !important;
+  border-color: var(--neon-blue) !important;
+  box-shadow: 0 0 10px var(--neon-blue) !important;
+}
+
+
 /* TOOLTIP */
 #custom-tooltip {
   position: absolute;
@@ -1266,9 +1288,15 @@ h2 {
   display: block;
 }
 
-/* CONFIRM POPUP */
-.confirm-dialog {
-  width: 28rem;
+/* CONFIRM POPUP (Compact on all devices) */
+.confirm-dialog,
+.security-alert {
+  width: auto !important;
+  min-width: 20rem;
+  max-width: 90vw !important;
+  height: auto !important;
+  max-height: 80vh !important;
+  padding: 1.5rem 2rem !important;
   text-align: center;
 }
 
@@ -1782,27 +1810,21 @@ h2 {
 
 /* HUD MAP NAME LABEL */
 .hud-map-label {
-  position: fixed;
-  /* Changed to fixed for easier JS coordinate mapping */
-  bottom: 2px;
+  position: absolute;
+  bottom: 0.2rem;
   left: 50%;
   transform: translateX(-50%);
-  font-weight: 900;
-  text-transform: uppercase;
-  background: transparent;
-  border: none;
-  padding: 0;
-  pointer-events: none;
-  z-index: 100;
-  white-space: nowrap;
-  text-align: center;
-  font-size: 0.7rem;
-  letter-spacing: 0.8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 700;
   color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  z-index: 100;
+  pointer-events: none;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
   opacity: 0;
   will-change: transform, opacity;
-  /* Transition is handled via inline style for precision */
 }
 
 .hud-map-label.active {

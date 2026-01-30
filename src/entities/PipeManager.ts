@@ -63,19 +63,33 @@ export class PipeManager {
 
         // Ground & Air Enemies (Walking, Falling, Flying)
         this.groundEnemies.forEach((e) => {
-            const movementSpeed = e.type === 'bullet' ? speed * 2 : (speed + e.crawlingSpeed);
+            let movementSpeed = e.type === 'bullet' ? speed * 2 : (speed + e.crawlingSpeed);
+            if ((e as any).dying) movementSpeed = speed;
+
             e.x -= movementSpeed * dtRatio;
             e.animFrame += 0.1 * dtRatio;
 
-            // Falling Physics for Goombas/Snails
-            if (e.type !== 'bullet') {
+            // Falling Physics for Goombas/Snails OR Dying Bullets
+            if (e.type !== 'bullet' || (e as any).dying) {
                 const groundY = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - e.h;
-                if (e.y < groundY) {
-                    e.vy = (e.vy || 0) + 0.25 * dtRatio; // Gravity
+
+                // If dying (squashed/falling), we might ignore ground collision?
+                if ((e as any).dying && e.type === 'bullet') {
+                    e.vy = (e.vy || 0) + 0.5 * dtRatio;
                     e.y += e.vy * dtRatio;
-                    if (e.y > groundY) {
-                        e.y = groundY;
-                        e.vy = 0;
+                    if (e.y > CANVAS.HEIGHT + 50) e.dead = true;
+                } else if ((e as any).dying) {
+                    // Squashed Goomba/Snail - Stay on ground
+                    // Already handled by scale/position set in Game.ts
+                } else {
+                    // Normal Physics
+                    if (e.y < groundY) {
+                        e.vy = (e.vy || 0) + 0.25 * dtRatio; // Gravity
+                        e.y += e.vy * dtRatio;
+                        if (e.y > groundY) {
+                            e.y = groundY;
+                            e.vy = 0;
+                        }
                     }
                 }
             }
@@ -452,7 +466,7 @@ export class PipeManager {
         // ctx.shadowBlur = 10; 
         // ctx.shadowColor = COLORS.NEON_BLUE;
 
-        // 1. Main Body (Dark Metal Hexagon shape)
+        // 1. Main Body (Dark Metal Rounded shape)
         const bodyGrad = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
         bodyGrad.addColorStop(0, '#1a1a2e');
         bodyGrad.addColorStop(0.5, '#16213e');
@@ -460,12 +474,15 @@ export class PipeManager {
         ctx.fillStyle = bodyGrad;
 
         ctx.beginPath();
-        ctx.moveTo(-w * 0.5, 0);          // Front Point
-        ctx.lineTo(-w * 0.2, -h * 0.5);   // Top Front
-        ctx.lineTo(w * 0.5, -h * 0.5);    // Top Back
-        ctx.lineTo(w * 0.4, 0);           // Rear Mid (Indented)
-        ctx.lineTo(w * 0.5, h * 0.5);     // Bottom Back
-        ctx.lineTo(-w * 0.2, h * 0.5);    // Bottom Front
+        // Front (Rounded Head)
+        ctx.moveTo(-w * 0.2, -h * 0.5);
+        ctx.quadraticCurveTo(-w * 0.6, 0, -w * 0.2, h * 0.5);
+        // Bottom
+        ctx.lineTo(w * 0.4, h * 0.5);
+        // Back (Slightly indented tail with small rounding)
+        ctx.lineTo(w * 0.35, 0);
+        ctx.lineTo(w * 0.4, -h * 0.5);
+        // Top
         ctx.closePath();
         ctx.fill();
 

@@ -119,8 +119,15 @@ export class Bird implements BirdState {
 
     private checkNitroFallback(): void {
         if (this.nitroType !== 'nitro_default' && this.nitroRemaining <= 0) {
+            // Signal the game to check for replenishment from inventory
             window.dispatchEvent(new CustomEvent('nitroDepleted'));
-            this.setNitroState('nitro_default', 10, 0, 0.333);
+
+            // Check if replenishment happened (nitroRemaining should be > 0 now if it did)
+            // We use a microtask or small delay to be safe, but since dispatchEvent is sync, 
+            // the Game.ts listener should have already updated this.
+            if (this.nitroRemaining <= 0) {
+                this.setNitroState('nitro_default', 10, 0, 0.333);
+            }
         }
     }
 

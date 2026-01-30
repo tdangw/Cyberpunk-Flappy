@@ -103,6 +103,7 @@ export class IconDrawer {
             case 'map_3': this.drawMapIcon(ctx, size, 'volcano'); break;  // Volcano Core
             case 'map_4': this.drawMapIcon(ctx, size, 'space'); break;    // Star Forge
             case 'map_5': this.drawMapIcon(ctx, size, 'sunny'); break;    // Sunny Highlands
+            case 'backpack' as any: this.drawBackpack(ctx, size); break;
         }
 
         return canvas.toDataURL();
@@ -384,5 +385,36 @@ export class IconDrawer {
             ctx.beginPath(); ctx.arc(-r * 1.2, -r * 0.8, 2, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(r * 1.1, r * 0.9, 1.5, 0, Math.PI * 2); ctx.fill();
         }
+    }
+
+    private static drawBackpack(ctx: CanvasRenderingContext2D, size: number) {
+        const color = '#00fff7'; // Neon Blue
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+
+        const s = size * 0.4;
+
+        // Backpack main body
+        ctx.strokeRect(-s * 0.7, -s * 0.5, s * 1.4, s * 1.2);
+
+        // Straps
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.4, -s * 0.5);
+        ctx.quadraticCurveTo(-s * 0.4, -s * 0.9, 0, -s * 0.9);
+        ctx.quadraticCurveTo(s * 0.4, -s * 0.9, s * 0.4, -s * 0.5);
+        ctx.stroke();
+
+        // Front pocket
+        ctx.strokeRect(-s * 0.5, -s * 0.1, s, s * 0.6);
+
+        // Neon detail (vertical line)
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 0.3);
+        ctx.lineTo(0, s * 0.1);
+        ctx.stroke();
     }
 }

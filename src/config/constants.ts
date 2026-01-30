@@ -114,14 +114,14 @@ export const MAPS: MapDefinition[] = [
         name: 'Sunny Highlands',
         bgm: 'bgm_sunny.mp3',
         palette: {
-            // Classic Flappy Green
-            pipeColors: ['#73bf2e', '#558c22', '#98e346'],
-            // Classic Cyan Sky (Flat or very subtle variation)
-            skyColors: ['#4ec0ca', '#5ee2ec', '#3ea6b0'],
-            // Sand/Ground Color
-            groundColors: ['#ded895', '#d4ce8c'],
-            styles: ['classic'], // Suggesting a classic style if supported, or falling back to defaults
-            decorations: ['clouds', 'highlands'], // Classic elements only
+            // Highland Greens
+            pipeColors: ['#2d5a27', '#4a8c3d', '#73bf2e'],
+            // Deeper Sky Blue (Improved contrast for white/blue HUD)
+            skyColors: ['#0ea5e9', '#0284c7', '#0369a1'],
+            // Grass/Highland Green
+            groundColors: ['#15803d', '#166534'],
+            styles: ['classic'],
+            decorations: ['clouds', 'highlands'],
             patterns: ['plain']
         }
     }

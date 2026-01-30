@@ -20,6 +20,10 @@ export class UIManager {
     private tooltipEl: HTMLElement | null = null;
     private currentShopTab: 'skins' | 'boosts' = 'skins';
     private currentShopPage: number = 1;
+
+    private currentInvTab: 'skins' | 'boosts' = 'skins';
+    private currentInvPage: number = 1;
+
     private readonly itemsPerPage: number = 20; // 5 rows x 4 items
     private lastStartTouchTime: number = 0;
     private startScreenCooldown: number = 0;
@@ -83,17 +87,35 @@ export class UIManager {
 
         bindAction('settings-btn', () => { this.playClick(); this.showSettings(); });
         bindAction('shop-btn', () => { this.playClick(); this.showShop(); });
+        bindAction('backpack-btn', () => { this.playClick(); this.showBackpack(); });
 
-        document.querySelectorAll('.shop-tab').forEach((tab) => {
+        // Shop Tabs logic
+        document.getElementById('shop-panel')?.querySelectorAll('.shop-tab').forEach((tab) => {
             const handler = (e: Event) => {
                 e.preventDefault();
                 e.stopPropagation();
                 this.playClick();
-                document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+                document.getElementById('shop-panel')?.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
                 (e.target as HTMLElement).classList.add('active');
                 this.currentShopTab = (e.target as HTMLElement).getAttribute('data-tab') as any;
-                this.currentShopPage = 1; // Reset to page 1 on tab switch
+                this.currentShopPage = 1;
                 this.renderShopGrid();
+            };
+            tab.addEventListener('click', handler);
+            tab.addEventListener('touchstart', handler, { passive: false });
+        });
+
+        // Inventory Tabs logic
+        document.getElementById('inventory-panel')?.querySelectorAll('.shop-tab').forEach((tab) => {
+            const handler = (e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.playClick();
+                document.getElementById('inventory-panel')?.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+                (e.target as HTMLElement).classList.add('active');
+                this.currentInvTab = (e.target as HTMLElement).getAttribute('data-tab') as any;
+                this.currentInvPage = 1;
+                this.renderInventoryGrid();
             };
             tab.addEventListener('click', handler);
             tab.addEventListener('touchstart', handler, { passive: false });
@@ -243,61 +265,7 @@ export class UIManager {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Animate Map Name to HUD (Ultra-Optimized for High FPS)
-                const themeNameEl = document.getElementById('selected-theme-name');
-                const hudLabel = document.getElementById('hud-map-name');
-
-                if (themeNameEl && hudLabel) {
-                    hudLabel.textContent = themeNameEl.textContent;
-
-                    // 1. Initial State (No-transition snap)
-                    hudLabel.style.transition = 'none';
-                    hudLabel.style.opacity = '1';
-                    hudLabel.style.transform = 'translateX(-50%)';
-
-                    const firstRect = themeNameEl.getBoundingClientRect();
-                    const lastRect = hudLabel.getBoundingClientRect();
-                    const themeStyle = window.getComputedStyle(themeNameEl);
-
-                    const deltaX = firstRect.left + firstRect.width / 2 - (lastRect.left + lastRect.width / 2);
-                    const deltaY = firstRect.top + firstRect.height / 2 - (lastRect.top + lastRect.height / 2);
-                    const scale = firstRect.height / lastRect.height;
-
-                    // Apply visual match to source (Snap)
-                    hudLabel.style.transform = `translate(calc(-50% + ${deltaX}px), ${deltaY}px) scale(${scale})`;
-                    hudLabel.style.color = themeStyle.color;
-                    hudLabel.style.textShadow = themeStyle.textShadow;
-                    hudLabel.style.letterSpacing = themeStyle.letterSpacing;
-
-                    themeNameEl.style.transition = 'opacity 0.2s';
-                    themeNameEl.style.opacity = '0';
-
-                    void hudLabel.offsetWidth; // Force Reflow
-
-                    // 2. Play Animation (Only Transform for GPU smoothness)
-                    // We change color/shadow instantly or very fast (0.3s) to avoid layout thrashing
-                    setTimeout(() => {
-                        hudLabel.style.transition = 'transform 2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s';
-                        hudLabel.style.transform = 'translateX(-50%) scale(1)';
-
-                        // Switch style properties faster than motion to save CPU
-                        setTimeout(() => {
-                            hudLabel.style.color = 'rgba(255, 255, 255, 0.9)';
-                            hudLabel.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.8)';
-                            hudLabel.style.letterSpacing = '0.8px';
-                        }, 200);
-                    }, 600);
-
-                    setTimeout(() => {
-                        hudLabel.classList.add('active');
-                        hudLabel.style.transition = '';
-                        hudLabel.style.transform = '';
-                        hudLabel.style.color = '';
-                        hudLabel.style.textShadow = '';
-                        hudLabel.style.letterSpacing = '';
-                    }, 2700);
-                }
-
+                this.animateMapName();
                 this.hideStartScreen();
                 this.game.resume(true);
             }
@@ -312,6 +280,7 @@ export class UIManager {
         });
 
         window.addEventListener('gameStarted', () => {
+            this.animateMapName();
             this.hideStartScreen();
             this.hideSplashScreen();
         });
@@ -328,6 +297,10 @@ export class UIManager {
         }) as EventListener);
 
         window.addEventListener('updateUI', () => this.updateAllUI());
+
+        window.addEventListener('showStartScreen', () => {
+            this.resetMapNameAnimation();
+        });
 
         window.addEventListener('openSettings', () => {
             const panel = document.getElementById('settings-panel');
@@ -595,6 +568,20 @@ export class UIManager {
         document.getElementById('shop-panel')?.classList.add('modal-active');
     }
 
+    private showBackpack(): void {
+        this.game.pause();
+        this.renderInventoryGrid();
+        this.updateInventoryStats();
+        document.getElementById('inventory-panel')?.classList.add('modal-active');
+    }
+
+    private updateInventoryStats(): void {
+        const ownedCount = this.saveManager.getOwnedSkins().length;
+        const totalSkins = this.skinManager.getAllSkins().length;
+        const el = document.getElementById('inv-skins-count');
+        if (el) el.textContent = `${ownedCount}/${totalSkins} SKINS ARCHIVED`;
+    }
+
     private updateSkinsOwnedCount(): void {
         const owned = this.saveManager.getOwnedSkins().length;
         const total = this.skinManager.getAllSkins().length;
@@ -623,14 +610,36 @@ export class UIManager {
         if (this.tooltipEl) this.tooltipEl.style.display = 'none';
     }
 
+    private resetMapNameAnimation(): void {
+        const themeNameEl = document.getElementById('selected-theme-name');
+        const hudLabel = document.getElementById('hud-map-name');
+
+        if (themeNameEl) {
+            themeNameEl.style.opacity = '1';
+            themeNameEl.style.transition = 'none';
+        }
+
+        if (hudLabel) {
+            hudLabel.classList.remove('active');
+            hudLabel.style.opacity = '0';
+            hudLabel.style.transform = 'translateX(-50%)';
+            hudLabel.style.transition = 'none';
+        }
+    }
+
     private updateEnergyBar(): void {
         const fill = document.getElementById('energy-fill');
         const label = document.getElementById('energy-label');
+        const qtyEl = document.getElementById('nitro-qty');
         const energyPct = this.game.getEnergy();
-        if (fill) fill.style.width = `${energyPct}%`;
 
-        if (label) {
-            label.textContent = `NITRO (${energyPct.toFixed(1)}%)`;
+        if (fill) fill.style.width = `${energyPct}%`;
+        if (label) label.textContent = `NITRO (${energyPct.toFixed(1)}%)`;
+
+        if (qtyEl) {
+            const qty = this.game.getNitroQuantity();
+            qtyEl.textContent = qty > 0 ? `x${qty}` : '';
+            qtyEl.style.display = qty > 0 ? 'block' : 'none';
         }
     }
 
@@ -639,17 +648,41 @@ export class UIManager {
         const paginationEl = document.getElementById('shop-pagination');
         if (!gridEl || !paginationEl) return;
 
-        // Clear message when re-rendering
         const msgEl = document.getElementById('shop-msg');
         if (msgEl) msgEl.textContent = '';
 
         if (this.currentShopTab === 'skins') {
-            const skins = this.skinManager.getAllSkins();
-            this.renderSkinGrid(skins);
-            this.renderPagination(skins.length, paginationEl);
+            const allSkins = this.skinManager.getAllSkins();
+            const ownedIds = this.saveManager.getOwnedSkins();
+            // Shop only shows NOT OWNED
+            const buyableSkins = allSkins.filter(s => !ownedIds.includes(s.id));
+            this.renderSkinGrid(buyableSkins);
+            this.renderPagination(buyableSkins.length, paginationEl, 'shop');
         } else {
-            this.renderBoostGrid(BOOSTS);
-            this.renderPagination(BOOSTS.length, paginationEl);
+            // Consumable boosters (except default) show in shop
+            const buyableBoosts = BOOSTS.filter(b => b.id !== 'nitro_default');
+            this.renderBoostGrid(buyableBoosts);
+            this.renderPagination(buyableBoosts.length, paginationEl, 'shop');
+        }
+    }
+
+    private renderInventoryGrid(): void {
+        const gridEl = document.getElementById('inventory-grid');
+        const paginationEl = document.getElementById('inventory-pagination');
+        if (!gridEl || !paginationEl) return;
+
+        if (this.currentInvTab === 'skins') {
+            const allSkins = this.skinManager.getAllSkins();
+            const ownedIds = this.saveManager.getOwnedSkins();
+            const ownedSkins = allSkins.filter(s => ownedIds.includes(s.id));
+            this.renderInvSkinGrid(ownedSkins);
+            this.renderPagination(ownedSkins.length, paginationEl, 'inv');
+        } else {
+            const ownedBoosts = BOOSTS.filter(b => {
+                return b.id === 'nitro_default' || this.saveManager.getBoostCount(b.id) > 0;
+            });
+            this.renderInvBoostGrid(ownedBoosts);
+            this.renderPagination(ownedBoosts.length, paginationEl, 'inv');
         }
     }
 
@@ -665,29 +698,18 @@ export class UIManager {
         const pageItems = allBoosts.slice(start, start + this.itemsPerPage);
 
         pageItems.forEach(boost => {
-            const count = this.saveManager.getBoostCount(boost.id);
             const isEquipped = equippedId === boost.id;
-            const isDefault = boost.id === 'nitro_default';
 
             const card = document.createElement('div');
             card.className = `skin-card ${isEquipped ? 'equipped' : ''}`;
 
-            const quantityBadge = count > 0 ? `<div class="item-quantity">${count}</div>` : '';
-
             card.innerHTML = `
-                ${quantityBadge}
                 <div class="card-preview-box">
                     <img src="${IconDrawer.getNitroIcon(boost.id)}" alt="icon" style="width: 45px; height: 45px;">
                 </div>
                 <div class="card-name">${boost.name}</div>
                 <div style="font-size: 0.55rem; color: #888; text-align: center; margin-bottom: 0.5rem;">${boost.capacity}m Capacity</div>
-                
-                <div class="boost-card-actions">
-                    <button class="shop-card-btn activate ${isEquipped ? 'equipped' : (count > 0 || isDefault ? 'can-activate' : 'locked')}" data-action="activate">
-                        ${isEquipped ? 'ACTIVE' : (isDefault ? 'EQUIP' : 'START')}
-                    </button>
-                    ${!isDefault ? `<button class="shop-card-btn buy" data-action="buy">$${boost.price}</button>` : ''}
-                </div>
+                <button class="shop-card-btn buy" style="width: 100%">BUY $${boost.price}</button>
             `;
 
             card.addEventListener('mouseenter', (e) => this.showTooltip(boost.description, e.clientX, e.clientY));
@@ -699,14 +721,60 @@ export class UIManager {
                 this.handleBoostBuy(boost);
             });
 
+            gridEl.appendChild(card);
+        });
+    }
+
+    private renderInvBoostGrid(ownedBoosts: BoostDefinition[]): void {
+        const gridEl = document.getElementById('inventory-grid');
+        if (!gridEl) return;
+        gridEl.innerHTML = '';
+
+        const equippedId = this.saveManager.getEquippedBoostId();
+        const start = (this.currentInvPage - 1) * this.itemsPerPage;
+        const pageItems = ownedBoosts.slice(start, start + this.itemsPerPage);
+
+        pageItems.forEach(boost => {
+            const count = this.saveManager.getBoostCount(boost.id);
+            const isEquipped = equippedId === boost.id;
+
+
+            const card = document.createElement('div');
+            card.className = `skin-card ${isEquipped ? 'equipped' : ''}`;
+            const quantityBadge = count > 0 ? `<div class="item-quantity">${count}</div>` : '';
+
+            card.innerHTML = `
+                ${quantityBadge}
+                <div class="card-preview-box">
+                    <img src="${IconDrawer.getNitroIcon(boost.id)}" alt="icon" style="width: 45px; height: 45px;">
+                </div>
+                <div class="card-name">${boost.name}</div>
+                <button class="shop-card-btn activate ${isEquipped ? 'equipped' : 'can-activate'}" style="width: 100%">
+                    ${isEquipped ? 'EQUIPPED' : 'EQUIP'}
+                </button>
+            `;
+
+            card.addEventListener('mouseenter', (e) => this.showTooltip(boost.description, e.clientX, e.clientY));
+            card.addEventListener('mouseleave', () => this.hideTooltip());
+
             card.querySelector('.activate')?.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.playClick();
-                this.handleBoostActivate(boost);
+                this.handleInvBoostActivate(boost);
             });
 
             gridEl.appendChild(card);
         });
+    }
+
+    private handleInvBoostActivate(boost: BoostDefinition): void {
+        const equippedId = this.saveManager.getEquippedBoostId();
+        if (equippedId === boost.id) return;
+
+        this.saveManager.setEquippedBoost(boost.id, boost.capacity);
+        this.renderInventoryGrid();
+        this.game.restart();
+        this.showCentralNotification(`${boost.name.toUpperCase()} EQUIPPED`, 'success');
     }
 
     private handleBoostBuy(boost: BoostDefinition): void {
@@ -725,22 +793,7 @@ export class UIManager {
         }, true);
     }
 
-    private handleBoostActivate(boost: BoostDefinition): void {
-        const equippedId = this.saveManager.getEquippedBoostId();
-        const isDefault = boost.id === 'nitro_default';
-        const count = this.saveManager.getBoostCount(boost.id);
 
-        if (equippedId === boost.id) return;
-
-        if (isDefault || count > 0) {
-            this.saveManager.setEquippedBoost(boost.id, boost.capacity);
-            this.renderShopGrid();
-            this.game.restart(); // Applies to bird
-            this.showCentralNotification('BOOST ACTIVATED', 'success');
-        } else {
-            this.showCentralNotification('NO STOCK - BUY FIRST', 'error');
-        }
-    }
 
     private showCentralNotification(msg: string, type: 'success' | 'error' = 'success'): void {
         const popup = document.getElementById('notification-popup');
@@ -774,6 +827,7 @@ export class UIManager {
             if (el) el.innerHTML = `<img src="${IconDrawer.getSimpleIcon(type)}" style="width: 70%; height: 70%; object-fit: contain; pointer-events: none;">`;
         };
         setIcon('fullscreen-btn', 'fullscreen');
+        setIcon('backpack-btn', 'backpack');
         setIcon('shop-btn', 'shop');
         setIcon('settings-btn', 'settings');
 
@@ -790,45 +844,27 @@ export class UIManager {
         this.showCentralNotification(msg, 'error');
     }
 
-    private renderSkinGrid(allSkins: any[]): void {
+    private renderSkinGrid(buyableSkins: any[]): void {
         const gridEl = document.getElementById('shop-grid');
         if (!gridEl) return;
         gridEl.innerHTML = '';
 
-        const owned = this.saveManager.getOwnedSkins();
-        const equipped = this.saveManager.getEquippedSkin();
-
-        // Paginate items
         const start = (this.currentShopPage - 1) * this.itemsPerPage;
-        const pageItems = allSkins.slice(start, start + this.itemsPerPage);
+        const pageItems = buyableSkins.slice(start, start + this.itemsPerPage);
 
         pageItems.forEach(skin => {
             const card = document.createElement('div');
-            const isOwned = owned.includes(skin.id);
-            const isEquipped = equipped === skin.id;
-
-            card.className = `skin-card ${isEquipped ? 'equipped' : ''}`;
+            card.className = `skin-card`;
 
             card.addEventListener('mouseenter', (e) => this.showTooltip(skin.description, e.clientX, e.clientY));
-            card.addEventListener('mousemove', (e) => this.showTooltip(skin.description, e.clientX, e.clientY));
             card.addEventListener('mouseleave', () => this.hideTooltip());
-
-            let btnText = `$${skin.price}`;
-            let btnClass = 'buy';
-            if (isEquipped) {
-                btnText = 'Equipped';
-                btnClass = 'equipped';
-            } else if (isOwned) {
-                btnText = 'Equip';
-                btnClass = 'equip';
-            }
 
             card.innerHTML = `
                 <div class="card-preview-box">
                     <div id="card-preview-${skin.id}"></div>
                 </div>
                 <div class="card-name">${skin.name}</div>
-                <button class="shop-card-btn ${btnClass}">${btnText}</button>
+                <button class="shop-card-btn buy" style="width: 100%">$${skin.price}</button>
             `;
 
             card.querySelector('.shop-card-btn')?.addEventListener('click', (e) => {
@@ -838,16 +874,55 @@ export class UIManager {
             });
 
             gridEl.appendChild(card);
-            const previewIcon = card.querySelector(`#card-preview-${skin.id}`);
-            if (previewIcon) previewIcon.appendChild(this.skinManager.drawPreview(skin.id));
+            const previewBox = card.querySelector(`#card-preview-${skin.id}`);
+            if (previewBox) previewBox.appendChild(this.skinManager.drawPreview(skin.id));
         });
     }
 
-    private renderPagination(totalItems: number, container: HTMLElement): void {
+    private renderInvSkinGrid(ownedSkins: any[]): void {
+        const gridEl = document.getElementById('inventory-grid');
+        if (!gridEl) return;
+        gridEl.innerHTML = '';
+
+        const equipped = this.saveManager.getEquippedSkin();
+        const start = (this.currentInvPage - 1) * this.itemsPerPage;
+        const pageItems = ownedSkins.slice(start, start + this.itemsPerPage);
+
+        pageItems.forEach(skin => {
+            const card = document.createElement('div');
+            const isEquipped = equipped === skin.id;
+            card.className = `skin-card ${isEquipped ? 'equipped' : ''}`;
+
+            card.innerHTML = `
+                <div class="card-preview-box">
+                    <div id="inv-preview-${skin.id}"></div>
+                </div>
+                <div class="card-name">${skin.name}</div>
+                <button class="shop-card-btn ${isEquipped ? 'equipped' : 'equip'}" style="width: 100%">
+                    ${isEquipped ? 'EQUIPPED' : 'EQUIP'}
+                </button>
+            `;
+
+            card.querySelector('.shop-card-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.playClick();
+                this.saveManager.equipSkin(skin.id);
+                this.renderInventoryGrid();
+                this.showCentralNotification(`${skin.name.toUpperCase()} EQUIPPED`, 'success');
+            });
+
+            gridEl.appendChild(card);
+            const previewBox = card.querySelector(`#inv-preview-${skin.id}`);
+            if (previewBox) previewBox.appendChild(this.skinManager.drawPreview(skin.id));
+        });
+    }
+
+    private renderPagination(totalItems: number, container: HTMLElement, type: 'shop' | 'inv' = 'shop'): void {
         const totalPages = Math.ceil(totalItems / this.itemsPerPage);
         container.innerHTML = '';
-
         if (totalPages <= 1) return;
+
+        const currentPage = type === 'shop' ? this.currentShopPage : this.currentInvPage;
 
         const createBtn = (label: string | number, page: number, isActive = false, isDisabled = false) => {
             const btn = document.createElement('button');
@@ -857,43 +932,23 @@ export class UIManager {
             if (!isDisabled && !isActive) {
                 btn.addEventListener('click', () => {
                     this.playClick();
-                    this.currentShopPage = page;
-                    this.renderShopGrid();
+                    if (type === 'shop') {
+                        this.currentShopPage = page;
+                        this.renderShopGrid();
+                    } else {
+                        this.currentInvPage = page;
+                        this.renderInventoryGrid();
+                    }
                 });
             }
             return btn;
         };
 
-        // Prev Button
-        container.appendChild(createBtn('<', this.currentShopPage - 1, false, this.currentShopPage === 1));
-
-        // Logic for "Smart" Page Numbering (1 ... 4 5 6 ... 10)
-        const delta = 2; // Number of pages around current
-        const range = [];
+        container.appendChild(createBtn('<', currentPage - 1, false, currentPage === 1));
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= this.currentShopPage - delta && i <= this.currentShopPage + delta)) {
-                range.push(i);
-            }
+            container.appendChild(createBtn(i, i, i === currentPage));
         }
-
-        let last = 0;
-        for (const i of range) {
-            if (last) {
-                if (i - last === 2) {
-                    container.appendChild(createBtn(last + 1, last + 1));
-                } else if (i - last !== 1) {
-                    const dots = document.createElement('span');
-                    dots.className = 'page-dots';
-                    dots.textContent = '...';
-                    container.appendChild(dots);
-                }
-            }
-            container.appendChild(createBtn(i, i, i === this.currentShopPage));
-            last = i;
-        }
-
-        // Next Button
-        container.appendChild(createBtn('>', this.currentShopPage + 1, false, this.currentShopPage === totalPages));
+        container.appendChild(createBtn('>', currentPage + 1, false, currentPage === totalPages));
     }
 
     private handleSkinAction(id: string): void {
@@ -901,44 +956,59 @@ export class UIManager {
         if (!skin) return;
 
         const owned = this.saveManager.getOwnedSkins();
-        const equipped = this.saveManager.getEquippedSkin();
-        if (equipped === id) return;
+        if (owned.includes(id)) return;
 
-        if (owned.includes(id)) {
-            this.saveManager.equipSkin(id);
-            this.renderShopGrid();
-            this.updateAllUI();
-        } else {
-            this.showConfirm(`PURCHASE: ${skin.name}`, `Spend ${skin.price} credits to unlock this skin?`, () => {
-                if (this.saveManager.spendCoins(skin.price)) {
-                    this.saveManager.unlockSkin(id);
-                    this.saveManager.equipSkin(id);
-                    this.renderShopGrid();
-                    this.updateAllUI();
-                    this.updateSkinsOwnedCount();
-                    this.showCentralNotification(`${skin.name} UNLOCKED!`, 'success');
-                } else {
-                    this.showCentralNotification('INSUFFICIENT CREDITS', 'error');
-                }
-            });
-        }
+        this.showConfirm(`PURCHASE: ${skin.name}`, `Spend ${skin.price} credits to unlock this skin?`, () => {
+            if (this.saveManager.spendCoins(skin.price)) {
+                this.saveManager.unlockSkin(id);
+                this.renderShopGrid();
+                this.updateAllUI();
+                this.showCentralNotification(`${skin.name.toUpperCase()} UNLOCKED!`, 'success');
+            } else {
+                this.showCentralNotification('INSUFFICIENT CREDITS', 'error');
+            }
+        });
     }
 
     private showConfirm(title: string, msg: string, callback: (qty?: number) => void, showQty: boolean = false): void {
         const modal = document.getElementById('confirm-modal');
         const titleEl = document.getElementById('confirm-title');
         const msgEl = document.getElementById('confirm-msg');
+        const okBtn = document.getElementById('confirm-ok');
+        const cancelBtn = document.getElementById('confirm-cancel');
         const qtyContainer = document.getElementById('confirm-qty-container');
         const qtyInput = document.getElementById('confirm-qty-input') as HTMLInputElement;
 
-        if (titleEl) titleEl.textContent = title;
-        if (msgEl) msgEl.textContent = msg;
+        if (!modal || !titleEl || !msgEl || !okBtn || !cancelBtn) return;
+
+        titleEl.textContent = title;
+        msgEl.textContent = msg;
 
         if (qtyContainer) qtyContainer.style.display = showQty ? 'block' : 'none';
         if (qtyInput) qtyInput.value = '1';
 
-        this.confirmCallback = callback as any;
-        modal?.classList.add('modal-active');
+        modal.classList.add('modal-active');
+
+        const cleanup = () => {
+            modal.classList.remove('modal-active');
+            okBtn.replaceWith(okBtn.cloneNode(true));
+            cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+        };
+
+        const onOk = () => {
+            this.playClick();
+            const qty = qtyInput ? parseInt(qtyInput.value) : 1;
+            callback(qty);
+            cleanup();
+        };
+
+        const onCancel = () => {
+            this.playClick();
+            cleanup();
+        };
+
+        document.getElementById('confirm-ok')?.addEventListener('click', onOk);
+        document.getElementById('confirm-cancel')?.addEventListener('click', onCancel);
     }
 
     private updateShopBalance(): void {
@@ -962,7 +1032,7 @@ export class UIManager {
         set('spacingRange', 'val-spacing', config.pipeSpacing);
     }
 
-    private showGameOver(score: number, coins: number, isClassic: boolean = false, bestDist: number = 0, canAdRevive: boolean = false, canQuickRevive: boolean = false): void {
+    showGameOver(score: number, coins: number, isClassic: boolean = false, bestDist: number = 0, canAdRevive: boolean = false, canQuickRevive: boolean = false): void {
         this.audioManager.play('gameover');
         const msg = document.getElementById('message');
         const s = document.getElementById('finalScore');
@@ -980,20 +1050,16 @@ export class UIManager {
                 distRow.style.display = 'none';
             } else {
                 distRow.style.display = 'flex';
-                if (d) d.textContent = `${bestDist} m`;
+                if (d) d.textContent = `${Math.floor(bestDist)} m`;
             }
         }
 
-        // Handle Revive UI
         const reviveBtn = document.getElementById('reviveBtn');
         const reviveAdBtn = document.getElementById('reviveAdBtn');
         if (reviveBtn && reviveAdBtn) {
             reviveBtn.style.display = canQuickRevive ? 'flex' : 'none';
             reviveAdBtn.style.display = canAdRevive ? 'flex' : 'none';
-
-            if (canQuickRevive || canAdRevive) {
-                this.startReviveTimer();
-            }
+            if (canQuickRevive || canAdRevive) this.startReviveTimer();
         }
 
         if (msg) msg.style.display = 'flex';
@@ -1003,26 +1069,14 @@ export class UIManager {
     private startReviveTimer(): void {
         this.stopReviveTimer();
         const reviveBtn = document.getElementById('reviveBtn');
-        const reviveAdBtn = document.getElementById('reviveAdBtn');
-        if (!reviveBtn || !reviveAdBtn) return;
-
-        // Reset state
+        if (!reviveBtn) return;
         reviveBtn.classList.remove('revive-expired', 'timer-active');
-        reviveAdBtn.classList.remove('revive-expired');
-
-        // Force reflow
         void (reviveBtn as HTMLElement).offsetHeight;
-
-        // Use a small delay to ensure the browser registers the class removal before adding it back
-        setTimeout(() => {
-            reviveBtn.classList.add('timer-active');
-        }, 20);
-
+        setTimeout(() => reviveBtn.classList.add('timer-active'), 20);
         this.reviveTimer = setTimeout(() => {
-            if (reviveBtn && reviveBtn.classList.contains('timer-active')) {
+            if (reviveBtn.classList.contains('timer-active')) {
                 reviveBtn.classList.add('revive-expired');
                 reviveBtn.classList.remove('timer-active');
-                // Ad revive remains valid indefinitely after timer
             }
         }, 5020);
     }
@@ -1033,13 +1087,7 @@ export class UIManager {
             this.reviveTimer = null;
         }
         const reviveBtn = document.getElementById('reviveBtn');
-        const reviveAdBtn = document.getElementById('reviveAdBtn');
-        if (reviveBtn) {
-            reviveBtn.classList.remove('timer-active', 'revive-expired');
-        }
-        if (reviveAdBtn) {
-            reviveAdBtn.classList.remove('revive-expired');
-        }
+        if (reviveBtn) reviveBtn.classList.remove('timer-active', 'revive-expired');
     }
 
     private setupMapSelector(): void {
@@ -1051,71 +1099,47 @@ export class UIManager {
             const description = this.getMapDescription(index);
 
             opt.addEventListener('mouseenter', (e: MouseEvent) => this.showTooltip(description, e.clientX, e.clientY));
-            opt.addEventListener('mousemove', (e: MouseEvent) => this.showTooltip(description, e.clientX, e.clientY));
             opt.addEventListener('mouseleave', () => this.hideTooltip());
 
             const handler = (e: Event) => {
                 e.preventDefault();
-                e.stopPropagation();
-                const mapIdIndex = parseInt(opt.getAttribute('data-map') || '0');
                 this.playClick();
                 options.forEach(o => o.classList.remove('active'));
                 opt.classList.add('active');
-
-                if (themeName) {
-                    themeName.textContent = name;
-                    themeName.style.transform = 'scale(1.1)';
-                    setTimeout(() => themeName.style.transform = 'scale(1)', 200);
-                }
-
+                if (themeName) themeName.textContent = name;
+                const mapIdIndex = parseInt(opt.getAttribute('data-map') || '5');
                 this.game.setStartMap(mapIdIndex);
                 this.updateStartScreenTheme(mapIdIndex);
+                this.setupTutorialIcons();
             };
 
             opt.addEventListener('click', handler);
-            opt.addEventListener('touchstart', handler, { passive: false });
-
-            if (opt.classList.contains('active')) {
-                const initialMapIndex = parseInt(opt.getAttribute('data-map') || '5');
-                this.game.setStartMap(initialMapIndex);
-                this.updateStartScreenTheme(initialMapIndex);
-            }
         });
 
         this.setupModeSelector();
     }
 
     private setupModeSelector(): void {
-        const modeContainer = document.querySelector('.mode-selector-container');
-        if (modeContainer) {
-            modeContainer.addEventListener('mousedown', (e) => e.stopPropagation());
-        }
-
         const modes = document.querySelectorAll('.mode-option') as NodeListOf<HTMLElement>;
-
         modes.forEach(modeBtn => {
             const mode = modeBtn.getAttribute('data-mode') || 'advance';
             const description = mode === 'classic'
-                ? "CLASSIC MODE: Pure skill. No nitro, no shops, just you and the pipes. Standard physics."
-                : "ADVANCE MODE: Full experience. Use nitro, unlock skins, and travel through different sectors.";
+                ? "CLASSIC MODE: Pure skill. No nitro, no shops, standard physics."
+                : "ADVANCE MODE: Full experience. Nitro, skins, and sectors.";
 
             modeBtn.addEventListener('mouseenter', (e) => this.showTooltip(description, e.clientX, e.clientY));
-            modeBtn.addEventListener('mousemove', (e) => this.showTooltip(description, e.clientX, e.clientY));
             modeBtn.addEventListener('mouseleave', () => this.hideTooltip());
 
             const handler = (e: Event) => {
                 e.stopPropagation();
-                e.preventDefault();
                 this.playClick();
                 modes.forEach(m => m.classList.remove('active'));
                 modeBtn.classList.add('active');
-
                 this.game.setGameMode(mode as 'classic' | 'advance');
-                this.setupTutorialIcons(); // Refresh tutorial icons for new mode
-                this.updateControlUI(); // Ensure Dash button in HUD is toggled
+                this.setupTutorialIcons();
+                this.updateControlUI();
             };
             modeBtn.addEventListener('click', handler);
-            modeBtn.addEventListener('touchstart', handler, { passive: false });
         });
     }
 
@@ -1129,11 +1153,11 @@ export class UIManager {
 
     private getMapDescription(index: number): string {
         const descriptions = [
-            "NEON CITY: The heart of the cyber world. Balanced and bright.",
-            "TECHO JUNGLE: Dense bio-synthetic growth. Mind the vines.",
-            "OCEAN ABYSS: High-pressure data streams. Deep dive.",
-            "VOLCANO CORE: Thermal energy overflow. Scorching heat.",
-            "STAR FORGE: Zero-gravity manufacturing. Cosmic power."
+            "NEON CITY: The heart of the cyber world.",
+            "TECHO JUNGLE: Dense bio-synthetic growth.",
+            "OCEAN ABYSS: High-pressure data streams.",
+            "VOLCANO CORE: Thermal energy overflow.",
+            "STAR FORGE: Zero-gravity manufacturing."
         ];
         return descriptions[index] || "Unknown Sectors";
     }
@@ -1141,28 +1165,15 @@ export class UIManager {
     private hideStartScreen(): void {
         const screen = document.getElementById('start-screen');
         if (screen) screen.style.display = 'none';
+        this.game.resume();
     }
 
-    private showStartScreen(): void {
+    showStartScreen(): void {
+        this.game.pause();
         const screen = document.getElementById('start-screen');
         if (screen) {
             screen.style.display = 'flex';
-            this.startScreenCooldown = Date.now(); // Set cooldown
             this.setupTutorialIcons();
-
-            // Reset HUD Map Label
-            const hudLabel = document.getElementById('hud-map-name');
-            if (hudLabel) {
-                hudLabel.textContent = '';
-                hudLabel.classList.remove('animate-in', 'active'); // Also remove 'active'
-
-                // Clear inline styles explicitly in case animation was interrupted
-                hudLabel.style.cssText = '';
-            }
-
-            // Restore Original Map Name visibility
-            const themeNameEl = document.getElementById('selected-theme-name');
-            if (themeNameEl) themeNameEl.style.opacity = '';
         }
     }
 
@@ -1170,40 +1181,26 @@ export class UIManager {
         const jumpIcon = document.getElementById('tut-jump-icon');
         const dashIcon = document.getElementById('tut-dash-icon');
         const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-        // Find which mode is active from the buttons
         const classicBtn = document.querySelector('.mode-option[data-mode="classic"]');
         const isClassic = classicBtn?.classList.contains('active');
 
         if (jumpIcon) {
-            if (isTouch) {
-                jumpIcon.textContent = '👆';
-                jumpIcon.className = 'tut-icon touch-icon';
-            } else {
-                jumpIcon.textContent = 'SPACE';
-                jumpIcon.className = 'tut-icon key-icon';
-            }
+            jumpIcon.textContent = isTouch ? '👆' : 'SPACE';
+            jumpIcon.className = `tut-icon ${isTouch ? 'touch-icon' : 'key-icon'}`;
         }
 
         if (dashIcon) {
             const dashItem = document.getElementById('tut-dash');
             const separator = document.querySelector('.tut-separator') as HTMLElement;
-
             if (isClassic) {
                 if (dashItem) dashItem.style.display = 'none';
                 if (separator) separator.style.display = 'none';
             } else {
                 if (dashItem) dashItem.style.display = 'flex';
                 if (separator) separator.style.display = 'block';
-
-                if (isTouch) {
-                    dashIcon.textContent = 'Touch R';
-                    dashIcon.className = 'tut-icon touch-icon';
-                    dashIcon.style.fontSize = '0.6rem';
-                } else {
-                    dashIcon.textContent = 'SHIFT';
-                    dashIcon.className = 'tut-icon key-icon';
-                }
+                dashIcon.textContent = isTouch ? 'Touch R' : 'SHIFT';
+                dashIcon.className = `tut-icon ${isTouch ? 'touch-icon' : 'key-icon'}`;
+                if (isTouch) dashIcon.style.fontSize = '0.6rem';
             }
         }
     }
@@ -1222,21 +1219,15 @@ export class UIManager {
         const popup = document.getElementById('bonus-notification');
         if (popup) {
             popup.classList.add('active');
-            setTimeout(() => {
-                popup.classList.remove('active');
-            }, 2500);
+            setTimeout(() => popup.classList.remove('active'), 2500);
         }
     }
 
     private toggleFullscreen(): void {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-            });
+            document.documentElement.requestFullscreen().catch(() => { });
         } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            }
+            if (document.exitFullscreen) document.exitFullscreen();
         }
     }
 
@@ -1250,7 +1241,66 @@ export class UIManager {
         const s = document.getElementById('score');
         if (c) c.textContent = this.saveManager.getCoins().toString();
         if (s) s.textContent = this.game.getScore().toString();
+        this.updateEnergyBar();
         this.updateShopBalance();
         this.updateControlUI();
+    }
+
+    private animateMapName(): void {
+        const themeNameEl = document.getElementById('selected-theme-name');
+        const hudLabel = document.getElementById('hud-map-name');
+
+        if (themeNameEl && hudLabel) {
+            hudLabel.textContent = themeNameEl.textContent;
+
+            // 1. Initial State (No-transition snap)
+            hudLabel.style.transition = 'none';
+            hudLabel.style.opacity = '1';
+            hudLabel.style.transform = 'translateX(-50%)';
+
+            const firstRect = themeNameEl.getBoundingClientRect();
+            const lastRect = hudLabel.getBoundingClientRect();
+            const themeStyle = window.getComputedStyle(themeNameEl);
+            const hudStyle = window.getComputedStyle(hudLabel);
+
+            const firstFontSize = parseFloat(themeStyle.fontSize);
+            const lastFontSize = parseFloat(hudStyle.fontSize);
+            const scale = firstFontSize / lastFontSize;
+
+            const deltaX = (firstRect.left + firstRect.width / 2) - (lastRect.left + lastRect.width / 2);
+            const deltaY = (firstRect.top + firstRect.height / 2) - (lastRect.top + lastRect.height / 2);
+
+            // Apply visual match to source (Snap)
+            hudLabel.style.transform = `translate(calc(-50% + ${deltaX}px), ${deltaY}px) scale(${scale})`;
+            hudLabel.style.color = themeStyle.color;
+            // Do not copy letter-spacing/shadow as scale handles it naturally
+
+            themeNameEl.style.transition = 'opacity 0.2s';
+            themeNameEl.style.opacity = '0';
+
+            void hudLabel.offsetWidth; // Force Reflow
+
+            // 2. Play Animation (Only Transform for GPU smoothness)
+            setTimeout(() => {
+                hudLabel.style.transition = 'transform 2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s';
+                hudLabel.style.transform = 'translateX(-50%) scale(1)';
+
+                // Visual Polish
+                setTimeout(() => {
+                    hudLabel.style.color = 'rgba(255, 255, 255, 0.9)';
+                    hudLabel.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.8)';
+                    hudLabel.style.letterSpacing = '0.8px';
+                }, 200);
+            }, 600);
+
+            setTimeout(() => {
+                hudLabel.classList.add('active');
+                hudLabel.style.transition = '';
+                hudLabel.style.transform = '';
+                hudLabel.style.color = '';
+                hudLabel.style.textShadow = '';
+                hudLabel.style.letterSpacing = '';
+            }, 2700);
+        }
     }
 }

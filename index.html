@@ -107,6 +107,27 @@
           style="color: var(--neon-red); text-align: center; font-size: 0.8rem; margin-top: 0.5rem; font-weight: 700;">
         </div>
       </div>
+      <!-- Inventory Panel (Backpack) -->
+      <div id="inventory-panel" class="modal-panel full-shop">
+        <span class="close-modal">&times;</span>
+        <h2>BACKPACK</h2>
+
+        <div class="shop-tabs">
+          <div class="shop-tab active" data-tab="skins">SKINS</div>
+          <div class="shop-tab" data-tab="boosts">BOOSTS</div>
+        </div>
+
+        <div class="shop-balance">
+          <div class="skins-count">VAULT CAPACITY: <span id="inv-skins-count">0</span></div>
+        </div>
+        <div class="shop-main-layout">
+          <div class="shop-grid" id="inventory-grid"></div>
+        </div>
+        <div id="inventory-pagination" class="pagination-container"></div>
+        <div id="inventory-msg"
+          style="color: var(--neon-blue); text-align: center; font-size: 0.8rem; margin-top: 0.5rem; font-weight: 700;">
+        </div>
+      </div>
 
       <div id="confirm-modal" class="modal-panel confirm-dialog">
         <h2 id="confirm-title">PURCHASE</h2>
@@ -151,6 +172,7 @@
 
           <div id="action-buttons">
             <div id="fullscreen-btn" class="btn-icon">⛶</div>
+            <div id="backpack-btn" class="btn-icon">🎒</div>
             <div id="shop-btn" class="btn-icon">🛍️</div>
             <div id="settings-btn" class="btn-icon">⚙</div>
           </div>
@@ -158,7 +180,10 @@
         </div>
 
         <div id="energy-bar-hud">
-          <span id="energy-label">Nitro System</span>
+          <div id="energy-label-container">
+            <span id="energy-label">Nitro System</span>
+            <span id="nitro-qty" class="nitro-badge">x0</span>
+          </div>
           <div id="energy-container">
             <div id="energy-fill"></div>
           </div>

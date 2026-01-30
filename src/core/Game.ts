@@ -10,6 +10,7 @@ import { Renderer } from './Renderer';
 import { AudioManager } from '../managers/AudioManager';
 import { LevelGenerator } from './LevelGenerator';
 import { BOOSTS } from '../config/boosts';
+import { GroundDecorationManager } from '../entities/GroundDecorationManager';
 
 /**
  * Main Game class - orchestrates all game systems
@@ -23,7 +24,7 @@ export class Game {
     private score = 0;
     private sessionCoins = 0;
     private lastThemeName = '';
-    private startMapIndex = 0;
+    private startMapIndex = 5; // Default to Sunny Highlands
     private distanceTraveled = 0;
     private isClassicMode = false;
 
@@ -31,6 +32,7 @@ export class Game {
     private bird: Bird;
     private pipeManager: PipeManager;
     private particleSystem: ParticleSystem;
+    private groundDecorationManager: GroundDecorationManager;
 
     private skinManager: SkinManager;
     private saveManager: SaveManager;
@@ -51,10 +53,14 @@ export class Game {
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d')!;
+        this.ctx = canvas.getContext('2d', { alpha: false })!; // Alpha false for performance optimization
         this.canvas.width = CANVAS.WIDTH;
         this.canvas.height = CANVAS.HEIGHT;
         this.config = { ...DEFAULT_CONFIG };
+
+        // Handle Responsive Layout (Aspect Fit)
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
 
         this.skinManager = SkinManager.getInstance();
         this.saveManager = SaveManager.getInstance();
@@ -65,6 +71,7 @@ export class Game {
         this.bird = new Bird(this.config, () => this.handleGroundCollision());
         this.pipeManager = new PipeManager(this.config);
         this.particleSystem = new ParticleSystem();
+        this.groundDecorationManager = new GroundDecorationManager();
 
         this.setupInput();
         this.setupDebugKeys();
@@ -77,7 +84,12 @@ export class Game {
         });
         this.setupNitroEvents();
         this.syncNitroToBird();
+
+        // Initialize Map Theme immediately
+        this.setStartMap(this.startMapIndex);
+
         this.audioManager.playBGM();
+        this.groundDecorationManager.reset(CANVAS.WIDTH, CANVAS.HEIGHT, CANVAS.GROUND_HEIGHT);
         this.start();
     }
 
@@ -85,10 +97,24 @@ export class Game {
         window.addEventListener('nitroDepleted', () => {
             const boostId = this.saveManager.getEquippedBoostId();
             if (boostId !== 'nitro_default') {
-                this.saveManager.useBoostFromInventory(boostId);
+                const count = this.saveManager.getBoostCount(boostId);
+                if (count > 0) {
+                    // Replenish: use one from inventory and refill the bird's tank
+                    this.saveManager.useBoostFromInventory(boostId);
+
+                    const boostDef = BOOSTS.find(b => b.id === boostId);
+                    if (boostDef) {
+                        this.saveManager.setEquippedBoost(boostId, boostDef.capacity);
+                        this.syncNitroToBird();
+                        return; // Successfully replenished
+                    }
+                }
             }
+
+            // Fallback to default if no boosters left or using default
             this.saveManager.setEquippedBoost('nitro_default', 10);
-            this.updateCoinUI(); // Refresh UI if needed
+            this.syncNitroToBird();
+            this.updateCoinUI();
         });
     }
 
@@ -114,6 +140,46 @@ export class Game {
                 window.dispatchEvent(new CustomEvent('updateUI'));
             }
         });
+    }
+
+    private resize(): void {
+        const aspect = CANVAS.WIDTH / CANVAS.HEIGHT;
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const winAspect = winW / winH;
+
+        let finalW, finalH;
+
+        if (winAspect > aspect) {
+            // Screen is wider than game -> fit by height
+            finalH = winH;
+            finalW = winH * aspect;
+        } else {
+            // Screen is taller than game -> fit by width
+            finalW = winW;
+            finalH = winW / aspect;
+        }
+
+        this.canvas.style.width = `${finalW}px`;
+        this.canvas.style.height = `${finalH}px`;
+
+        // Center the canvas
+        const left = (winW - finalW) / 2;
+        const top = (winH - finalH) / 2;
+
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.left = `${left}px`;
+        this.canvas.style.top = `${top}px`;
+
+        // Sync UI Layer
+        const uiLayer = document.querySelector('.ui-layer') as HTMLElement;
+        if (uiLayer) {
+            uiLayer.style.width = `${finalW}px`;
+            uiLayer.style.height = `${finalH}px`;
+            uiLayer.style.position = 'absolute';
+            uiLayer.style.left = `${left}px`;
+            uiLayer.style.top = `${top}px`;
+        }
     }
 
     private setupInput(): void {
@@ -222,6 +288,11 @@ export class Game {
             // Update pipes with Coin Spawn Flag (Disable coins if classic mode)
             this.pipeManager.update(speed, dtRatio, !this.isClassicMode);
 
+            // Ground Decorations
+            if (!this.isClassicMode) {
+                this.groundDecorationManager.update(speed, dtRatio, CANVAS.WIDTH, CANVAS.HEIGHT, CANVAS.GROUND_HEIGHT);
+            }
+
             // Procedural Level Generation
             // Use visual score (passed pipes) for difficulty, but could use distance too
             const mapId = this.getMapIdByIndex(this.startMapIndex);
@@ -315,7 +386,7 @@ export class Game {
 
         // New: Collision with Ground Enemies (Goombas, Bullets)
         this.pipeManager.getEnemies().forEach((enemy) => {
-            if (enemy.dead) return;
+            if (enemy.dead || (enemy as any).dying) return;
 
             const enemyRect = {
                 l: enemy.x + 5,
@@ -333,14 +404,24 @@ export class Game {
 
                 if (isNotJumpingUp && hitTopPart) {
                     // Successful Stomp (works even with shield!)
+                    (enemy as any).dying = true;
+
                     if (enemy.type === 'bullet') {
-                        enemy.dead = true;
-                        enemy.vy = 10; // Drop down
+                        // Drop Straight Down
+                        enemy.vy = -5; // Tiny hop then fall looks more natural physics
+                        enemy.crawlingSpeed = 0;
                         this.score += 5;
                         this.createScorePopup(enemy.x, enemy.y, '+5$ 🪙');
                         this.audioManager.play('coin');
                     } else {
-                        enemy.dead = true;
+                        // Flatten & Linger
+                        const originalH = enemy.h;
+                        enemy.scaleY = 0.2;
+                        enemy.y += originalH * 0.4; // Align to bottom
+                        enemy.crawlingSpeed = 0;
+
+                        setTimeout(() => { enemy.dead = true; }, 400);
+
                         this.score += 2;
                         this.createScorePopup(enemy.x, enemy.y, '+2$ 🪙');
                         this.audioManager.play('coin');
@@ -419,6 +500,10 @@ export class Game {
 
         this.pipeManager.render(this.ctx);
 
+        if (!this.isClassicMode) {
+            this.groundDecorationManager.render(this.ctx); // Theme color technically handled inside
+        }
+
         // Particles now allowed in Classic (vFX requested for collisions)
         this.particleSystem.render(this.ctx);
 
@@ -496,6 +581,8 @@ export class Game {
         this.syncNitroToBird(); // Ensure fresh boost state from save
         this.pipeManager.reset();
         this.particleSystem.clear();
+        this.groundDecorationManager.reset(CANVAS.WIDTH, CANVAS.HEIGHT, CANVAS.GROUND_HEIGHT);
+
         this.updateScoreUI();
         this.updateCoinUI();
 
@@ -504,6 +591,12 @@ export class Game {
 
         // Re-apply mode settings to ensure consistent state
         this.setGameMode(this.isClassicMode ? 'classic' : 'advance');
+
+        // Force map reset on restart to ensure correct background if switching modes/maps
+        this.setStartMap(this.startMapIndex);
+
+        // Notify UI to reset visuals for Start Screen
+        window.dispatchEvent(new CustomEvent('showStartScreen'));
     }
 
     pause(): void { if (this.state === 'PLAYING') this.state = 'PAUSED'; }
@@ -550,6 +643,11 @@ export class Game {
     getConfig(): GameConfig { return { ...this.config }; }
     getScore(): number { return this.score; }
     getEnergy(): number { return this.bird.energy; }
+    getNitroQuantity(): number {
+        const boostId = this.saveManager.getEquippedBoostId();
+        if (boostId === 'nitro_default') return 0;
+        return this.saveManager.getBoostCount(boostId);
+    }
     getCurrentThemeName(): string { return this.renderer.getCurrentTheme().theme; }
     getState(): GameStateType { return this.state; }
     public getInputManager(): InputManager { return this.inputManager; }
@@ -565,8 +663,12 @@ export class Game {
         this.renderer.setTheme(stageDef, mapId);
 
         const theme = this.renderer.getCurrentTheme() as any;
-        if (theme.bgm) {
-            this.audioManager.playBGM(theme.bgm);
+        // Only play BGM if in START state to avoid restarting it mid-game unnecessarily
+        // But initial load needs it.
+        if (this.state === 'SPLASH' || this.state === 'START') {
+            if (theme.bgm) {
+                this.audioManager.playBGM(theme.bgm);
+            }
         }
         window.dispatchEvent(new CustomEvent('mapChanged', { detail: { theme } }));
     }
