@@ -51,20 +51,10 @@ export class ParticleSystem {
             ctx.fillStyle = p.color;
 
             if (p.text) {
-                // Render score popup text (Handles icon if passed in string)
-                // Size matched to HUD coin display (~20px equivalent)
                 ctx.font = '700 20px "JetBrains Mono", monospace';
                 ctx.textAlign = 'center';
-                ctx.shadowBlur = 4;
-                ctx.shadowColor = '#000';
-
-                // Draw Text
-                ctx.fillStyle = p.color;
                 ctx.fillText(p.text, p.x, p.y);
             } else {
-                // Render standard glow particles
-                ctx.shadowBlur = 10 * p.life;
-                ctx.shadowColor = p.color;
                 ctx.beginPath();
                 const radius = Math.max(0, 4 * p.life);
                 ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);

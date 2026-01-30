@@ -7,7 +7,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     speed: 4.5,
     gravity: 0.85,
     jump: 15,
-    pipeGap: 200,
+    pipeGap: 210,
     pipeSpacing: 250, // Default spacing
     bgmVolume: 0.3,
     sfxVolume: 0.5,

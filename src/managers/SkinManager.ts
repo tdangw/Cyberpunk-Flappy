@@ -28,7 +28,7 @@ function drawEye(ctx: CanvasRenderingContext2D, dx: number, dy: number): void {
 
 function drawSphere(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 8; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 10 : 0; ctx.shadowColor = glow;
     ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.fillStyle = '#111'; ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
     drawEye(ctx, 8, -4);
@@ -39,7 +39,7 @@ function drawSphere(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: b
 
 function drawPigeon(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 8; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 10 : 0; ctx.shadowColor = glow;
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 14, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
     drawEye(ctx, 12, -4);
@@ -50,7 +50,7 @@ function drawPigeon(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: b
 
 function drawShark(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 10; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 12 : 0; ctx.shadowColor = glow;
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(-25, 0); ctx.bezierCurveTo(-25, -20, 25, -20, 35, 0); ctx.bezierCurveTo(25, 20, -25, 20, -25, 0); ctx.fill();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 1; ctx.stroke();
@@ -64,7 +64,7 @@ function drawShark(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: bo
 
 function drawButterfly(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 12; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
 
     // 1. Phác thảo thân bướm (Segmented Body)
     ctx.fillStyle = '#0a0a0a';
@@ -148,7 +148,7 @@ function drawButterfly(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing
 
 function drawChicken(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const flap = Math.sin(bird.wingAngle) * 8;
-    ctx.shadowBlur = 8; ctx.shadowColor = color;
+    // ctx.shadowBlur = 8; // Removed for mobile optimization
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
     drawEye(ctx, 10, -5);
@@ -160,7 +160,7 @@ function drawChicken(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: 
 function drawFish(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
     const wobble = Math.sin(bird.wingAngle * 1.5) * 8;
-    ctx.shadowBlur = 10; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 12 : 0; ctx.shadowColor = glow;
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(0, 0, 22, 14, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
     drawEye(ctx, 12, -4);
@@ -170,7 +170,7 @@ function drawFish(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boo
 function drawChimera(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const flap = Math.sin(bird.wingAngle) * 15;
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 12; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
     ctx.fillStyle = '#0a0a0a'; ctx.beginPath(); ctx.moveTo(25, 0); ctx.bezierCurveTo(20, -15, -5, -15, -15, 0); ctx.lineTo(-30, 0); ctx.bezierCurveTo(-15, 15, 20, 15, 25, 0); ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
     drawEye(ctx, 15, -4);
@@ -179,7 +179,7 @@ function drawChimera(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: 
 
 function drawWhale(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 15; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(0, 0, 30, 18, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
     drawEye(ctx, 18, -5);
@@ -189,7 +189,7 @@ function drawWhale(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: bo
 
 function drawPhoenix(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 12; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
 
     // Sparkles - Simple pulsing dots (3 static positions)
     ctx.save();
@@ -276,7 +276,7 @@ function drawPhoenix(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: 
 
 function drawDragonfly(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 8; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 10 : 0; ctx.shadowColor = glow;
     // Long Body
     ctx.fillStyle = '#1b1b1b';
     ctx.beginPath();
@@ -310,7 +310,7 @@ function drawDragonfly(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing
 
 function drawBee(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 10; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 12 : 0; ctx.shadowColor = glow;
 
     // Body - Cute rounded egg shape
     ctx.save();
@@ -391,7 +391,7 @@ function drawBee(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: bool
 
 function drawClassicFlappy(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 8; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 10 : 0; ctx.shadowColor = glow;
     // Classic Fat Shape
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.ellipse(0, 0, 18, 15, 0, 0, Math.PI * 2); ctx.fill();
@@ -409,7 +409,7 @@ function drawClassicFlappy(ctx: CanvasRenderingContext2D, bird: BirdState, isDas
 
 function drawJellyfish(ctx: CanvasRenderingContext2D, _bird: BirdState, isDashing: boolean, frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 15; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
 
     // Bell
     ctx.fillStyle = color;
@@ -441,7 +441,7 @@ function drawJellyfish(ctx: CanvasRenderingContext2D, _bird: BirdState, isDashin
 
 function drawDuck(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 10; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 12 : 0; ctx.shadowColor = glow;
 
     // Body
     ctx.fillStyle = color;
@@ -469,7 +469,7 @@ function drawDuck(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boo
 
 function drawBeetle(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 12; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
 
     // Under-wings (Flying wings - intense flapping)
     const wingFlap = Math.sin(bird.wingAngle * 4) * 20;
@@ -533,7 +533,7 @@ function drawBeetle(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: b
 
 function drawClownfish(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 10; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 12 : 0; ctx.shadowColor = glow;
 
     // Body (Nemo style)
     ctx.fillStyle = color;
@@ -600,7 +600,7 @@ function drawClownfish(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing
 
 function drawSwordSurfer(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 15; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
 
     // 1. Demonic Soul Blade (Soul Edge style)
     ctx.save();
@@ -708,7 +708,7 @@ function drawSwordSurfer(ctx: CanvasRenderingContext2D, bird: BirdState, isDashi
 // 2. PHANTOM REAPER (Scythe-Sword Stick Figure)
 function drawReaper(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 15; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
 
     // SCYTHE SWORD
     ctx.save();
@@ -755,7 +755,7 @@ function drawReaper(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: b
 // 3. PLASMA LANCER (Spear-Blade Stick Figure)
 function drawLancer(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 15; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
 
     // PLASMA SPEAR
     ctx.save();
@@ -795,7 +795,7 @@ function drawLancer(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: b
 // 4. VOID SAMURAI (Traditional Blade Stick Figure)
 function drawSamurai(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const glow = isDashing ? '#fff' : color;
-    ctx.shadowBlur = 15; ctx.shadowColor = glow;
+    ctx.shadowBlur = isDashing ? 15 : 0; ctx.shadowColor = glow;
 
     // VOID KATANA
     ctx.save();
@@ -889,8 +889,7 @@ export class SkinManager {
             ctx.arc(0, 0, shieldRadius, 0, Math.PI * 2);
             ctx.strokeStyle = shieldColor;
             ctx.lineWidth = 2.5;
-            ctx.shadowBlur = 18;
-            ctx.shadowColor = shieldColor;
+            // ctx.shadowBlur = 18;
             ctx.globalAlpha = 0.4;
             ctx.stroke();
 
@@ -928,6 +927,36 @@ export class SkinManager {
                 }
             }
             ctx.restore();
+            ctx.restore();
+        }
+
+        // 5. SHIELD VISUAL (Pulse blue when protected)
+        if (bird.invulnerableTimer > 0) {
+            ctx.save();
+            const pulse = (Math.sin(frames * 0.2) + 1) / 2;
+            const alpha = Math.min(0.6, bird.invulnerableTimer / 30);
+
+            // Outer Ring
+            ctx.strokeStyle = `rgba(0, 255, 247, ${alpha})`;
+            ctx.lineWidth = 1 + pulse;
+            ctx.beginPath();
+            ctx.arc(0, 0, bird.radius + 6 + pulse * 3, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner Hexagon Glow (Cyber feel)
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI * 2) / 6 + (frames * 0.05);
+                const r = bird.radius + 4;
+                const px = Math.cos(angle) * r;
+                const py = Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.globalAlpha = alpha * 0.3;
+            ctx.fillStyle = '#00fff7';
+            ctx.fill();
             ctx.restore();
         }
 

@@ -191,9 +191,19 @@ export class Bird implements BirdState {
     }
 
     private checkBounds(): void {
-        if (this.y + this.radius >= CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT) {
-            this.y = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - this.radius;
-            this.onGameOver();
+        const groundY = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT;
+        if (this.y + this.radius >= groundY) {
+            if (this.isInvulnerable()) {
+                // Ground Bounce Mechanic: If shielded, bounce up instead of dying
+                this.y = groundY - this.radius;
+                this.bounce();
+                this.speed = -this.config.jump * 1.0; // Stronger bounce for ground
+                this.invulnerableTimer = 5; // Very short grace period to clear ground collision
+                window.dispatchEvent(new CustomEvent('groundBounce'));
+            } else {
+                this.y = groundY - this.radius;
+                this.onGameOver();
+            }
         }
         if (this.y - this.radius <= 0) {
             this.y = this.radius;

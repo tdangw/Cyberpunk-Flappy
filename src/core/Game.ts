@@ -68,6 +68,13 @@ export class Game {
 
         this.setupInput();
         this.setupDebugKeys();
+
+        // Listen for Ground Bounce Events
+        window.addEventListener('groundBounce', () => {
+            this.audioManager.play('jump');
+            this.particleSystem.emit(this.bird.x, CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT, 10, '#00fff7');
+            this.screenShake = 5;
+        });
         this.setupNitroEvents();
         this.syncNitroToBird();
         this.audioManager.playBGM();
@@ -374,13 +381,6 @@ export class Game {
 
     private handleGroundCollision(): void {
         if (this.state === 'GAMEOVER') return;
-
-        // NEW: If bird is shielded (invulnerable) during play, bounce off the ground instead of dying
-        if (this.state === 'PLAYING' && this.bird.isInvulnerable()) {
-            this.bird.bounce();
-            this.audioManager.play('jump');
-            return;
-        }
 
         this.audioManager.play('hit'); // Sync: Impact Ground
         this.audioManager.play('die'); // Game over sound

@@ -37,8 +37,13 @@ export class PipeManager {
 
         const lastPipe = this.pipes[this.pipes.length - 1];
         if (!lastPipe || CANVAS.WIDTH - lastPipe.x >= this.currentPipeInterval) {
+            const wasEvent = this.patternType !== 'none' && this.patternType.startsWith('bullet_');
             this.createPipe(spawnCoins);
-            this.setNextPipeInterval();
+            // Only randomize next interval if we didn't just start a custom event 
+            // handleBulletEvent sets a specific interval; we mustn't overwrite it.
+            if (!wasEvent) {
+                this.setNextPipeInterval();
+            }
         }
 
         // Coins
@@ -87,14 +92,28 @@ export class PipeManager {
         const minY = padding;
         const maxY = CANVAS.HEIGHT - groundH - gap - padding;
 
-        const lastPipe = this.pipes[this.pipes.length - 1];
         let topH: number;
         let spawnX = CANVAS.WIDTH + 150;
+        const lastPipe = this.pipes[this.pipes.length - 1];
 
-        // CHECK FOR EXCLUSIVE BULLET EVENTS
-        if (this.patternType === 'bullet_stairs' || this.patternType === 'bullet_squad' || this.patternType === 'bullet_zigzag') {
+        // Restore Simple Bullet/Enemy Spawning alongside pipes
+        const randEvent = Math.random();
+        if (this.currentPipeInterval > 150) {
+            if (randEvent < 0.12) {
+                this.spawnGroundEnemy(spawnX + 200);
+            } else if (randEvent < 0.22) {
+                this.spawnFallingEnemy(spawnX, lastPipe ? lastPipe.top : 300);
+            } else if (randEvent < 0.40) {
+                // SIMPLE BULLETS (Frequent)
+                const midY = lastPipe ? (lastPipe.top + gap / 2) : 350;
+                this.spawnBulletBill(spawnX + 180, midY + (Math.random() - 0.5) * 100);
+            }
+        }
+
+        // COMPLEX EVENTS (Keep rare, exclusive)
+        if (this.patternType === 'bullet_stairs' || this.patternType === 'bullet_zigzag') {
             this.handleBulletEvent(spawnX, lastPipe ? lastPipe.top : 300, gap);
-            return; // EXIT EARLY - NO PIPE FOR THESE EVENTS
+            return;
         }
 
         if (lastPipe && this.patternRemaining > 0) {
@@ -130,18 +149,6 @@ export class PipeManager {
                 this.coins.push({ x: coinX, y: coinY, r: 15, collected: false, wobble: Math.random() * Math.PI });
             }
         }
-
-        // NEW: Minor Variant Spawning (Still allowed with pipes)
-        const randEvent = Math.random();
-        if (this.currentPipeInterval > 150) {
-            if (randEvent < 0.12) {
-                // GROUND ENEMY
-                this.spawnGroundEnemy(spawnX + 150);
-            } else if (randEvent < 0.22) {
-                // FALLING ENEMY
-                this.spawnFallingEnemy(spawnX, topH);
-            }
-        }
     }
 
     private handleBulletEvent(spawnX: number, lastTop: number, gap: number): void {
@@ -158,21 +165,24 @@ export class PipeManager {
                 this.spawnBulletBill(startX + i * 90, squadY);
             }
         } else if (type === 'bullet_stairs') {
-            // STAIR FORMATION - Adjacent bullets as per image
-            this.currentPipeInterval = 3000;
+            // STAIR FORMATION - Smaller localized groups in sequence
+            this.currentPipeInterval = 2500;
             const startX = spawnX + 150;
-            const count = 10;
-            const horizontalGap = 55; // Adjacent (bullet width is ~50-60)
-            const verticalStep = 65;
-            const startY = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - 60;
+            const count = 5;
+            const hGap = 62; // Nearly touching (width is 60)
+            const vStep = 50;
 
+            // Cluster 1: Starting lower
+            const startY1 = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - 120;
             for (let i = 0; i < count; i++) {
-                const x = startX + i * horizontalGap;
-                const y = startY - (i * verticalStep);
-                // Don't spawn off-screen top
-                if (y > 40) {
-                    this.spawnBulletBill(x, y);
-                }
+                this.spawnBulletBill(startX + i * hGap, startY1 - (i * vStep));
+            }
+
+            // Cluster 2: Sequentially later, starting mid-height
+            const offsetX = (count * hGap) + 350; // Gap between small stairs
+            const startY2 = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - 180;
+            for (let i = 0; i < count; i++) {
+                this.spawnBulletBill(startX + offsetX + i * hGap, startY2 - (i * vStep));
             }
         } else if (type === 'bullet_zigzag') {
             // "GATE/CORRIDOR" FORMATION - Top and bottom rows with dodge space
@@ -308,7 +318,7 @@ export class PipeManager {
         } else if (rand < 0.30) {
             this.patternType = 'desert';
             this.currentPipeInterval = 1800 + Math.random() * 500;
-        } else if (rand < 0.35) {
+        } else if (rand < 0.45) {
             // ADVANCED BULLET FORMATIONS (Now chose as top-level patterns)
             const fRand = Math.random();
             if (fRand < 0.4) this.patternType = 'bullet_stairs';
@@ -341,7 +351,7 @@ export class PipeManager {
             const absScale = Math.abs(Math.cos(c.wobble));
             ctx.save();
             ctx.translate(c.x, c.y);
-            ctx.shadowBlur = 20; ctx.shadowColor = COLORS.NEON_GOLD;
+            // ctx.shadowBlur = 20; // Removed for mobile optimization
             ctx.fillStyle = COLORS.NEON_GOLD;
             ctx.beginPath(); ctx.ellipse(0, 0, c.r * absScale, c.r, 0, 0, Math.PI * 2); ctx.fill();
             if (absScale > 0.4) {
@@ -438,9 +448,9 @@ export class PipeManager {
 
         ctx.save();
 
-        // Body Glow (Cyberpunk feel)
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = COLORS.NEON_BLUE;
+        // Body Glow (Optimized)
+        // ctx.shadowBlur = 10; 
+        // ctx.shadowColor = COLORS.NEON_BLUE;
 
         // 1. Main Body (Dark Metal Hexagon shape)
         const bodyGrad = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
@@ -459,9 +469,9 @@ export class PipeManager {
         ctx.closePath();
         ctx.fill();
 
-        // 2. Neon Visor (Instead of Eyes)
+        // 2. Neon Visor (Optimized)
         ctx.fillStyle = COLORS.NEON_BLUE;
-        ctx.shadowBlur = 15;
+        // ctx.shadowBlur = 15;
         ctx.beginPath();
         ctx.moveTo(-w * 0.35, -h * 0.1);
         ctx.lineTo(-w * 0.1, -h * 0.1);
@@ -513,7 +523,7 @@ export class PipeManager {
         ctx.fillStyle = '#050010';
         ctx.strokeStyle = this.pipeColor;
         ctx.lineWidth = 4;
-        ctx.shadowBlur = 5; ctx.shadowColor = this.pipeColor; // Reduced from 15 to 5
+        // ctx.shadowBlur = 5; // Removed for performance
 
         const drawBody = () => {
             ctx.strokeRect(p.x, 0, p.w, p.top);

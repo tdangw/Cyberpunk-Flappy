@@ -326,15 +326,12 @@ export class Renderer {
         const cx = CANVAS.WIDTH - 200;
         const cy = 120;
 
-        // Sun Core - Pale Yellow/White, distinct circle
+        // Sun Core - Simple circle for performance
         this.ctx.save();
-        this.ctx.fillStyle = 'rgba(254, 252, 232, 0.9)'; // Pale yellow
-        this.ctx.shadowBlur = 40;
-        this.ctx.shadowColor = 'rgba(253, 224, 71, 0.3)'; // Soft yellow glow
+        this.ctx.fillStyle = 'rgba(254, 252, 232, 0.9)';
         this.ctx.beginPath();
         this.ctx.arc(cx, cy, 50, 0, Math.PI * 2);
         this.ctx.fill();
-        this.ctx.shadowBlur = 0;
         this.ctx.restore();
 
         // Rays - Geometric, long beams, very subtle rotation
@@ -427,10 +424,7 @@ export class Renderer {
             // Text
             this.ctx.fillStyle = '#ffffff'; // White text for visibility
             this.ctx.font = 'bold 12px "JetBrains Mono", monospace';
-            this.ctx.shadowBlur = 5;
-            this.ctx.shadowColor = themeColor; // Keep glow as theme color
             this.ctx.fillText(`${i} km`, screenX, signY);
-            this.ctx.shadowBlur = 0;
 
             // --- Decorations (Base) ---
             // Simple Rocks (Dark Grey)
