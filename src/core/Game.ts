@@ -305,6 +305,21 @@ export class Game {
                 this.particleSystem.emit(coin.x, coin.y, 8, COLORS.NEON_GOLD);
             }
         });
+
+        // New: Collision with Ground Enemies (Goombas)
+        this.pipeManager.getEnemies().forEach((enemy) => {
+            if (!enemy.dead &&
+                birdRect.r > enemy.x + 5 && birdRect.l < enemy.x + enemy.w - 5 &&
+                birdRect.b > enemy.y + 5 && birdRect.t < enemy.y + enemy.h - 5) {
+
+                if (this.bird.isInvulnerable()) {
+                    // Skip or extend safety
+                    this.bird.extendInvulnerability(2);
+                } else {
+                    this.triggerDying();
+                }
+            }
+        });
     }
 
     private triggerDying(): void {

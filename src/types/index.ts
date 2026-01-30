@@ -72,6 +72,16 @@ export interface Coin {
     wobble: number;
 }
 
+export interface GroundEnemy {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    crawlingSpeed: number;
+    animFrame: number;
+    dead: boolean;
+}
+
 export interface SkinDefinition {
     id: string;
     name: string;
