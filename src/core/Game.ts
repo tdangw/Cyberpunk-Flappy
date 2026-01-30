@@ -552,6 +552,10 @@ export class Game {
     private gameOver(): void {
         this.state = 'GAMEOVER';
         this.saveManager.updateHighScore(this.score, this.isClassicMode);
+        if (!this.isClassicMode) {
+            const mapId = this.getMapIdByIndex(this.startMapIndex);
+            this.saveManager.updateMapHighScore(mapId, this.score);
+        }
         this.saveManager.updateBoostRemaining(this.bird.nitroRemaining);
 
         const currentDist = Math.floor(this.distanceTraveled / 50);

@@ -2,7 +2,7 @@ import type { Game } from '../core/Game';
 import { SaveManager } from '../managers/SaveManager';
 import { SkinManager } from '../managers/SkinManager';
 import { AudioManager } from '../managers/AudioManager';
-import { DEFAULT_CONFIG } from '../config/constants';
+import { DEFAULT_CONFIG, MAPS } from '../config/constants';
 import { BOOSTS } from '../config/boosts';
 import type { BoostDefinition } from '../config/boosts';
 import { IconDrawer } from './IconDrawer';
@@ -23,6 +23,8 @@ export class UIManager {
 
     private currentInvTab: 'skins' | 'boosts' = 'skins';
     private currentInvPage: number = 1;
+
+    private currentLBTab: 'personal' | 'online' = 'personal';
 
     private readonly itemsPerPage: number = 20; // 5 rows x 4 items
     private lastStartTouchTime: number = 0;
@@ -97,6 +99,7 @@ export class UIManager {
         bindAction('settings-btn', () => { this.playClick(); this.showSettings(); });
         bindAction('shop-btn', () => { this.playClick(); this.showShop(); });
         bindAction('backpack-btn', () => { this.playClick(); this.showBackpack(); });
+        bindAction('leaderboard-btn', () => { this.playClick(); this.showLeaderboard(); });
 
         // Shop Tabs logic
         document.getElementById('shop-panel')?.querySelectorAll('.shop-tab').forEach((tab) => {
@@ -605,6 +608,66 @@ export class UIManager {
         const totalSkins = this.skinManager.getAllSkins().length;
         const el = document.getElementById('inv-skins-count');
         if (el) el.textContent = `${ownedCount}/${totalSkins} SKINS ARCHIVED`;
+    }
+
+    private showLeaderboard(): void {
+        this.game.pause();
+        this.renderLeaderboard();
+        document.getElementById('leaderboard-panel')?.classList.add('modal-active');
+    }
+
+    private renderLeaderboard(): void {
+        const container = document.getElementById('lb-content');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (this.currentLBTab === 'personal') {
+            this.renderPersonalLB(container);
+        } else {
+            this.renderOnlineLB(container);
+        }
+    }
+
+    private renderPersonalLB(container: HTMLElement): void {
+        // Add Header
+        container.innerHTML += `
+           <div class="lb-row header">
+               <div class="lb-name">MODE / MAP</div>
+               <div class="lb-score">SCORE</div>
+           </div>
+        `;
+
+        // Classic
+        const classicScore = this.saveManager.getHighScore(true);
+        container.innerHTML += `
+           <div class="lb-row highlight">
+               <div class="lb-name">CLASSIC MODE</div>
+               <div class="lb-score">${classicScore}</div>
+           </div>
+        `;
+
+        // Maps
+        MAPS.forEach(map => {
+            const score = this.saveManager.getMapHighScore(map.id);
+            container.innerHTML += `
+               <div class="lb-row">
+                   <div class="lb-name">${map.name}</div>
+                   <div class="lb-score">${score}</div>
+               </div>
+            `;
+        });
+    }
+
+    private renderOnlineLB(container: HTMLElement): void {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: #888;">
+                <h3>ONLINE RANKING</h3>
+                <p>Connecting to Neural Net...</p>
+                <div style="font-size: 3rem; margin: 1rem;">🌐</div>
+                <p style="font-size: 0.8rem; color: var(--neon-blue);">COMING SOON</p>
+                <p style="font-size: 0.7rem;">Firebase Integration Pending</p>
+            </div>
+         `;
     }
 
     private updateSkinsOwnedCount(): void {
