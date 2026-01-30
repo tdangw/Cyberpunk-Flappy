@@ -1625,7 +1625,7 @@ h2 {
   /* Neon Text */
   font-weight: 950;
   cursor: pointer;
-  letter-spacing: 4px;
+  letter-spacing: 8px;
   position: relative;
   transition: 0.3s all;
   box-shadow: 0 0 20px var(--neon-blue), inset 0 0 10px var(--neon-blue);
