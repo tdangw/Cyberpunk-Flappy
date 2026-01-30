@@ -67,7 +67,8 @@ export class SaveManager {
             equippedBoostId: 'nitro_default',
             boostRemainingMeters: 10,
             inventoryBoosts: {},
-            maxDistance: 0
+            maxDistance: 0,
+            mapHighScores: {}
         };
     }
 
@@ -136,6 +137,26 @@ export class SaveManager {
                 this.save();
                 return true;
             }
+        }
+        return false;
+    }
+
+    getMapHighScore(mapId: string): number {
+        return this.data.mapHighScores?.[mapId] || 0;
+    }
+
+    updateMapHighScore(mapId: string, score: number): boolean {
+        if (!this.data.mapHighScores) this.data.mapHighScores = {};
+
+        const current = this.data.mapHighScores[mapId] || 0;
+        if (score > current) {
+            this.data.mapHighScores[mapId] = score;
+            // Also update global high score if better
+            if (score > (this.data.highScore || 0)) {
+                this.data.highScore = score;
+            }
+            this.save();
+            return true;
         }
         return false;
     }

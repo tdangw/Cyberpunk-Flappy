@@ -46,6 +46,7 @@ export interface PlayerData {
     boostRemainingMeters?: number;
     inventoryBoosts: { [key: string]: number };
     maxDistance?: number;
+    mapHighScores?: { [key: string]: number };
 }
 
 export interface Particle {
