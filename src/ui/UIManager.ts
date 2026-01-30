@@ -967,8 +967,8 @@ export class UIManager {
         }, 1500);
 
         // Also play sound if possible
-        if (type === 'success') this.audioManager.play('unlock');
-        else this.audioManager.play('hit'); // Error sound
+        if (type === 'success') this.audioManager.play('buy_success');
+        else this.audioManager.play('buy_fail');
     }
 
     private replaceIcons(): void {
