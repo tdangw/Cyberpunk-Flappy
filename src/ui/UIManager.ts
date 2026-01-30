@@ -800,11 +800,9 @@ export class UIManager {
 
         if (this.currentShopTab === 'skins') {
             const allSkins = this.skinManager.getAllSkins();
-            const ownedIds = this.saveManager.getOwnedSkins();
-            // Shop only shows NOT OWNED
-            const buyableSkins = allSkins.filter(s => !ownedIds.includes(s.id));
-            this.renderSkinGrid(buyableSkins);
-            this.renderPagination(buyableSkins.length, paginationEl, 'shop');
+            // Show all skins, whether owned or not
+            this.renderSkinGrid(allSkins);
+            this.renderPagination(allSkins.length, paginationEl, 'shop');
         } else {
             // Consumable boosters (except default) show in shop
             const buyableBoosts = BOOSTS.filter(b => b.id !== 'nitro_default');
@@ -987,6 +985,18 @@ export class UIManager {
                 opt.innerHTML = `<img src="${IconDrawer.getSimpleIcon(`map_${mapIndex}` as any)}" style="width: 70%; height: 70%; object-fit: contain; pointer-events: none;">`;
             }
         });
+
+        // Revive Button Coin
+        const reviveCostTag = document.getElementById('revive-cost-tag');
+        if (reviveCostTag) {
+            reviveCostTag.innerHTML = `3$ <img src="${IconDrawer.getCoinIcon(30)}" style="width: 1.2rem; height: 1.2rem; vertical-align: middle; margin-left: 4px; filter: drop-shadow(0 0 5px #ffd700);">`;
+        }
+
+        // HUD Coin Icon
+        const coinIcon = document.querySelector('.coin-icon');
+        if (coinIcon) {
+            coinIcon.innerHTML = `<img src="${IconDrawer.getCoinIcon(40)}" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; filter: drop-shadow(0 0 8px #ffd700);">`;
+        }
     }
 
     private showError(msg: string): void {
@@ -1003,7 +1013,10 @@ export class UIManager {
 
         pageItems.forEach(skin => {
             const card = document.createElement('div');
-            card.className = `skin-card`;
+            const isLimited = skin.id.includes('limited');
+            const isOwned = this.saveManager.getOwnedSkins().includes(skin.id);
+
+            card.className = `skin-card ${isLimited ? 'limited' : ''} ${isOwned ? 'owned-skin' : ''}`;
 
             card.addEventListener('mouseenter', (e) => this.showTooltip(skin.description, e.clientX, e.clientY));
             card.addEventListener('mouseleave', () => this.hideTooltip());
@@ -1013,14 +1026,18 @@ export class UIManager {
                     <div id="card-preview-${skin.id}"></div>
                 </div>
                 <div class="card-name">${skin.name}</div>
-                <button class="shop-card-btn buy" style="width: 100%">$${skin.price}</button>
+                <button class="shop-card-btn ${isOwned ? 'owned' : 'buy'}" style="width: 100%" ${isOwned ? 'disabled' : ''}>
+                    ${isOwned ? 'OWNED' : `$${skin.price}`}
+                </button>
             `;
 
-            card.querySelector('.shop-card-btn')?.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.playClick();
-                this.handleSkinAction(skin.id);
-            });
+            if (!isOwned) {
+                card.querySelector('.shop-card-btn')?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.playClick();
+                    this.handleSkinAction(skin.id);
+                });
+            }
 
             gridEl.appendChild(card);
             const previewBox = card.querySelector(`#card-preview-${skin.id}`);
@@ -1040,7 +1057,8 @@ export class UIManager {
         pageItems.forEach(skin => {
             const card = document.createElement('div');
             const isEquipped = equipped === skin.id;
-            card.className = `skin-card ${isEquipped ? 'equipped' : ''}`;
+            const isLimited = skin.id.includes('limited');
+            card.className = `skin-card ${isEquipped ? 'equipped' : ''} ${isLimited ? 'limited' : ''}`;
 
             card.innerHTML = `
                 <div class="card-preview-box">
@@ -1334,7 +1352,11 @@ export class UIManager {
         const isClassic = classicBtn?.classList.contains('active');
 
         if (jumpIcon) {
-            jumpIcon.textContent = isTouch ? '👆' : 'SPACE';
+            if (isTouch) {
+                jumpIcon.innerHTML = `<img src="${IconDrawer.getSimpleIcon('hand')}" style="width: 40px; height: 40px; object-fit: contain;">`;
+            } else {
+                jumpIcon.textContent = 'SPACE';
+            }
             jumpIcon.className = `tut-icon ${isTouch ? 'touch-icon' : 'key-icon'}`;
         }
 
@@ -1347,7 +1369,11 @@ export class UIManager {
             } else {
                 if (dashItem) dashItem.style.display = 'flex';
                 if (separator) separator.style.display = 'block';
-                dashIcon.textContent = isTouch ? 'Touch R' : 'SHIFT';
+                if (isTouch) {
+                    dashIcon.innerHTML = `<img src="${IconDrawer.getSimpleIcon('hand')}" style="width: 35px; height: 35px; object-fit: contain;"> <span style="font-size: 0.6rem; margin-left: 4px;">R</span>`;
+                } else {
+                    dashIcon.textContent = 'SHIFT';
+                }
                 dashIcon.className = `tut-icon ${isTouch ? 'touch-icon' : 'key-icon'}`;
                 if (isTouch) dashIcon.style.fontSize = '0.6rem';
             }

@@ -726,8 +726,8 @@ h2 {
   scrollbar-width: none;
   padding: 0.2rem 0.5rem;
   margin-top: 0.5rem;
-  height: 19rem;
-  /* Fixed height to show roughly 2 rows */
+  height: 22rem;
+  /* Increased from 19rem */
 }
 
 .shop-main-layout::-webkit-scrollbar {
@@ -772,17 +772,46 @@ h2 {
   background: rgba(0, 255, 247, 0.03);
 }
 
+.skin-card.owned-skin {
+  border-color: rgba(0, 255, 170, 0.3);
+  background: rgba(0, 255, 170, 0.02);
+}
+
+.skin-card.limited {
+  border-color: #00ffcc !important;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.2), inset 0 0 10px rgba(0, 255, 204, 0.1);
+  background: linear-gradient(135deg, rgba(0, 255, 204, 0.05) 0%, rgba(10, 10, 20, 0.95) 100%);
+}
+
+.skin-card.limited::before {
+  content: 'LIMITED';
+  position: absolute;
+  top: 0.5rem;
+  left: -1rem;
+  background: #00ffcc;
+  color: #000;
+  font-size: 0.5rem;
+  font-weight: 900;
+  padding: 0.2rem 1.5rem;
+  transform: rotate(-45deg);
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+  z-index: 10;
+}
+
 .card-preview-box {
-  height: 3.5rem;
+  height: 5.5rem;
+  /* Increased from 3.5rem */
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: scale(1.1);
+  margin-bottom: 0.2rem;
 }
 
 .card-preview-box canvas {
   background: transparent !important;
-  /* Force transparency */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .card-name {
@@ -818,6 +847,14 @@ h2 {
 .shop-card-btn:hover {
   background: #fff;
   transform: scale(1.03);
+}
+
+.shop-card-btn.owned {
+  background: #222 !important;
+  color: #666 !important;
+  cursor: default !important;
+  transform: none !important;
+  border: 1px solid #333 !important;
 }
 
 /* UNIFIED COLOR FOR ALL ACTION BUTTONS - Solid Blue */

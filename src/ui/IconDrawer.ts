@@ -68,10 +68,48 @@ export class IconDrawer {
             case 'nitro_ultra': return '#ff4500'; // OrangeRed
             case 'nitro_quantum': return '#adff2f'; // GreenYellow
             case 'nitro_hyper': return '#ffffff'; // White/Hyper
+            case 'nitro_omega': return '#00ffaa'; // Ethereal Cyan/Green
             default: return '#888';
         }
     }
-    static getSimpleIcon(type: 'success' | 'error' | 'shop' | 'settings' | 'fullscreen' | 'leaderboard' | 'map_0' | 'map_1' | 'map_2' | 'map_3' | 'map_4' | 'map_5', size: number = 60): string {
+
+    static getCoinIcon(size: number = 60): string {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d')!;
+
+        const color = '#ffd700'; // Neon Gold
+        ctx.translate(size / 2, size / 2);
+
+        // Drawing the coin
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size * 0.08;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = size * 0.2;
+
+        // Outer circle
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner circle/detail
+        ctx.lineWidth = size * 0.04;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.2, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Dollar sign or symbol
+        ctx.fillStyle = color;
+        ctx.font = `bold ${size * 0.35}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('$', 0, 0);
+
+        return canvas.toDataURL();
+    }
+
+    static getSimpleIcon(type: 'success' | 'error' | 'shop' | 'settings' | 'fullscreen' | 'leaderboard' | 'map_0' | 'map_1' | 'map_2' | 'map_3' | 'map_4' | 'map_5' | 'coin' | 'hand', size: number = 60): string {
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -106,10 +144,46 @@ export class IconDrawer {
             case 'map_3': this.drawMapIcon(ctx, size, 'volcano'); break;  // Volcano Core
             case 'map_4': this.drawMapIcon(ctx, size, 'space'); break;    // Star Forge
             case 'map_5': this.drawMapIcon(ctx, size, 'sunny'); break;    // Sunny Highlands
+            case 'coin':
+                ctx.restore(); // Reset translate for getCoinIcon which also translates
+                return this.getCoinIcon(size);
+            case 'hand': this.drawTapIcon(ctx, size); break;
             case 'backpack' as any: this.drawBackpack(ctx, size); break;
         }
 
         return canvas.toDataURL();
+    }
+
+    private static drawTapIcon(ctx: CanvasRenderingContext2D, size: number) {
+        const color = '#00fff7'; // Neon Blue
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+
+        const s = size * 0.4;
+
+        // Draw a simplified "Finger" tapping/touching
+        ctx.beginPath();
+        // Finger tip (Circle or Rounded end)
+        ctx.arc(0, -s * 0.2, s * 0.2, Math.PI, 0);
+        // Finger body
+        ctx.lineTo(s * 0.2, s * 0.8);
+        ctx.lineTo(-s * 0.2, s * 0.8);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Ripple/Tap effect circles
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.2, s * 0.4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.2, s * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
     }
 
     private static drawCheckmark(ctx: CanvasRenderingContext2D, size: number) {

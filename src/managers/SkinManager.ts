@@ -825,30 +825,186 @@ function drawSamurai(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: 
     ctx.restore();
 }
 
+function drawAetherDragon(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, frames: number, color: string): void {
+    ctx.save();
+    ctx.scale(0.6, 0.6);
+
+    const glow = isDashing ? '#fff' : color;
+    const flap = Math.sin(bird.wingAngle) * 20;
+    const isBlinking = (frames % 180) > 172;
+
+    // 1. Refined Dragon Body (Majestic Snout & Jaw)
+    ctx.fillStyle = '#0a0a0a';
+    ctx.beginPath();
+    // Rounded/Blunt tail base instead of sharp point
+    ctx.moveTo(-35, -5);
+    ctx.quadraticCurveTo(-45, 0, -35, 5);
+
+    // Lower body with BELLY FINS
+    ctx.quadraticCurveTo(-15, 20, 10, 12);   // Jaw curve
+    ctx.lineTo(32, 6);                       // Mouth line
+    ctx.quadraticCurveTo(46, 2, 46, -2);     // Snout Tip
+    ctx.lineTo(38, -6);                      // Upper Snout
+    ctx.quadraticCurveTo(10, -12, -35, -5);  // Back to tail base
+    ctx.fill();
+    ctx.strokeStyle = glow;
+    ctx.lineWidth = 2.0;
+    ctx.stroke();
+
+    // 2. PREMIUM DETAIL: BELLY FINS & WHISKERS
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.6;
+    // Front Belly Fin
+    ctx.beginPath();
+    ctx.moveTo(0, 12); ctx.lineTo(-8, 22); ctx.lineTo(-2, 12); ctx.closePath(); ctx.fill();
+    // Mid Belly Fin
+    ctx.beginPath();
+    ctx.moveTo(-15, 10); ctx.lineTo(-20, 18); ctx.lineTo(-12, 10); ctx.closePath(); ctx.fill();
+
+    // Whiskers (Flowing backwards for a more dynamic look)
+    ctx.strokeStyle = glow; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    // Top whisker trailing back
+    ctx.moveTo(38, 1);
+    ctx.quadraticCurveTo(20, 10, -15, 18 + Math.sin(frames * 0.06) * 4);
+    // Bottom whisker trailing back
+    ctx.moveTo(38, -1);
+    ctx.quadraticCurveTo(20, -10, -15, -18 + Math.cos(frames * 0.06) * 4);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. ENERGY CORE (Optimized for Mobile FPS)
+    const corePulse = (Math.sin(frames * 0.08) + 1) * 0.5;
+    ctx.save();
+    ctx.globalAlpha = 0.2 + corePulse * 0.3;
+    const coreGrad = ctx.createRadialGradient(-5, 0, 2, -5, 0, 14);
+    coreGrad.addColorStop(0, '#fff');
+    coreGrad.addColorStop(0.6, color);
+    coreGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = coreGrad;
+    ctx.setTransform(ctx.getTransform().scale(1 + corePulse * 0.1, 1 + corePulse * 0.1)); // Subtle pulse scale
+    ctx.beginPath(); ctx.arc(-5 / (1 + corePulse * 0.1), 0, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // 2. Re-aligned Cyber-Spine
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.0;
+    ctx.globalAlpha = 0.45;
+    for (let i = 0; i < 5; i++) {
+        const sx = -28 + i * 11;
+        const sy = -3 + (i * 0.9);
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - 6);
+        ctx.quadraticCurveTo(sx + 3, sy, sx, sy + 6);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 3. Sharp Dragon Horns
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.moveTo(10, -13); ctx.lineTo(6, -32); ctx.lineTo(18, -16);
+    ctx.moveTo(22, -11); ctx.lineTo(22, -26); ctx.lineTo(30, -13);
+    ctx.fill();
+
+    // 4. Blinking Eye (Positioned on new snout)
+    if (!isBlinking) {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.ellipse(33, -3, 4.2, 3.2, 0.1, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.arc(35, -3, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(34, -4, 0.7, 0, Math.PI * 2); ctx.fill();
+    } else {
+        ctx.strokeStyle = glow; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(30, -3); ctx.lineTo(38, -3); ctx.stroke();
+    }
+
+    // 5. Ethereal High-Detail Wings
+    const drawEtherWing = (isUpper: boolean) => {
+        const yDir = isUpper ? -1 : 1;
+        ctx.save();
+        ctx.translate(-5, 4 * yDir);
+        ctx.rotate(flap * 0.008 * yDir);
+
+        const grad = ctx.createRadialGradient(0, 0, 5, -30, -15 * yDir, 50);
+        grad.addColorStop(0, color);
+        grad.addColorStop(0.6, `rgba(0, 255, 204, 0.15)`);
+        grad.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = grad;
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        if (isUpper) {
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-20, -45 + flap, -75, -35 + flap, -85, -8 + flap / 2);
+            ctx.quadraticCurveTo(-40, 2, 0, 0);
+        } else {
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-15, 35 - flap, -65, 40 - flap, -75, 15 - flap / 2);
+            ctx.quadraticCurveTo(-35, 4, 0, 0);
+        }
+        ctx.fill();
+        ctx.strokeStyle = color; ctx.lineWidth = 1.0; ctx.globalAlpha = 0.3; ctx.stroke();
+        ctx.restore();
+    };
+    drawEtherWing(true);
+    drawEtherWing(false);
+
+    // 6. Spectral Energy Tail (Slowed down to 0.04 speed)
+    for (let i = 0; i < 5; i++) {
+        const tx = -55 - i * 14;
+        const ty = Math.sin(frames * 0.04 + i * 0.6) * 6; // Slowed down from 0.05
+        const s = 4.5 - i * 0.8;
+
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.globalAlpha = 1.0 - i * 0.18;
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 0.4;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    ctx.restore();
+}
+
 // --- SKIN CONFIG: 5 VERY DISTINCT COLORS ---
 const DISTINCT_COLORS = ['#ff00ff', '#00ffaa', '#00aaff', '#ffaa00', '#ff3333']; // Pink, Emerald, Sapphire, Amber, Ruby
 
 export const SKINS: SkinDefinition[] = [
-    ...createVariations('sphere', 'Neon Sphere', 'Standard magnetic containment unit with eyes and energy core.', ['Balanced'], DISTINCT_COLORS, drawSphere),
-    ...createVariations('pigeon', 'Cyber Pigeon', 'Urban recon drone. High agility.', ['Agile'], DISTINCT_COLORS, drawPigeon),
-    ...createVariations('shark', 'Cyber Shark', 'Apex predator of the data streams.', ['Fast'], DISTINCT_COLORS, drawShark),
-    ...createVariations('butterfly', 'Cyber Butterfly', 'Bio-luminescent winged unit for silent data infiltration.', ['Flow'], DISTINCT_COLORS, drawButterfly),
-    ...createVariations('chicken', 'Sky Pecker', 'Orbital poultry craft with pulse wings.', ['Hover'], DISTINCT_COLORS, drawChicken),
-    ...createVariations('fish', 'Deep-Net Fish', 'Data stream inhabitant with oscillating tail.', ['Swim'], DISTINCT_COLORS, drawFish),
-    ...createVariations('chimera', 'Cyber Chimera', 'Forbidden experimental hybrid predator.', ['Exotic'], DISTINCT_COLORS, drawChimera),
-    ...createVariations('whale', 'Plasma Whale', 'Titan of the binary deep with energy fins.', ['Titan'], DISTINCT_COLORS, drawWhale),
-    ...createVariations('phoenix', 'Cyber Phoenix', 'Mythical eternal bird reborn in neon fire.', ['Immortal'], DISTINCT_COLORS, drawPhoenix),
-    ...createVariations('dragonfly', 'Neon Dragonfly', 'High-speed interceptor with quadruple wings.', ['Agile'], DISTINCT_COLORS, drawDragonfly),
-    ...createVariations('bee', 'Cyber Bee', 'Aggressive swarm unit with pulse stinger.', ['Small'], DISTINCT_COLORS, drawBee),
-    ...createVariations('flappy', 'Retro Flappy', 'Old-school classic reborn in the grid.', ['Classic'], DISTINCT_COLORS, drawClassicFlappy),
-    ...createVariations('jellyfish', 'Plasma Jelly', 'Bioluminescent deep-sea explorer.', ['Fluid'], DISTINCT_COLORS, drawJellyfish),
-    ...createVariations('duck', 'Cyber Duck', 'Tactical waterfowl with buoyant plating.', ['Quack'], DISTINCT_COLORS, drawDuck),
-    ...createVariations('beetle', 'Iron Beetle', 'Heavy armored insect with hydraulic shell.', ['Heavy'], DISTINCT_COLORS, drawBeetle),
-    ...createVariations('clownfish', 'Neon Clown', 'Playful reef inhabitant with energy bands.', ['Reef'], DISTINCT_COLORS, drawClownfish),
-    ...createVariations('swordsurfer', 'Cyber Blade Walker', 'Legendary warrior surfing the data tides on a gravity-blade.', ['Legendary'], DISTINCT_COLORS, drawSwordSurfer, 1000),
-    ...createVariations('reaper', 'Phantom Reaper', 'Demonic scythe-master with a tattered soul-cloak.', ['Grim'], DISTINCT_COLORS, drawReaper, 1000),
-    ...createVariations('lancer', 'Plasma Lancer', 'Futuristic spear-rider with energy scarf.', ['Elite'], DISTINCT_COLORS, drawLancer, 1000),
-    ...createVariations('samurai', 'Void Samurai', 'Traditional minimalist shadow-walker.', ['Swift'], DISTINCT_COLORS, drawSamurai, 1000),
+    ...createVariations('sphere', 'Neon Sphere', 'Standard magnetic containment unit with eyes and energy core.', ['Balanced'], DISTINCT_COLORS, drawSphere, 500),
+    ...createVariations('pigeon', 'Cyber Pigeon', 'Urban recon drone. High agility.', ['Agile'], DISTINCT_COLORS, drawPigeon, 600),
+    ...createVariations('shark', 'Cyber Shark', 'Apex predator of the data streams.', ['Fast'], DISTINCT_COLORS, drawShark, 700),
+    ...createVariations('butterfly', 'Cyber Butterfly', 'Bio-luminescent winged unit for silent data infiltration.', ['Flow'], DISTINCT_COLORS, drawButterfly, 800),
+    ...createVariations('chicken', 'Sky Pecker', 'Orbital poultry craft with pulse wings.', ['Hover'], DISTINCT_COLORS, drawChicken, 900),
+    ...createVariations('fish', 'Deep-Net Fish', 'Data stream inhabitant with oscillating tail.', ['Swim'], DISTINCT_COLORS, drawFish, 1000),
+    ...createVariations('chimera', 'Cyber Chimera', 'Forbidden experimental hybrid predator.', ['Exotic'], DISTINCT_COLORS, drawChimera, 1100),
+    ...createVariations('whale', 'Plasma Whale', 'Titan of the binary deep with energy fins.', ['Titan'], DISTINCT_COLORS, drawWhale, 1200),
+    ...createVariations('phoenix', 'Cyber Phoenix', 'Mythical eternal bird reborn in neon fire.', ['Immortal'], DISTINCT_COLORS, drawPhoenix, 1300),
+    ...createVariations('dragonfly', 'Neon Dragonfly', 'High-speed interceptor with quadruple wings.', ['Agile'], DISTINCT_COLORS, drawDragonfly, 1400),
+    ...createVariations('bee', 'Cyber Bee', 'Aggressive swarm unit with pulse stinger.', ['Small'], DISTINCT_COLORS, drawBee, 1500),
+    ...createVariations('flappy', 'Retro Flappy', 'Old-school classic reborn in the grid.', ['Classic'], DISTINCT_COLORS, drawClassicFlappy, 1600),
+    ...createVariations('jellyfish', 'Plasma Jelly', 'Bioluminescent deep-sea explorer.', ['Fluid'], DISTINCT_COLORS, drawJellyfish, 1700),
+    ...createVariations('duck', 'Cyber Duck', 'Tactical waterfowl with buoyant plating.', ['Quack'], DISTINCT_COLORS, drawDuck, 1800),
+    ...createVariations('beetle', 'Iron Beetle', 'Heavy armored insect with hydraulic shell.', ['Heavy'], DISTINCT_COLORS, drawBeetle, 1900),
+    ...createVariations('clownfish', 'Neon Clown', 'Playful reef inhabitant with energy bands.', ['Reef'], DISTINCT_COLORS, drawClownfish, 2000),
+    ...createVariations('swordsurfer', 'Cyber Blade Walker', 'Legendary warrior surfing the data tides on a gravity-blade.', ['Legendary'], DISTINCT_COLORS, drawSwordSurfer, 2100),
+    ...createVariations('reaper', 'Phantom Reaper', 'Demonic scythe-master with a tattered soul-cloak.', ['Grim'], DISTINCT_COLORS, drawReaper, 2200),
+    ...createVariations('lancer', 'Plasma Lancer', 'Futuristic spear-rider with energy scarf.', ['Elite'], DISTINCT_COLORS, drawLancer, 2300),
+    ...createVariations('samurai', 'Void Samurai', 'Traditional minimalist shadow-walker.', ['Swift'], DISTINCT_COLORS, drawSamurai, 2400),
+    {
+        id: 'aether-dragon-limited',
+        name: 'AETHER DRAGON',
+        price: 2500,
+        description: 'LIMITED EDITION. A mythical creature from the void. Ethereal wings and pulse tail.',
+        features: ['Legendary', 'Limited'],
+        drawFunction: (ctx, bird, isDashing, frames) => drawAetherDragon(ctx, bird, isDashing, frames, '#00ffcc')
+    }
 ];
 
 export class SkinManager {
@@ -1062,12 +1218,21 @@ export class SkinManager {
         ctx.restore();
     }
     drawPreview(skinId: string): HTMLCanvasElement {
-        const canvas = document.createElement('canvas'); canvas.width = 60; canvas.height = 60;
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 100;
         const ctx = canvas.getContext('2d')!;
-        const mockBird: BirdState = { x: 30, y: 30, radius: 15, rotation: 0, speed: 0, energy: 100, isDashing: false, wingAngle: 0, stabilizeTimer: 0, invulnerableTimer: 0 };
-        ctx.translate(30, 30);
+        const mockBird: BirdState = {
+            x: 50, y: 60, radius: 15, rotation: 0, speed: 0, energy: 100, isDashing: false,
+            wingAngle: 0, stabilizeTimer: 0, invulnerableTimer: 0
+        };
+        ctx.translate(50, 60); // Offset down slightly for taller stick figures
         const skin = this.getSkinById(skinId);
-        if (skin) skin.drawFunction(ctx, mockBird, false, 0);
+        if (skin) {
+            // Scale down slightly to fit 100x100 better
+            ctx.scale(0.85, 0.85);
+            skin.drawFunction(ctx, mockBird, false, 0);
+        }
         return canvas;
     }
 }

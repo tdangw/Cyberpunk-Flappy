@@ -2,12 +2,16 @@ export class GroundDecorationManager {
     private decorations: { x: number; y: number; type: string; variant: number; scale: number; rotation: number }[] = [];
     private density: number = 40;
     private nextGap: number = 0;
+    private patternCount: number = 0;
+    private currentPattern: string = 'random';
 
     constructor() { }
 
     reset(width: number, height: number, groundHeight: number): void {
         this.decorations = [];
         this.nextGap = Math.random() * this.density + 10;
+        this.patternCount = 0;
+        this.currentPattern = 'random';
 
         // Pre-fill screen
         let currentX = 0;
@@ -40,8 +44,8 @@ export class GroundDecorationManager {
             // or we keep it but only if we really want gaps.
             // Given user feedback "too few grass", let's fill every gap.
 
-            // Performance Cap: Don't spawn if too many items (e.g., > 30) 
-            if (this.decorations.length < 30) {
+            // Performance Cap: Don't spawn if too many items (e.g., > 35) 
+            if (this.decorations.length < 35) {
                 this.spawnDecorationAt(width + 50, height, groundHeight);
             }
 
@@ -51,8 +55,39 @@ export class GroundDecorationManager {
     }
 
     private spawnDecorationAt(x: number, height: number, groundHeight: number): void {
-        const types = ['grass', 'grass', 'grass', 'flower', 'rock', 'rock']; // Weight probability
-        const type = types[Math.floor(Math.random() * types.length)];
+        // Pattern Selection Logic
+        if (this.patternCount <= 0) {
+            // Pick a new pattern: 40% grass cluster, 30% flower cluster, 10% rock cluster, 20% random mix
+            const rand = Math.random();
+            if (rand < 0.45) {
+                this.currentPattern = 'grass';
+                this.patternCount = 2 + Math.floor(Math.random() * 4); // Cluster of 2-5
+            } else if (rand < 0.75) {
+                this.currentPattern = 'flower';
+                this.patternCount = 2 + Math.floor(Math.random() * 3); // Cluster of 2-4
+            } else if (rand < 0.85) {
+                this.currentPattern = 'rock';
+                this.patternCount = 1 + Math.floor(Math.random() * 2); // Cluster of 1-2 rocks
+            } else {
+                this.currentPattern = 'random';
+                this.patternCount = 3 + Math.floor(Math.random() * 5); // Cluster of 3-7 mixed
+            }
+        }
+
+        let type = 'grass';
+        if (this.currentPattern === 'random') {
+            const types = ['grass', 'grass', 'flower', 'rock'];
+            type = types[Math.floor(Math.random() * types.length)];
+        } else {
+            type = this.currentPattern;
+            // 15% noise chance to break the pattern slightly for natural look
+            if (Math.random() < 0.15) {
+                const noiseTypes = ['grass', 'flower', 'rock'];
+                type = noiseTypes[Math.floor(Math.random() * noiseTypes.length)];
+            }
+        }
+
+        this.patternCount--;
 
         let y = height - groundHeight;
         let scale = 0.8 + Math.random() * 0.4;
