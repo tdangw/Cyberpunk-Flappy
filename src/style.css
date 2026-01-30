@@ -244,36 +244,33 @@ canvas {
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  /* Faster, smoother transition */
+  transition: transform 0.1s ease-out, background 0.1s, box-shadow 0.1s;
   letter-spacing: 2px;
   box-shadow: 0 0 15px rgba(0, 255, 247, 0.3);
   pointer-events: auto;
   user-select: none;
-  touch-action: none;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  /* Remove mobile blue highlight */
   outline: none;
 }
 
-@media (hover: hover) {
-  .dash-button-hud:hover {
-    background: var(--neon-blue);
-    color: #000;
-    box-shadow: 0 0 25px var(--neon-blue);
-    transform: scale(1.05);
-  }
-}
+/* REMOVED HOVER COMPLETELY TO PREVENT STICKY MOBILE STATES */
 
 .dash-button-hud:active {
-  transform: scale(0.85);
-  /* Slightly more pronounced press */
-  background: var(--neon-blue) !important;
-  color: #fff !important;
-  box-shadow: 0 0 40px var(--neon-blue), inset 0 0 20px rgba(255, 255, 255, 0.4);
+  transform: scale(0.9);
+  background: var(--neon-blue);
+  color: #fff;
+  box-shadow: 0 0 30px var(--neon-blue), inset 0 0 15px rgba(255, 255, 255, 0.5);
   filter: brightness(1.2);
-  transition: all 0.05s;
-  /* Instant snap on press */
+  transition: none;
+  /* Instant feedback on press */
+}
+
+.dash-button-hud:focus,
+.dash-button-hud:focus-visible {
+  outline: none;
+  box-shadow: 0 0 15px rgba(0, 255, 247, 0.3);
+  /* Reset shadow */
 }
 
 /* DASH BUTTON ACCENTS - 4 Corner Arcs */

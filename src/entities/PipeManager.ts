@@ -3,15 +3,21 @@ import { CANVAS, COLORS } from '../config/constants';
 
 /**
  * Manages pipe generation and movement
- * Restored to original clean design. Covers all style types to fix the 26 points bug.
+ * Optimized with dynamic patterns (Stairs, Twins, Desert)
  */
 export class PipeManager {
     private pipes: Pipe[] = [];
     private coins: Coin[] = [];
     private config: GameConfig;
-    private currentPipeInterval: number = 250;
-    private pipeColor: string = COLORS.NEON_PINK;
     private pipeStyle: string = 'cyber';
+    private pipeColor: string = COLORS.NEON_PINK;
+
+    // Generation State
+    private currentPipeInterval: number = 400;
+    private patternType: 'none' | 'stairs_up' | 'stairs_down' | 'twins' | 'desert' = 'none';
+    private patternRemaining: number = 0;
+    private lastPipeTop: number = 300;
+    private lastPipeGap: number = 250;
 
     constructor(config: GameConfig) {
         this.config = config;
@@ -31,7 +37,7 @@ export class PipeManager {
 
         const lastPipe = this.pipes[this.pipes.length - 1];
 
-        // If no pipes, spawn immediately. If pipes exist, check against stored interval.
+        // Check if it's time to spawn a new pipe
         if (!lastPipe || CANVAS.WIDTH - lastPipe.x >= this.currentPipeInterval) {
             this.createPipe(spawnCoins);
             this.setNextPipeInterval();
@@ -49,7 +55,7 @@ export class PipeManager {
             });
         });
 
-        // Random floating coins (disabled in classic)
+        // Random floating coins
         if (spawnCoins && Math.random() < 0.005 * dtRatio) this.spawnSafeRandomCoin();
 
         this.coins = this.coins.filter((c) => c.x + c.r > 0 && !c.collected);
@@ -63,7 +69,28 @@ export class PipeManager {
         const padding = 80;
         const minY = padding;
         const maxY = CANVAS.HEIGHT - groundH - gap - padding;
-        const topH = Math.random() * (maxY - minY) + minY;
+
+        let topH: number;
+
+        // Pattern Height Logic
+        if (this.patternType === 'stairs_up' && this.patternRemaining > 0) {
+            topH = Math.max(minY, this.lastPipeTop - 80);
+        } else if (this.patternType === 'stairs_down' && this.patternRemaining > 0) {
+            topH = Math.min(maxY, this.lastPipeTop + 80);
+        } else if (this.patternType === 'twins' && this.patternRemaining > 0) {
+            topH = this.lastPipeTop;
+        } else {
+            // Normal Random
+            topH = Math.random() * (maxY - minY) + minY;
+
+            // Smoothing transition from patterns
+            if (this.patternRemaining === 0 && Math.abs(topH - this.lastPipeTop) > 300) {
+                topH = this.lastPipeTop + (topH > this.lastPipeTop ? 200 : -200);
+            }
+        }
+
+        this.lastPipeTop = topH;
+        this.lastPipeGap = gap;
 
         const pipe: Pipe = {
             x: CANVAS.WIDTH + 100,
@@ -74,6 +101,9 @@ export class PipeManager {
         };
         this.pipes.push(pipe);
 
+        if (this.patternRemaining > 0) this.patternRemaining--;
+
+        // Spawn coin in the gap
         if (spawnCoins && Math.random() > 0.4) {
             const coinX = pipe.x + 40;
             const coinY = topH + gap / 2;
@@ -84,18 +114,15 @@ export class PipeManager {
     }
 
     private isPositionSafe(x: number, y: number, r: number): boolean {
-        // Check against pipes
         const pipeOverlap = this.pipes.some(p => {
             const horizontalProximity = x + r > p.x - 20 && x - r < p.x + p.w + 20;
             if (!horizontalProximity) return false;
-            // Inside horizontal range, check vertical gap
             const gapTop = p.top;
             const gapBottom = p.top + this.config.pipeGap;
             return y - r < gapTop + 10 || y + r > gapBottom - 10;
         });
         if (pipeOverlap) return false;
 
-        // Check against existing coins
         const coinOverlap = this.coins.some(c => {
             const dx = c.x - x;
             const dy = c.y - y;
@@ -105,11 +132,9 @@ export class PipeManager {
     }
 
     private spawnSafeRandomCoin(): void {
-        // Try spawning between pipes (midpoint logic)
         let x = CANVAS.WIDTH + 150;
         const lastPipe = this.pipes[this.pipes.length - 1];
         if (lastPipe) {
-            // Spawn 200px after last pipe if interval allows
             x = lastPipe.x + this.currentPipeInterval / 2;
         }
 
@@ -124,16 +149,59 @@ export class PipeManager {
 
     setColors(color: string): void { this.pipeColor = color; }
     setStyle(style: string): void { this.pipeStyle = style; }
+
     private setNextPipeInterval(): void {
-        const baseSpacing = this.config.pipeSpacing || 250;
-        const variance = 200;
-        const randomDist = baseSpacing + (Math.random() - 0.5) * variance;
-        this.currentPipeInterval = Math.max(150, randomDist);
+        const baseSpacing = this.config.pipeSpacing || 350;
+
+        if (this.patternRemaining <= 0) {
+            this.patternType = 'none';
+        }
+
+        // Pattern Spacing Logic (Immediate override for active patterns)
+        if (this.patternType === 'stairs_up' || this.patternType === 'stairs_down') {
+            this.currentPipeInterval = 280; // Tighter for stairs
+            return;
+        }
+
+        if (this.patternType === 'twins') {
+            this.currentPipeInterval = 220; // Fast sequence
+            return;
+        }
+
+        if (this.patternType === 'desert') {
+            this.currentPipeInterval = 1500 + Math.random() * 800; // Even longer gap possible
+            this.patternType = 'none';
+            return;
+        }
+
+        // Potential to start a NEW pattern
+        const rand = Math.random();
+        if (rand < 0.12) {
+            this.patternType = 'stairs_up';
+            this.patternRemaining = 2 + Math.floor(Math.random() * 3); // 2-4 pipes in the sequence
+            this.currentPipeInterval = baseSpacing;
+        } else if (rand < 0.24) {
+            this.patternType = 'stairs_down';
+            this.patternRemaining = 2 + Math.floor(Math.random() * 3);
+            this.currentPipeInterval = baseSpacing;
+        } else if (rand < 0.32) {
+            this.patternType = 'twins';
+            this.patternRemaining = 1 + Math.floor(Math.random() * 2); // 2 or 3 total
+            this.currentPipeInterval = baseSpacing;
+        } else if (rand < 0.38) {
+            this.patternType = 'desert';
+            this.patternRemaining = 0;
+            this.currentPipeInterval = baseSpacing;
+        } else {
+            // Normal rhythmic behavior
+            const variance = 150;
+            const randomDist = baseSpacing + (Math.random() - 0.5) * variance;
+            this.currentPipeInterval = Math.max(280, randomDist);
+        }
     }
 
     getPipes(): Pipe[] { return this.pipes; }
     getCoins(): Coin[] { return this.coins; }
-
     reset(): void { this.pipes = []; this.coins = []; }
 
     clearNearPipes(birdX: number): void {
@@ -171,7 +239,6 @@ export class PipeManager {
         ctx.lineWidth = 4;
         ctx.shadowBlur = 15; ctx.shadowColor = this.pipeColor;
 
-        // Base logic for drawing shapes
         const drawBody = () => {
             ctx.strokeRect(p.x, 0, p.w, p.top);
             ctx.fillRect(p.x, 0, p.w, p.top);
@@ -197,14 +264,12 @@ export class PipeManager {
             drawBody();
         }
 
-        // Universal Body Fill for ALL styles (skipped for 3d_neon and classic)
-        ctx.globalAlpha = 0.15; // Subtle fill
+        ctx.globalAlpha = 0.15;
         ctx.fillStyle = this.pipeColor;
         ctx.fillRect(p.x, 0, p.w, p.top);
         ctx.fillRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
         ctx.globalAlpha = 1.0;
 
-        // Internal Details & Borders
         ctx.shadowBlur = 0;
         ctx.strokeStyle = this.pipeColor;
 
@@ -213,7 +278,6 @@ export class PipeManager {
             case 'neon':
             case 'glitch':
             case 'plasma':
-                // Add fill for these tech styles + extra glow
                 ctx.fillStyle = this.pipeColor;
                 ctx.globalAlpha = 0.1;
                 ctx.fillRect(p.x + 5, 0, p.w - 10, p.top);
@@ -223,7 +287,6 @@ export class PipeManager {
                 for (let y = 20; y < p.top; y += 40) { ctx.moveTo(p.x, y); ctx.lineTo(p.x + p.w, y); }
                 for (let y = botY + 20; y < CANVAS.HEIGHT; y += 40) { ctx.moveTo(p.x, y); ctx.lineTo(p.x + p.w, y); }
                 ctx.stroke();
-                // Solid Border
                 ctx.globalAlpha = 1;
                 ctx.strokeRect(p.x, 0, p.w, p.top);
                 ctx.strokeRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
@@ -232,7 +295,6 @@ export class PipeManager {
                 ctx.fillStyle = this.pipeColor;
                 ctx.fillRect(p.x, 0, p.w, p.top);
                 ctx.fillRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
-                // Knots
                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
                 for (let y = 40; y < p.top; y += 80) ctx.fillRect(p.x - 2, y, p.w + 4, 6);
                 for (let y = botY + 40; y < CANVAS.HEIGHT; y += 80) ctx.fillRect(p.x - 2, y, p.w + 4, 6);
@@ -241,10 +303,9 @@ export class PipeManager {
             case 'stone':
             case 'lava':
             case 'magma':
-                ctx.fillStyle = this.pipeColor; // Solid Fill
+                ctx.fillStyle = this.pipeColor;
                 ctx.fillRect(p.x, 0, p.w, p.top);
                 ctx.fillRect(p.x, botY, p.w, CANVAS.HEIGHT - botY);
-                // Texture
                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
                 for (let y = 20; y < p.top; y += 50) { ctx.beginPath(); ctx.arc(p.x + 10, y, 5, 0, Math.PI * 2); ctx.fill(); }
                 for (let y = botY + 20; y < CANVAS.HEIGHT; y += 50) { ctx.beginPath(); ctx.arc(p.x + p.w - 15, y + 10, 8, 0, Math.PI * 2); ctx.fill(); }
@@ -274,48 +335,32 @@ export class PipeManager {
     private drawClassicPipe(ctx: CanvasRenderingContext2D, x: number, w: number, top: number, botY: number): void {
         const rimHeight = 26;
         const rimOverhang = 4;
-        const borderW = 2; // Thinner, smoother border
-        const borderColor = '#2f441a'; // Dark green/black outline
+        const borderW = 2;
+        const borderColor = '#2f441a';
 
         ctx.shadowBlur = 0;
         ctx.lineWidth = borderW;
         ctx.strokeStyle = borderColor;
 
-        // Create Gradient for 3D effect
-        // We create it across the width of the pipe (x to x+w)
-        // Since we reuse it for rim (wider), we need a standardized gradient or function.
         const drawPart = (bx: number, by: number, bw: number, bh: number) => {
             const grad = ctx.createLinearGradient(bx, by, bx + bw, by);
-            // 3D Lighting: Dark Edge -> Base -> Highlight -> Base -> Dark Edge
-            grad.addColorStop(0, '#4a8522');     // Darker Shadow
-            grad.addColorStop(0.1, '#65a830');   // Base Green
-            grad.addColorStop(0.4, '#b4e05b');   // Specular Highlight (Yellowish)
-            grad.addColorStop(0.6, '#98d146');   // Soft Highlight
-            grad.addColorStop(0.9, '#65a830');   // Base Green
-            grad.addColorStop(1, '#3b6916');     // Dark Edge
+            grad.addColorStop(0, '#4a8522');
+            grad.addColorStop(0.1, '#65a830');
+            grad.addColorStop(0.4, '#b4e05b');
+            grad.addColorStop(0.6, '#98d146');
+            grad.addColorStop(0.9, '#65a830');
+            grad.addColorStop(1, '#3b6916');
 
             ctx.fillStyle = grad;
-
-            // Draw
             ctx.beginPath();
             ctx.rect(bx, by, bw, bh);
             ctx.fill();
             ctx.stroke();
-
-            // Inner bevel/highlight line at top of vertical segments for 3D feel? 
-            // The image is clean, so standard gradient + border is closest.
         };
 
-        // TOP PIPE
-        // Body
         drawPart(x, -5, w, top - rimHeight + 5);
-        // Rim
         drawPart(x - rimOverhang, top - rimHeight, w + rimOverhang * 2, rimHeight);
-
-        // BOTTOM PIPE
-        // Rim
         drawPart(x - rimOverhang, botY, w + rimOverhang * 2, rimHeight);
-        // Body
         drawPart(x, botY + rimHeight, w, CANVAS.HEIGHT - (botY + rimHeight) - CANVAS.GROUND_HEIGHT + 5);
     }
 
@@ -342,48 +387,30 @@ export class PipeManager {
 
     private draw3DPipe(ctx: CanvasRenderingContext2D, x: number, w: number, top: number, bot: number): void {
         ctx.globalAlpha = 1.0;
-
-        // Optimized Cylinder Shader - FASTEST & SMOOTHEST
         const drawCylinder = (sx: number, sy: number, sw: number, sh: number) => {
-            // Gradient only - no overlay for maximum performance and smoothness
             const grad = ctx.createLinearGradient(sx, sy, sx + sw, sy);
-            grad.addColorStop(0, '#000');           // Edge shadow
-            grad.addColorStop(0.15, this.pipeColor);// Base color
-            grad.addColorStop(0.4, this.pipeColor); // Highlight area (flat)
-            grad.addColorStop(0.85, this.pipeColor);// Base color
-            grad.addColorStop(1.0, '#000');         // Edge shadow
-
+            grad.addColorStop(0, '#000');
+            grad.addColorStop(0.15, this.pipeColor);
+            grad.addColorStop(0.4, this.pipeColor);
+            grad.addColorStop(0.85, this.pipeColor);
+            grad.addColorStop(1.0, '#000');
             ctx.fillStyle = grad;
             ctx.fillRect(sx, sy, sw, sh);
-
-            // Add a very subtle inner shadow line to define shape without white
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(sx + sw * 0.7, sy, sw * 0.1, sh);
         };
 
         const rimHeight = 25;
         const rimOverhang = 6;
+        const getDarkShade = () => 'rgba(0,0,0,0.5)';
 
-        // Darker color for inside the pipe (simulating depth without solid black line)
-        const getDarkShade = () => {
-            // Simple hack: overlay black with alpha on current coloring
-            return 'rgba(0,0,0,0.5)';
-        };
-
-        // TOP PIPE
-        drawCylinder(x, 0, w, top - rimHeight); // Body
-        drawCylinder(x - rimOverhang, top - rimHeight, w + rimOverhang * 2, rimHeight); // Rim
-
-        // Cap (Bottom of top pipe) - No black line
-        // Just fill with a slightly darker shade to look like a solid object
+        drawCylinder(x, 0, w, top - rimHeight);
+        drawCylinder(x - rimOverhang, top - rimHeight, w + rimOverhang * 2, rimHeight);
         ctx.fillStyle = getDarkShade();
         ctx.fillRect(x + 2, top - 4, w - 4, 4);
 
-        // BOTTOM PIPE
-        drawCylinder(x - rimOverhang, bot, w + rimOverhang * 2, rimHeight); // Rim
-        drawCylinder(x, bot + rimHeight, w, CANVAS.HEIGHT - (bot + rimHeight) - CANVAS.GROUND_HEIGHT); // Body
-
-        // Cap (Top of bottom pipe)
+        drawCylinder(x - rimOverhang, bot, w + rimOverhang * 2, rimHeight);
+        drawCylinder(x, bot + rimHeight, w, CANVAS.HEIGHT - (bot + rimHeight) - CANVAS.GROUND_HEIGHT);
         ctx.fillStyle = getDarkShade();
         ctx.fillRect(x + 2, bot, w - 4, 4);
     }
