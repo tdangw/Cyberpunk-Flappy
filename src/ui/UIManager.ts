@@ -78,11 +78,20 @@ export class UIManager {
     }
 
     private setupEventListeners(): void {
-        const bindAction = (id: string, callback: () => void) => {
+        const bindAction = (id: string, callback: (e?: Event) => void) => {
             const el = document.getElementById(id);
             if (!el) return;
-            el.addEventListener('click', (e) => { e.stopPropagation(); callback(); });
-            el.addEventListener('touchstart', (e) => { e.stopPropagation(); callback(); }, { passive: false });
+            // Handle Click
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                callback(e);
+            });
+            // Handle Touch - Prevent Default to stop Ghost Click
+            el.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                callback(e);
+            }, { passive: false });
         };
 
         bindAction('settings-btn', () => { this.playClick(); this.showSettings(); });
@@ -177,11 +186,13 @@ export class UIManager {
         this.setupConfirmControls();
 
         // Retry Button
-        bindAction('restartBtn', () => {
+        bindAction('restartBtn', (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             this.playClick();
             this.stopReviveTimer();
             this.hideGameOver();
             this.showStartScreen();
+            this.startScreenCooldown = Date.now(); // Prevent immediate start
             this.game.restart();
         });
 
