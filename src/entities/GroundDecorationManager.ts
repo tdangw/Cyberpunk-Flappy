@@ -40,8 +40,8 @@ export class GroundDecorationManager {
             // or we keep it but only if we really want gaps.
             // Given user feedback "too few grass", let's fill every gap.
 
-            // Performance Cap: Don't spawn if too many items (e.g., > 50) 
-            if (this.decorations.length < 50) {
+            // Performance Cap: Don't spawn if too many items (e.g., > 35) 
+            if (this.decorations.length < 35) {
                 this.spawnDecorationAt(width + 50, height, groundHeight);
             }
 

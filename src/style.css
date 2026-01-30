@@ -164,7 +164,7 @@ canvas {
 }
 
 #energy-label {
-  font-size: 0.5rem;
+  font-size: 0.45rem;
   color: #fff;
   font-weight: 700;
   text-transform: uppercase;
@@ -1815,7 +1815,7 @@ h2 {
   left: 50%;
   transform: translateX(-50%);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.9);
   letter-spacing: 1px;
