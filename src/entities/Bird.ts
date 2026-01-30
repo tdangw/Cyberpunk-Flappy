@@ -209,6 +209,15 @@ export class Bird implements BirdState {
         }
     }
 
+    bounce(): void {
+        this.speed = -this.config.jump * 0.8; // Small bounce up
+        this.wingAngle = 0;
+    }
+
+    getVelocity(): { x: number; y: number } {
+        return { x: 0, y: this.speed };
+    }
+
     isInvulnerable(): boolean {
         // If dashing, ALWAYS safe.
         // If timer > 0 (post-dash or revive), ALSO safe.

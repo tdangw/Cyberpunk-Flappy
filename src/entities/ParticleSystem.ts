@@ -23,28 +23,53 @@ export class ParticleSystem {
     emit(x: number, y: number, count: number, color: string): void {
         for (let i = 0; i < count; i++) {
             this.particles.push({
-                x,
-                y,
-                vx: (Math.random() - 0.5) * 12, // Faster explosion
+                x, y,
+                vx: (Math.random() - 0.5) * 12,
                 vy: (Math.random() - 0.5) * 12,
-                life: 1.0 + Math.random() * 0.5, // Varied life
+                life: 1.0 + Math.random() * 0.5,
                 color,
             });
         }
     }
 
+    emitText(x: number, y: number, text: string, color: string): void {
+        // We use a dummy vx/vy for text particles to move up slowly
+        this.particles.push({
+            x, y,
+            vx: 0,
+            vy: -2,
+            life: 1.5,
+            color,
+            text
+        } as any);
+    }
+
     render(ctx: CanvasRenderingContext2D): void {
-        this.particles.forEach((p) => {
+        this.particles.forEach((p: any) => {
             ctx.save();
-            ctx.globalAlpha = p.life;
+            ctx.globalAlpha = Math.min(1.0, p.life);
             ctx.fillStyle = p.color;
-            ctx.shadowBlur = 10 * p.life; // Blur fades too
-            ctx.shadowColor = p.color;
-            ctx.beginPath();
-            // Shrink as it dies
-            const radius = Math.max(0, 4 * p.life);
-            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-            ctx.fill();
+
+            if (p.text) {
+                // Render score popup text (Handles icon if passed in string)
+                // Size matched to HUD coin display (~20px equivalent)
+                ctx.font = '700 20px "JetBrains Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = '#000';
+
+                // Draw Text
+                ctx.fillStyle = p.color;
+                ctx.fillText(p.text, p.x, p.y);
+            } else {
+                // Render standard glow particles
+                ctx.shadowBlur = 10 * p.life;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                const radius = Math.max(0, 4 * p.life);
+                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
             ctx.restore();
         });
     }

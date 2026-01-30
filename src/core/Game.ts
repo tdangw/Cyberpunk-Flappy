@@ -306,11 +306,44 @@ export class Game {
             }
         });
 
-        // New: Collision with Ground Enemies (Goombas)
+        // New: Collision with Ground Enemies (Goombas, Bullets)
         this.pipeManager.getEnemies().forEach((enemy) => {
-            if (!enemy.dead &&
-                birdRect.r > enemy.x + 5 && birdRect.l < enemy.x + enemy.w - 5 &&
-                birdRect.b > enemy.y + 5 && birdRect.t < enemy.y + enemy.h - 5) {
+            if (enemy.dead) return;
+
+            const enemyRect = {
+                l: enemy.x + 5,
+                r: enemy.x + enemy.w - 5,
+                t: enemy.y + 5,
+                b: enemy.y + enemy.h - 5
+            };
+
+            if (birdRect.r > enemyRect.l && birdRect.l < enemyRect.r &&
+                birdRect.b > enemyRect.t && birdRect.t < enemyRect.b) {
+
+                // STOMP LOGIC: More generous stomp zone
+                const isNotJumpingUp = this.bird.getVelocity().y > -2;
+                const hitTopPart = birdRect.b < enemy.y + enemy.h * 0.8;
+
+                if (isNotJumpingUp && hitTopPart) {
+                    // Successful Stomp (works even with shield!)
+                    if (enemy.type === 'bullet') {
+                        enemy.dead = true;
+                        enemy.vy = 10; // Drop down
+                        this.score += 5;
+                        this.createScorePopup(enemy.x, enemy.y, '+5$ 🪙');
+                        this.audioManager.play('coin');
+                    } else {
+                        enemy.dead = true;
+                        this.score += 2;
+                        this.createScorePopup(enemy.x, enemy.y, '+2$ 🪙');
+                        this.audioManager.play('coin');
+                    }
+
+                    // Refresh shield and bounce
+                    this.bird.extendInvulnerability(60);
+                    this.bird.bounce();
+                    return;
+                }
 
                 if (this.bird.isInvulnerable()) {
                     // Skip or extend safety
@@ -320,6 +353,12 @@ export class Game {
                 }
             }
         });
+    }
+
+    private createScorePopup(x: number, y: number, text: string): void {
+        // We already have particle logic, let's reuse or add a simple particle for score
+        this.particleSystem.emitText(x, y, text, COLORS.NEON_GOLD);
+        // We could also add a temporary UI element if needed, but particles are lighter
     }
 
     private triggerDying(): void {
@@ -335,6 +374,13 @@ export class Game {
 
     private handleGroundCollision(): void {
         if (this.state === 'GAMEOVER') return;
+
+        // NEW: If bird is shielded (invulnerable) during play, bounce off the ground instead of dying
+        if (this.state === 'PLAYING' && this.bird.isInvulnerable()) {
+            this.bird.bounce();
+            this.audioManager.play('jump');
+            return;
+        }
 
         this.audioManager.play('hit'); // Sync: Impact Ground
         this.audioManager.play('die'); // Game over sound

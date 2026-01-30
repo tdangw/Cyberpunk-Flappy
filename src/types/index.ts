@@ -73,9 +73,10 @@ export interface Coin {
 }
 
 export interface GroundEnemy {
-    type: 'goomba' | 'snail';
+    type: 'goomba' | 'snail' | 'bullet';
     x: number;
     y: number;
+    vy?: number; // Vertical velocity for falling enemies
     w: number;
     h: number;
     scaleX: number;

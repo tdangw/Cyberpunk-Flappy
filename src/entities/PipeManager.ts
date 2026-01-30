@@ -14,7 +14,7 @@ export class PipeManager {
 
     // Generation State
     private currentPipeInterval: number = 400;
-    private patternType: 'none' | 'stairs_up' | 'stairs_down' | 'twins' | 'desert' = 'none';
+    private patternType: 'none' | 'stairs_up' | 'stairs_down' | 'twins' | 'desert' | 'bullet_stairs' | 'bullet_squad' | 'bullet_zigzag' = 'none';
     private patternRemaining: number = 0;
     private lastPipeTop: number = 300;
 
@@ -56,11 +56,24 @@ export class PipeManager {
         if (spawnCoins && Math.random() < 0.005 * dtRatio) this.spawnSafeRandomCoin();
         this.coins = this.coins.filter((c) => c.x + c.r > 0 && !c.collected);
 
-        // Ground Enemies (Goombas)
+        // Ground & Air Enemies (Walking, Falling, Flying)
         this.groundEnemies.forEach((e) => {
-            // Move with map PLUS their own crawling speed
-            e.x -= (speed + e.crawlingSpeed) * dtRatio;
+            const movementSpeed = e.type === 'bullet' ? speed * 2 : (speed + e.crawlingSpeed);
+            e.x -= movementSpeed * dtRatio;
             e.animFrame += 0.1 * dtRatio;
+
+            // Falling Physics for Goombas/Snails
+            if (e.type !== 'bullet') {
+                const groundY = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - e.h;
+                if (e.y < groundY) {
+                    e.vy = (e.vy || 0) + 0.25 * dtRatio; // Gravity
+                    e.y += e.vy * dtRatio;
+                    if (e.y > groundY) {
+                        e.y = groundY;
+                        e.vy = 0;
+                    }
+                }
+            }
         });
         this.groundEnemies = this.groundEnemies.filter(e => e.x + e.w > -100 && !e.dead);
     }
@@ -77,6 +90,12 @@ export class PipeManager {
         const lastPipe = this.pipes[this.pipes.length - 1];
         let topH: number;
         let spawnX = CANVAS.WIDTH + 150;
+
+        // CHECK FOR EXCLUSIVE BULLET EVENTS
+        if (this.patternType === 'bullet_stairs' || this.patternType === 'bullet_squad' || this.patternType === 'bullet_zigzag') {
+            this.handleBulletEvent(spawnX, lastPipe ? lastPipe.top : 300, gap);
+            return; // EXIT EARLY - NO PIPE FOR THESE EVENTS
+        }
 
         if (lastPipe && this.patternRemaining > 0) {
             spawnX = lastPipe.x + this.currentPipeInterval;
@@ -112,44 +131,110 @@ export class PipeManager {
             }
         }
 
-        // NEW: Spawn Ground Enemy (Mario-style animals with variants)
-        if (this.currentPipeInterval > 150 && Math.random() < 0.28) {
-            const types: ('goomba' | 'snail')[] = ['goomba', 'snail'];
-            const type = types[Math.floor(Math.random() * types.length)];
-
-            // 3 Size Variants: Std, Small, Large
-            const sizeRand = Math.random();
-            let sx = 1, sy = 1;
-            if (sizeRand < 0.33) { sx = 0.7; sy = 0.7; }      // Smaller
-            else if (sizeRand < 0.66) { sx = 1.4; sy = 1.4; } // Larger
-            // else Standard (1,1)
-
-            // 6 Color Variants (Standard + 5 others)
-            const goombaColors = ['#8b4513', '#4682b4', '#a52a2a', '#2e8b57', '#6a5acd', '#2f4f4f'];
-            const snailColors = ['#ffa07a', '#00ced1', '#32cd32', '#ff69b4', '#ffd700', '#9370db'];
-            const chosenColor = type === 'goomba'
-                ? goombaColors[Math.floor(Math.random() * goombaColors.length)]
-                : snailColors[Math.floor(Math.random() * snailColors.length)];
-
-            const enemyW = 40 * sx;
-            const enemyH = 40 * sy;
-            const enemyX = spawnX + 150;
-            const enemyY = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - enemyH;
-
-            this.groundEnemies.push({
-                type,
-                x: enemyX,
-                y: enemyY,
-                w: enemyW,
-                h: enemyH,
-                scaleX: sx,
-                scaleY: sy,
-                color: chosenColor,
-                crawlingSpeed: (type === 'snail' ? 0.3 : 1.0) * (sizeRand < 0.2 ? 1.3 : 1.0), // Smaller ones move faster
-                animFrame: 0,
-                dead: false
-            });
+        // NEW: Minor Variant Spawning (Still allowed with pipes)
+        const randEvent = Math.random();
+        if (this.currentPipeInterval > 150) {
+            if (randEvent < 0.12) {
+                // GROUND ENEMY
+                this.spawnGroundEnemy(spawnX + 150);
+            } else if (randEvent < 0.22) {
+                // FALLING ENEMY
+                this.spawnFallingEnemy(spawnX, topH);
+            }
         }
+    }
+
+    private handleBulletEvent(spawnX: number, lastTop: number, gap: number): void {
+        const type = this.patternType;
+        this.patternType = 'none'; // Reset so next call is normal
+
+        if (type === 'bullet_squad') {
+            this.currentPipeInterval = 800;
+            const startX = spawnX + 100;
+            const count = 4;
+            const midY = lastTop + gap / 2;
+            const squadY = midY + (Math.random() > 0.5 ? -50 : 50);
+            for (let i = 0; i < count; i++) {
+                this.spawnBulletBill(startX + i * 90, squadY);
+            }
+        } else if (type === 'bullet_stairs') {
+            // STAIR FORMATION - Adjacent bullets as per image
+            this.currentPipeInterval = 3000;
+            const startX = spawnX + 150;
+            const count = 10;
+            const horizontalGap = 55; // Adjacent (bullet width is ~50-60)
+            const verticalStep = 65;
+            const startY = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - 60;
+
+            for (let i = 0; i < count; i++) {
+                const x = startX + i * horizontalGap;
+                const y = startY - (i * verticalStep);
+                // Don't spawn off-screen top
+                if (y > 40) {
+                    this.spawnBulletBill(x, y);
+                }
+            }
+        } else if (type === 'bullet_zigzag') {
+            // "GATE/CORRIDOR" FORMATION - Top and bottom rows with dodge space
+            this.currentPipeInterval = 2500;
+            const startX = spawnX + 150;
+            const count = 6; // 6 pairs
+            const horizontalGap = 220;
+
+            // Fixed heights for top and bottom barriers
+            const topY = 80;
+            const bottomY = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - 80;
+
+            for (let i = 0; i < count; i++) {
+                const x = startX + i * horizontalGap;
+                this.spawnBulletBill(x, topY);
+                this.spawnBulletBill(x, bottomY);
+            }
+        }
+    }
+
+    private spawnGroundEnemy(x: number): void {
+        const types: ('goomba' | 'snail')[] = ['goomba', 'snail'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const sizeRand = Math.random();
+        let sx = 1, sy = 1;
+        if (sizeRand < 0.33) { sx = 0.7; sy = 0.7; }
+        else if (sizeRand < 0.66) { sx = 1.4; sy = 1.4; }
+
+        const goombaColors = ['#8b4513', '#4682b4', '#a52a2a', '#2e8b57', '#6a5acd', '#2f4f4f'];
+        const snailColors = ['#ffa07a', '#00ced1', '#32cd32', '#ff69b4', '#ffd700', '#9370db'];
+        const color = type === 'goomba' ? goombaColors[Math.floor(Math.random() * goombaColors.length)] : snailColors[Math.floor(Math.random() * snailColors.length)];
+
+        const w = 40 * sx; const h = 40 * sy;
+        this.groundEnemies.push({
+            type, x, y: CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - h,
+            w, h, scaleX: sx, scaleY: sy, color,
+            crawlingSpeed: (type === 'snail' ? 0.3 : 1.0) * (sizeRand < 0.33 ? 1.3 : 1.0),
+            animFrame: 0, dead: false
+        });
+    }
+
+    private spawnFallingEnemy(x: number, pipeTop: number): void {
+        // Spawn right at the edge of the top pipe
+        const w = 35; const h = 35;
+        this.groundEnemies.push({
+            type: Math.random() > 0.5 ? 'goomba' : 'snail',
+            x: x + 20, y: pipeTop - h, vy: 2, // Start with a little down push
+            w, h, scaleX: 0.9, scaleY: 0.9, color: COLORS.NEON_PINK,
+            crawlingSpeed: 1, animFrame: 0, dead: false
+        });
+    }
+
+    private spawnBulletBill(x: number, gapMidY: number): void {
+        const w = 50; const h = 35;
+        // Bullet Bill positions follow a "reachable" pattern
+        // Slightly offset from exact center for variety
+        const y = gapMidY + (Math.random() - 0.5) * 60;
+        this.groundEnemies.push({
+            type: 'bullet', x, y: y - h / 2,
+            w, h, scaleX: 1.2, scaleY: 1.2, color: '#000',
+            crawlingSpeed: 0, animFrame: 0, dead: false
+        });
     }
 
     private isPositionSafe(x: number, y: number, r: number): boolean {
@@ -208,21 +293,29 @@ export class PipeManager {
             }
         }
         const rand = Math.random();
-        if (rand < 0.12) {
+        if (rand < 0.10) {
             this.patternType = 'stairs_up';
             this.patternRemaining = 2 + Math.floor(Math.random() * 3);
             this.currentPipeInterval = 250;
-        } else if (rand < 0.22) {
+        } else if (rand < 0.18) {
             this.patternType = 'stairs_down';
             this.patternRemaining = 2 + Math.floor(Math.random() * 3);
             this.currentPipeInterval = 250;
-        } else if (rand < 0.30) {
+        } else if (rand < 0.25) {
             this.patternType = 'twins';
             this.patternRemaining = 2 + Math.floor(Math.random() * 3);
             this.currentPipeInterval = 250;
-        } else if (rand < 0.35) {
+        } else if (rand < 0.30) {
             this.patternType = 'desert';
             this.currentPipeInterval = 1800 + Math.random() * 500;
+        } else if (rand < 0.35) {
+            // ADVANCED BULLET FORMATIONS (Now chose as top-level patterns)
+            const fRand = Math.random();
+            if (fRand < 0.4) this.patternType = 'bullet_stairs';
+            else if (fRand < 0.7) this.patternType = 'bullet_squad';
+            else this.patternType = 'bullet_zigzag';
+            // Spacing will be set inside createPipe when the event triggers
+            this.currentPipeInterval = baseSpacing;
         } else {
             // NORMAL: 250 +- 50
             const variance = 50;
@@ -264,7 +357,10 @@ export class PipeManager {
     private drawGroundEnemy(ctx: CanvasRenderingContext2D, e: GroundEnemy): void {
         ctx.save();
         ctx.translate(e.x + e.w / 2, e.y + e.h / 2);
-        ctx.scale(e.scaleX, e.scaleY); // Apply size variant scaling
+
+        if (e.type !== 'bullet') {
+            ctx.scale(e.scaleX, e.scaleY); // Apply size variant scaling
+        }
 
         const walk = Math.sin(e.animFrame) * 4;
         const baseW = 40;
@@ -327,7 +423,85 @@ export class PipeManager {
                 ctx.strokeStyle = '#8b4513'; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.arc(baseW * 0.1, baseH * 0.05, baseH * 0.15, 0, Math.PI * 2); ctx.stroke();
                 break;
+
+            case 'bullet':
+                this.drawBulletBill(ctx, e);
+                break;
         }
+
+        ctx.restore();
+    }
+
+    private drawBulletBill(ctx: CanvasRenderingContext2D, e: GroundEnemy): void {
+        const w = e.w * 1.3;
+        const h = e.h;
+
+        ctx.save();
+
+        // Body Glow (Cyberpunk feel)
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = COLORS.NEON_BLUE;
+
+        // 1. Main Body (Dark Metal Hexagon shape)
+        const bodyGrad = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+        bodyGrad.addColorStop(0, '#1a1a2e');
+        bodyGrad.addColorStop(0.5, '#16213e');
+        bodyGrad.addColorStop(1, '#0f3460');
+        ctx.fillStyle = bodyGrad;
+
+        ctx.beginPath();
+        ctx.moveTo(-w * 0.5, 0);          // Front Point
+        ctx.lineTo(-w * 0.2, -h * 0.5);   // Top Front
+        ctx.lineTo(w * 0.5, -h * 0.5);    // Top Back
+        ctx.lineTo(w * 0.4, 0);           // Rear Mid (Indented)
+        ctx.lineTo(w * 0.5, h * 0.5);     // Bottom Back
+        ctx.lineTo(-w * 0.2, h * 0.5);    // Bottom Front
+        ctx.closePath();
+        ctx.fill();
+
+        // 2. Neon Visor (Instead of Eyes)
+        ctx.fillStyle = COLORS.NEON_BLUE;
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.moveTo(-w * 0.35, -h * 0.1);
+        ctx.lineTo(-w * 0.1, -h * 0.1);
+        ctx.lineTo(-w * 0.2, h * 0.1);
+        ctx.lineTo(-w * 0.4, h * 0.1);
+        ctx.closePath();
+        ctx.fill();
+
+        // 3. Stabilization Fins (Instead of Arms)
+        ctx.fillStyle = '#4e4e4e';
+        ctx.shadowBlur = 0;
+        // Upper Fin
+        ctx.beginPath();
+        ctx.moveTo(w * 0.1, -h * 0.5);
+        ctx.lineTo(w * 0.3, -h * 0.75);
+        ctx.lineTo(w * 0.4, -h * 0.5);
+        ctx.fill();
+        // Lower Fin
+        ctx.beginPath();
+        ctx.moveTo(w * 0.1, h * 0.5);
+        ctx.lineTo(w * 0.3, h * 0.75);
+        ctx.lineTo(w * 0.4, h * 0.5);
+        ctx.fill();
+
+        // 4. Rear Energy Core (Thruster)
+        const engineGrad = ctx.createRadialGradient(w * 0.4, 0, 0, w * 0.4, 0, 10);
+        engineGrad.addColorStop(0, '#fff');
+        engineGrad.addColorStop(1, COLORS.NEON_BLUE);
+        ctx.fillStyle = engineGrad;
+        ctx.beginPath();
+        ctx.arc(w * 0.4, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. Surface Detail (Tech lines)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, -h * 0.5);
+        ctx.lineTo(0, h * 0.5);
+        ctx.stroke();
 
         ctx.restore();
     }
