@@ -258,12 +258,8 @@ canvas {
 
 .dash-button-hud:active {
   transform: scale(0.9);
-  background: var(--neon-blue);
-  color: #fff;
-  box-shadow: 0 0 30px var(--neon-blue), inset 0 0 15px rgba(255, 255, 255, 0.5);
-  filter: brightness(1.2);
+  /* Removed glow for mobile stickiness fix */
   transition: none;
-  /* Instant feedback on press */
 }
 
 .dash-button-hud:focus,

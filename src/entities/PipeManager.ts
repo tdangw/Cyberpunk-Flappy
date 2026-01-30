@@ -73,24 +73,24 @@ export class PipeManager {
         let topH: number;
 
         // Pattern Height Logic
+        // If we are IN a pattern sequence, calculate based on last pipe
         if (this.patternType === 'stairs_up' && this.patternRemaining > 0) {
-            topH = Math.max(minY, this.lastPipeTop - 80);
+            topH = Math.max(minY, this.lastPipeTop - 100);
         } else if (this.patternType === 'stairs_down' && this.patternRemaining > 0) {
-            topH = Math.min(maxY, this.lastPipeTop + 80);
+            topH = Math.min(maxY, this.lastPipeTop + 100);
         } else if (this.patternType === 'twins' && this.patternRemaining > 0) {
-            topH = this.lastPipeTop;
+            topH = this.lastPipeTop; // Contiguous wall at same height
         } else {
-            // Normal Random
+            // Normal Random or start of a pattern
             topH = Math.random() * (maxY - minY) + minY;
 
-            // Smoothing transition from patterns
+            // Safety: if starting fresh after a pattern, don't jump too far too fast
             if (this.patternRemaining === 0 && Math.abs(topH - this.lastPipeTop) > 300) {
-                topH = this.lastPipeTop + (topH > this.lastPipeTop ? 200 : -200);
+                topH = this.lastPipeTop + (topH > this.lastPipeTop ? 150 : -150);
             }
         }
 
         this.lastPipeTop = topH;
-        this.lastPipeGap = gap;
 
         const pipe: Pipe = {
             x: CANVAS.WIDTH + 100,
@@ -103,7 +103,6 @@ export class PipeManager {
 
         if (this.patternRemaining > 0) this.patternRemaining--;
 
-        // Spawn coin in the gap
         if (spawnCoins && Math.random() > 0.4) {
             const coinX = pipe.x + 40;
             const coinY = topH + gap / 2;
@@ -114,15 +113,18 @@ export class PipeManager {
     }
 
     private isPositionSafe(x: number, y: number, r: number): boolean {
+        // Check against pipes
         const pipeOverlap = this.pipes.some(p => {
             const horizontalProximity = x + r > p.x - 20 && x - r < p.x + p.w + 20;
             if (!horizontalProximity) return false;
+            // Inside horizontal range, check vertical gap
             const gapTop = p.top;
             const gapBottom = p.top + this.config.pipeGap;
             return y - r < gapTop + 10 || y + r > gapBottom - 10;
         });
         if (pipeOverlap) return false;
 
+        // Check against existing coins
         const coinOverlap = this.coins.some(c => {
             const dx = c.x - x;
             const dy = c.y - y;
@@ -132,9 +134,11 @@ export class PipeManager {
     }
 
     private spawnSafeRandomCoin(): void {
+        // Try spawning between pipes (midpoint logic)
         let x = CANVAS.WIDTH + 150;
         const lastPipe = this.pipes[this.pipes.length - 1];
         if (lastPipe) {
+            // Spawn after last pipe
             x = lastPipe.x + this.currentPipeInterval / 2;
         }
 
@@ -153,50 +157,55 @@ export class PipeManager {
     private setNextPipeInterval(): void {
         const baseSpacing = this.config.pipeSpacing || 350;
 
-        if (this.patternRemaining <= 0) {
+        // 1. Check if we are currently mid-sequence
+        if (this.patternRemaining > 0) {
+            // Contiguous sequence: pipes touch each other
+            if (['stairs_up', 'stairs_down', 'twins'].includes(this.patternType)) {
+                this.currentPipeInterval = 80; // Pipe width (contiguous)
+                return;
+            }
+        }
+
+        // 2. Check if a pattern just finished
+        if (this.patternType !== 'none') {
+            const prevType = this.patternType;
             this.patternType = 'none';
+            this.patternRemaining = 0;
+
+            // Give extra space for player to recover after a dense wall/stairs
+            if (prevType !== 'desert') {
+                this.currentPipeInterval = baseSpacing + 250;
+                return;
+            }
         }
 
-        // Pattern Spacing Logic (Immediate override for active patterns)
-        if (this.patternType === 'stairs_up' || this.patternType === 'stairs_down') {
-            this.currentPipeInterval = 280; // Tighter for stairs
-            return;
-        }
-
-        if (this.patternType === 'twins') {
-            this.currentPipeInterval = 220; // Fast sequence
-            return;
-        }
-
-        if (this.patternType === 'desert') {
-            this.currentPipeInterval = 1500 + Math.random() * 800; // Even longer gap possible
-            this.patternType = 'none';
-            return;
-        }
-
-        // Potential to start a NEW pattern
+        // 3. Roll for a NEW pattern or normal spacing
         const rand = Math.random();
-        if (rand < 0.12) {
+
+        if (rand < 0.15) {
+            // STAIRS UP
             this.patternType = 'stairs_up';
-            this.patternRemaining = 2 + Math.floor(Math.random() * 3); // 2-4 pipes in the sequence
+            this.patternRemaining = 2 + Math.floor(Math.random() * 3); // 2-4 more pipes
             this.currentPipeInterval = baseSpacing;
-        } else if (rand < 0.24) {
+        } else if (rand < 0.30) {
+            // STAIRS DOWN
             this.patternType = 'stairs_down';
             this.patternRemaining = 2 + Math.floor(Math.random() * 3);
             this.currentPipeInterval = baseSpacing;
-        } else if (rand < 0.32) {
+        } else if (rand < 0.40) {
+            // CONTIGUOUS WALL (Twins/Triples/Quads)
             this.patternType = 'twins';
-            this.patternRemaining = 1 + Math.floor(Math.random() * 2); // 2 or 3 total
+            this.patternRemaining = 1 + Math.floor(Math.random() * 4); // 2-5 pipes total
             this.currentPipeInterval = baseSpacing;
-        } else if (rand < 0.38) {
+        } else if (rand < 0.45) {
+            // DESERT (Long gap)
             this.patternType = 'desert';
-            this.patternRemaining = 0;
-            this.currentPipeInterval = baseSpacing;
+            this.currentPipeInterval = 1600 + Math.random() * 1000;
         } else {
             // Normal rhythmic behavior
             const variance = 150;
             const randomDist = baseSpacing + (Math.random() - 0.5) * variance;
-            this.currentPipeInterval = Math.max(280, randomDist);
+            this.currentPipeInterval = Math.max(350, randomDist);
         }
     }
 
