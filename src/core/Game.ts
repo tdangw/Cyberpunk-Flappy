@@ -11,6 +11,7 @@ import { AudioManager } from '../managers/AudioManager';
 import { LevelGenerator } from './LevelGenerator';
 import { BOOSTS } from '../config/boosts';
 import { GroundDecorationManager } from '../entities/GroundDecorationManager';
+import { BackgroundBirdManager } from '../entities/BackgroundBirdManager';
 
 /**
  * Main Game class - orchestrates all game systems
@@ -33,6 +34,7 @@ export class Game {
     private pipeManager: PipeManager;
     private particleSystem: ParticleSystem;
     private groundDecorationManager: GroundDecorationManager;
+    private backgroundBirdManager: BackgroundBirdManager;
 
     private skinManager: SkinManager;
     private saveManager: SaveManager;
@@ -72,6 +74,7 @@ export class Game {
         this.pipeManager = new PipeManager(this.config);
         this.particleSystem = new ParticleSystem();
         this.groundDecorationManager = new GroundDecorationManager();
+        this.backgroundBirdManager = new BackgroundBirdManager();
 
         this.setupInput();
         this.setupDebugKeys();
@@ -291,6 +294,9 @@ export class Game {
             // Ground Decorations
             if (!this.isClassicMode) {
                 this.groundDecorationManager.update(speed, dtRatio, CANVAS.WIDTH, CANVAS.HEIGHT, CANVAS.GROUND_HEIGHT);
+                if (this.config.showBackgroundDetails) {
+                    this.backgroundBirdManager.update(dtRatio, speed);
+                }
             }
 
             // Procedural Level Generation
@@ -495,6 +501,11 @@ export class Game {
 
         // Pass Classic flags to renderer
         this.renderer.drawBackground(this.frames, this.isClassicMode);
+
+        if (!this.isClassicMode && this.config.showBackgroundDetails) {
+            this.backgroundBirdManager.render(this.ctx, this.frames);
+        }
+
         this.renderer.drawDistanceMarkers(this.distanceTraveled, this.isClassicMode);
         this.renderer.drawGround(this.frames, this.state === 'PLAYING' ? this.config.speed : 0);
 
@@ -582,6 +593,7 @@ export class Game {
         this.pipeManager.reset();
         this.particleSystem.clear();
         this.groundDecorationManager.reset(CANVAS.WIDTH, CANVAS.HEIGHT, CANVAS.GROUND_HEIGHT);
+        this.backgroundBirdManager.reset();
 
         this.updateScoreUI();
         this.updateCoinUI();

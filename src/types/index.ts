@@ -16,6 +16,7 @@ export interface GameConfig {
     pipeSpacing: number;
     dashControl: DashControlType;
     showFPS: boolean;
+    showBackgroundDetails: boolean;
 }
 
 export interface StageDefinition {

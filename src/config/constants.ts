@@ -15,6 +15,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     sfxEnabled: true,
     dashControl: 'button_right',
     showFPS: false,
+    showBackgroundDetails: true,
 };
 
 export interface StageDefinition {

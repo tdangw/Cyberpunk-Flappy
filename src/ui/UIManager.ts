@@ -444,6 +444,12 @@ export class UIManager {
             this.game.updateConfig({ showFPS: !current });
             this.updateControlUI();
         });
+        document.getElementById('toggle-bg-details')?.addEventListener('click', () => {
+            this.playClick();
+            const current = this.game.getConfig().showBackgroundDetails;
+            this.game.updateConfig({ showBackgroundDetails: !current });
+            this.updateControlUI();
+        });
     }
 
     private setupConfirmControls(): void {
@@ -499,6 +505,14 @@ export class UIManager {
                 btnFPS.classList.remove('active');
                 container?.classList.remove('has-fps');
             }
+        }
+
+        const btnBg = document.getElementById('toggle-bg-details');
+        if (btnBg) {
+            const isOn = config.showBackgroundDetails;
+            btnBg.textContent = isOn ? 'ON' : 'OFF';
+            btnBg.classList.remove('on', 'off', 'active'); // Clear all potential
+            btnBg.classList.add(isOn ? 'on' : 'off');
         }
 
         // Dashboard HUD Visibility and Position
