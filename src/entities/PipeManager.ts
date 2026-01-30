@@ -28,7 +28,7 @@ export class PipeManager {
         this.setNextPipeInterval();
     }
 
-    update(speed: number, dtRatio: number, spawnCoins: boolean = true): void {
+    update(speed: number, dtRatio: number, spawnCoins: boolean = true, isClassic: boolean = false): void {
         // Pipes
         this.pipes.forEach((p) => (p.x -= speed * dtRatio));
         if (this.pipes.length && this.pipes[0].x + this.pipes[0].w < -100) {
@@ -38,7 +38,7 @@ export class PipeManager {
         const lastPipe = this.pipes[this.pipes.length - 1];
         if (!lastPipe || CANVAS.WIDTH - lastPipe.x >= this.currentPipeInterval) {
             const wasEvent = this.patternType !== 'none' && this.patternType.startsWith('bullet_');
-            this.createPipe(spawnCoins);
+            this.createPipe(spawnCoins, isClassic);
             // Only randomize next interval if we didn't just start a custom event 
             // handleBulletEvent sets a specific interval; we mustn't overwrite it.
             if (!wasEvent) {
@@ -97,7 +97,7 @@ export class PipeManager {
         this.groundEnemies = this.groundEnemies.filter(e => e.x + e.w > -100 && !e.dead);
     }
 
-    private createPipe(spawnCoins: boolean): void {
+    private createPipe(spawnCoins: boolean, isClassic: boolean = false): void {
         const groundH = CANVAS.GROUND_HEIGHT;
         const configGap = this.config.pipeGap;
         const gapVariance = (Math.random() - 0.5) * 20;
@@ -112,7 +112,7 @@ export class PipeManager {
 
         // Restore Simple Bullet/Enemy Spawning alongside pipes
         const randEvent = Math.random();
-        if (this.currentPipeInterval > 150) {
+        if (!isClassic && this.currentPipeInterval > 150) {
             if (randEvent < 0.12) {
                 this.spawnGroundEnemy(spawnX + 200);
             } else if (randEvent < 0.22) {
@@ -125,7 +125,7 @@ export class PipeManager {
         }
 
         // COMPLEX EVENTS (Keep rare, exclusive)
-        if (this.patternType === 'bullet_stairs' || this.patternType === 'bullet_zigzag') {
+        if (!isClassic && (this.patternType === 'bullet_stairs' || this.patternType === 'bullet_zigzag')) {
             this.handleBulletEvent(spawnX, lastPipe ? lastPipe.top : 300, gap);
             return;
         }
@@ -358,7 +358,7 @@ export class PipeManager {
         this.groundEnemies = this.groundEnemies.filter(e => e.x < birdX - 50 || e.x > birdX + 400);
     }
 
-    render(ctx: CanvasRenderingContext2D): void {
+    render(ctx: CanvasRenderingContext2D, isClassic: boolean = false): void {
         this.pipes.forEach((p) => this.drawPipe(ctx, p));
         this.coins.forEach((c) => {
             if (c.collected) return;
@@ -375,7 +375,9 @@ export class PipeManager {
             }
             ctx.restore();
         });
-        this.groundEnemies.forEach(e => this.drawGroundEnemy(ctx, e));
+        if (!isClassic) {
+            this.groundEnemies.forEach(e => this.drawGroundEnemy(ctx, e));
+        }
     }
 
     private drawGroundEnemy(ctx: CanvasRenderingContext2D, e: GroundEnemy): void {

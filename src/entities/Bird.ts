@@ -222,13 +222,11 @@ export class Bird implements BirdState {
         if (!this.isDashing) {
             this.stabilizeTimer = 0;
             this.speed = -this.config.jump;
-            this.wingAngle = 0;
         }
     }
 
     bounce(): void {
         this.speed = -this.config.jump * 0.8; // Small bounce up
-        this.wingAngle = 0;
     }
 
     getVelocity(): { x: number; y: number } {

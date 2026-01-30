@@ -30,7 +30,9 @@ export class BackgroundBirdManager {
 
     // Whitelist of "flying" skins to use for background
     private readonly ALLOWED_SKINS = [
-        'pigeon', 'chicken', 'duck', 'phoenix', 'dragonfly', 'bee', 'flappy', 'beetle'
+        'pigeon', 'chicken', 'duck', 'phoenix', 'dragonfly', 'bee', 'flappy', 'beetle',
+        'butterfly', 'whale', 'jellyfish', 'clownfish', 'fish', 'shark',
+        'swordsurfer', 'reaper', 'lancer', 'samurai', 'sphere', 'chimera'
     ];
 
     constructor() {
@@ -76,9 +78,10 @@ export class BackgroundBirdManager {
                 }
             } else {
                 if (b.dashCooldown > 0) b.dashCooldown -= dtRatio;
-                if (b.dashCooldown <= 0 && Math.random() < 0.005) {
+                if (b.dashCooldown <= 0 && Math.random() < 0.008) {
                     b.isDashing = true;
-                    b.dashTimer = 20 + Math.random() * 20;
+                    // Longer dash for "Nitro" feel: 60 to 180 frames (1-3 seconds)
+                    b.dashTimer = 60 + Math.random() * 120;
                 }
             }
 
@@ -90,12 +93,18 @@ export class BackgroundBirdManager {
             b.vy += 0.25 * dtRatio;
             b.y += b.vy * dtRatio;
 
-            // AI Flap Logic
-            if (b.y > b.targetY + Math.random() * 30) {
+            // AI Flap Logic (Disable frantic flapping during long nitro dashes)
+            if (!b.isDashing && b.y > b.targetY + Math.random() * 30) {
                 b.vy = -4.5;
                 b.wingSpeed = 0.3;
             }
-            if (b.wingSpeed > 0.15) b.wingSpeed -= 0.01 * dtRatio;
+            if (b.isDashing) {
+                // Stabilize vertical movement during dash for a "smooth glide" feel
+                b.vy *= 0.8;
+                b.y += (b.targetY - b.y) * 0.05 * dtRatio;
+                b.wingSpeed = 0.1; // Slow wing beat during glide
+            }
+            if (b.wingSpeed > 0.15 && !b.isDashing) b.wingSpeed -= 0.01 * dtRatio;
 
             // Rotation
             const rotationTarget = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (b.vy * 0.1)));

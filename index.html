@@ -50,7 +50,13 @@
 
           <div class="setting-row">
             <span class="setting-label">BG Details</span>
+            <div style="flex: 1;"></div>
             <button id="toggle-bg-details" class="btn-toggle active">ON</button>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Ground Decors</span>
+            <div style="flex: 1;"></div>
+            <button id="toggle-ground-details" class="btn-toggle active">ON</button>
           </div>
 
           <div class="divider"></div>
@@ -159,15 +165,26 @@
 
       <div id="leaderboard-panel" class="modal-panel full-shop">
         <span class="close-modal">&times;</span>
-        <h2>LEADERBOARD</h2>
+        <h2 class="neon-text-blue">LEADERBOARD</h2>
 
         <div class="shop-tabs">
           <div class="shop-tab active" data-lb-tab="personal">PERSONAL</div>
           <div class="shop-tab" data-lb-tab="online">ONLINE</div>
         </div>
 
+        <!-- Map Sub-Tabs (Only visible in Personal) -->
+        <div id="lb-map-tabs" class="lb-map-tabs">
+          <div class="lb-sub-tab active" data-lb-map="classic">CLASSIC</div>
+          <div class="lb-sub-tab" data-lb-map="0">CITY</div>
+          <div class="lb-sub-tab" data-lb-map="1">JUNGLE</div>
+          <div class="lb-sub-tab" data-lb-map="2">OCEAN</div>
+          <div class="lb-sub-tab" data-lb-map="3">CORE</div>
+          <div class="lb-sub-tab" data-lb-map="4">FORGE</div>
+          <div class="lb-sub-tab" data-lb-map="5">SUNNY</div>
+        </div>
+
         <div class="shop-main-layout">
-          <div id="lb-content" class="lb-list">
+          <div id="lb-content" class="lb-list lb-details-view">
             <!-- Dynamic Content -->
           </div>
         </div>
@@ -195,7 +212,7 @@
             <div id="fullscreen-btn" class="btn-icon">⛶</div>
             <div id="backpack-btn" class="btn-icon">🎒</div>
             <div id="shop-btn" class="btn-icon">🛍️</div>
-            <div id="leaderboard-btn" class="btn-icon">🏆</div>
+            <div id="leaderboard-btn" class="btn-icon"></div>
             <div id="settings-btn" class="btn-icon">⚙</div>
           </div>
           <div id="fps-display" class="fps-text">60 FPS</div>

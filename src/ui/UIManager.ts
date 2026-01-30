@@ -25,6 +25,7 @@ export class UIManager {
     private currentInvPage: number = 1;
 
     private currentLBTab: 'personal' | 'online' = 'personal';
+    private currentLBMap: string = 'classic';
 
     private readonly itemsPerPage: number = 20; // 5 rows x 4 items
     private lastStartTouchTime: number = 0;
@@ -128,6 +129,41 @@ export class UIManager {
                 this.currentInvTab = (e.target as HTMLElement).getAttribute('data-tab') as any;
                 this.currentInvPage = 1;
                 this.renderInventoryGrid();
+            };
+            tab.addEventListener('click', handler);
+            tab.addEventListener('touchstart', handler, { passive: false });
+        });
+
+        // Leaderboard Tabs logic
+        document.getElementById('leaderboard-panel')?.querySelectorAll('.shop-tab').forEach((tab) => {
+            const handler = (e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.playClick();
+                document.getElementById('leaderboard-panel')?.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+                (e.target as HTMLElement).classList.add('active');
+                this.currentLBTab = (e.target as HTMLElement).getAttribute('data-lb-tab') as any;
+
+                // Toggle map tabs visibility
+                const panel = document.getElementById('leaderboard-panel');
+                if (panel) panel.setAttribute('data-online', this.currentLBTab === 'online' ? 'true' : 'false');
+
+                this.renderLeaderboard();
+            };
+            tab.addEventListener('click', handler);
+            tab.addEventListener('touchstart', handler, { passive: false });
+        });
+
+        // Leaderboard Map Sub-Tabs logic
+        document.getElementById('leaderboard-panel')?.querySelectorAll('.lb-sub-tab').forEach((tab) => {
+            const handler = (e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.playClick();
+                document.getElementById('leaderboard-panel')?.querySelectorAll('.lb-sub-tab').forEach(t => t.classList.remove('active'));
+                (e.target as HTMLElement).classList.add('active');
+                this.currentLBMap = (e.target as HTMLElement).getAttribute('data-lb-map') || 'classic';
+                this.renderLeaderboard();
             };
             tab.addEventListener('click', handler);
             tab.addEventListener('touchstart', handler, { passive: false });
@@ -453,6 +489,12 @@ export class UIManager {
             this.game.updateConfig({ showBackgroundDetails: !current });
             this.updateControlUI();
         });
+        document.getElementById('toggle-ground-details')?.addEventListener('click', () => {
+            this.playClick();
+            const current = this.game.getConfig().showGroundDetails;
+            this.game.updateConfig({ showGroundDetails: !current });
+            this.updateControlUI();
+        });
     }
 
     private setupConfirmControls(): void {
@@ -514,8 +556,16 @@ export class UIManager {
         if (btnBg) {
             const isOn = config.showBackgroundDetails;
             btnBg.textContent = isOn ? 'ON' : 'OFF';
-            btnBg.classList.remove('on', 'off', 'active'); // Clear all potential
+            btnBg.classList.remove('on', 'off', 'active');
             btnBg.classList.add(isOn ? 'on' : 'off');
+        }
+
+        const btnGround = document.getElementById('toggle-ground-details');
+        if (btnGround) {
+            const isOn = config.showGroundDetails;
+            btnGround.textContent = isOn ? 'ON' : 'OFF';
+            btnGround.classList.remove('on', 'off', 'active');
+            btnGround.classList.add(isOn ? 'on' : 'off');
         }
 
         // Dashboard HUD Visibility and Position
@@ -618,54 +668,66 @@ export class UIManager {
 
     private renderLeaderboard(): void {
         const container = document.getElementById('lb-content');
+        const mapTabs = document.getElementById('lb-map-tabs');
         if (!container) return;
         container.innerHTML = '';
 
         if (this.currentLBTab === 'personal') {
+            if (mapTabs) mapTabs.style.display = 'flex';
             this.renderPersonalLB(container);
         } else {
+            if (mapTabs) mapTabs.style.display = 'none';
             this.renderOnlineLB(container);
         }
     }
 
     private renderPersonalLB(container: HTMLElement): void {
-        // Add Header
-        container.innerHTML += `
-           <div class="lb-row header">
-               <div class="lb-name">MODE / MAP</div>
-               <div class="lb-score">SCORE</div>
-           </div>
-        `;
+        const isClassic = this.currentLBMap === 'classic';
+        const mapIdx = parseInt(this.currentLBMap);
+        const mapDef = !isClassic ? MAPS[mapIdx] : null;
 
-        // Classic
-        const classicScore = this.saveManager.getHighScore(true);
-        container.innerHTML += `
-           <div class="lb-row highlight">
-               <div class="lb-name">CLASSIC MODE</div>
-               <div class="lb-score">${classicScore}</div>
-           </div>
-        `;
+        let highScore = 0;
+        let maxDist = 0;
+        let totalCoins = 0;
 
-        // Maps
-        MAPS.forEach(map => {
-            const score = this.saveManager.getMapHighScore(map.id);
-            container.innerHTML += `
-               <div class="lb-row">
-                   <div class="lb-name">${map.name}</div>
-                   <div class="lb-score">${score}</div>
-               </div>
-            `;
-        });
+        if (isClassic) {
+            highScore = this.saveManager.getHighScore(true);
+            maxDist = 0;
+            totalCoins = 0;
+        } else if (mapDef) {
+            const mId = mapDef.id;
+            highScore = this.saveManager.getMapHighScore(mId);
+            maxDist = this.saveManager.getMapMaxDistance(mId);
+            totalCoins = this.saveManager.getMapTotalCoins(mId);
+        }
+
+        container.innerHTML = `
+            <div class="lb-detail-row">
+                <div class="lb-detail-label">HIGHEST RECORD</div>
+                <div class="lb-detail-value highlight">${highScore}</div>
+            </div>
+
+            <div class="lb-detail-row">
+                <div class="lb-detail-label">MAX DISTANCE</div>
+                <div class="lb-detail-value">${Math.floor(maxDist)} <span class="unit">m</span></div>
+            </div>
+
+            <div class="lb-detail-row">
+                <div class="lb-detail-label">CREDITS ACQUIRED</div>
+                <div class="lb-detail-value">${totalCoins} <span class="unit">$</span></div>
+            </div>
+        `;
     }
 
     private renderOnlineLB(container: HTMLElement): void {
         container.innerHTML = `
-            <div style="text-align: center; padding: 2rem; color: #888;">
-                <h3>ONLINE RANKING</h3>
-                <p>Connecting to Neural Net...</p>
-                <div style="font-size: 3rem; margin: 1rem;">🌐</div>
-                <p style="font-size: 0.8rem; color: var(--neon-blue);">COMING SOON</p>
-                <p style="font-size: 0.7rem;">Firebase Integration Pending</p>
+            <div style="text-align: center; padding: 4rem 2rem; color: #888;">
+                <h3 class="neon-text-blue" style="margin-bottom: 1rem;">NEURAL NETWORK</h3>
+                <p style="font-size: 0.8rem; letter-spacing: 1px;">CONNECTING TO GLOBAL RANKING...</p>
+                <div style="font-size: 4rem; margin: 1.5rem; filter: drop-shadow(0 0 10px var(--neon-blue));">🌐</div>
+                <p style="font-size: 0.9rem; color: var(--neon-blue); font-weight: 900; margin-top: 1rem;">ACCESS RESTRICTED</p>
+                <p style="font-size: 0.7rem; opacity: 0.6; margin-top: 0.5rem; letter-spacing: 1px;">SYNCHRONIZING GLOBAL DATALINK...</p>
+                <p style="font-size: 0.6rem; opacity: 0.4; margin-top: 0.4rem;">PLEASE WAIT FOR NETWORK CALIBRATION</p>
             </div>
          `;
     }
@@ -918,6 +980,7 @@ export class UIManager {
         setIcon('backpack-btn', 'backpack');
         setIcon('shop-btn', 'shop');
         setIcon('settings-btn', 'settings');
+        setIcon('leaderboard-btn', 'leaderboard');
 
         // Map Selector
         document.querySelectorAll('.map-option').forEach(opt => {

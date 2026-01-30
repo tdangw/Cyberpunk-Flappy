@@ -1200,12 +1200,12 @@ h2 {
   background: transparent;
   border: 2px solid var(--neon-blue);
   color: var(--neon-blue);
-  width: 3.8rem;
-  height: 2rem;
+  width: 5rem;
+  height: 2.8rem;
   border-radius: 0.4rem;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 900;
+  font-size: 0.85rem;
+  font-weight: 950;
   cursor: pointer;
   transition: 0.2s;
 }
@@ -1829,4 +1829,102 @@ h2 {
 
 .hud-map-label.active {
   opacity: 1;
+}
+
+/* LEADERBOARD ENHANCEMENTS */
+.lb-map-tabs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+  padding: 0 1rem;
+}
+
+.lb-sub-tab {
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  border-radius: 0.3rem;
+  color: #888;
+  font-size: 0.65rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.lb-sub-tab:hover {
+  border-color: #555;
+  color: #ccc;
+}
+
+.lb-sub-tab.active {
+  background: rgba(0, 255, 247, 0.1);
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  box-shadow: 0 0 10px rgba(0, 255, 247, 0.2);
+}
+
+.lb-details-view {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 255, 247, 0.1);
+  border-radius: 0.8rem;
+  padding: 1.5rem;
+  margin: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  min-height: 200px;
+}
+
+.lb-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lb-detail-row:last-child {
+  border-bottom: none;
+}
+
+.lb-detail-label {
+  color: #666;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.lb-detail-value {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.lb-detail-value.highlight {
+  color: var(--neon-blue);
+  text-shadow: 0 0 15px var(--neon-blue);
+}
+
+.lb-detail-value .unit {
+  font-size: 0.8rem;
+  margin-left: 0.3rem;
+  color: #888;
+  font-weight: 400;
+}
+
+/* Hide map tabs when online tab is active */
+#leaderboard-panel[data-online="true"] #lb-map-tabs {
+  display: none;
+}
+
+.neon-text-blue {
+  color: var(--neon-blue);
+  text-shadow: 0 0 15px var(--neon-blue);
 }

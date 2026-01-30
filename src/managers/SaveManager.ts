@@ -68,7 +68,9 @@ export class SaveManager {
             boostRemainingMeters: 10,
             inventoryBoosts: {},
             maxDistance: 0,
-            mapHighScores: {}
+            mapHighScores: {},
+            mapMaxDistances: {},
+            mapTotalCoins: {}
         };
     }
 
@@ -159,6 +161,31 @@ export class SaveManager {
             return true;
         }
         return false;
+    }
+
+    getMapMaxDistance(mapId: string): number {
+        return this.data.mapMaxDistances?.[mapId] || 0;
+    }
+
+    updateMapMaxDistance(mapId: string, distance: number): boolean {
+        if (!this.data.mapMaxDistances) this.data.mapMaxDistances = {};
+        const current = this.data.mapMaxDistances[mapId] || 0;
+        if (distance > current) {
+            this.data.mapMaxDistances[mapId] = Math.floor(distance);
+            this.save();
+            return true;
+        }
+        return false;
+    }
+
+    getMapTotalCoins(mapId: string): number {
+        return this.data.mapTotalCoins?.[mapId] || 0;
+    }
+
+    addMapCoins(mapId: string, amount: number): void {
+        if (!this.data.mapTotalCoins) this.data.mapTotalCoins = {};
+        this.data.mapTotalCoins[mapId] = (this.data.mapTotalCoins[mapId] || 0) + amount;
+        this.save();
     }
 
     getMaxDistance(): number { return this.data.maxDistance || 0; }

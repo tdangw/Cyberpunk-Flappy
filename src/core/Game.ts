@@ -289,7 +289,7 @@ export class Game {
             this.distanceTraveled += moveStep;
 
             // Update pipes with Coin Spawn Flag (Disable coins if classic mode)
-            this.pipeManager.update(speed, dtRatio, !this.isClassicMode);
+            this.pipeManager.update(speed, dtRatio, !this.isClassicMode, this.isClassicMode);
 
             // Ground Decorations
             if (!this.isClassicMode) {
@@ -509,10 +509,10 @@ export class Game {
         this.renderer.drawDistanceMarkers(this.distanceTraveled, this.isClassicMode);
         this.renderer.drawGround(this.frames, this.state === 'PLAYING' ? this.config.speed : 0);
 
-        this.pipeManager.render(this.ctx);
+        this.pipeManager.render(this.ctx, this.isClassicMode);
 
-        if (!this.isClassicMode) {
-            this.groundDecorationManager.render(this.ctx); // Theme color technically handled inside
+        if (!this.isClassicMode && this.config.showGroundDetails) {
+            this.groundDecorationManager.render(this.ctx);
         }
 
         // Particles now allowed in Classic (vFX requested for collisions)
@@ -555,6 +555,8 @@ export class Game {
         if (!this.isClassicMode) {
             const mapId = this.getMapIdByIndex(this.startMapIndex);
             this.saveManager.updateMapHighScore(mapId, this.score);
+            this.saveManager.updateMapMaxDistance(mapId, this.distanceTraveled / 50);
+            this.saveManager.addMapCoins(mapId, this.sessionCoins);
         }
         this.saveManager.updateBoostRemaining(this.bird.nitroRemaining);
 

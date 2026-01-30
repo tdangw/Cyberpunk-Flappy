@@ -48,7 +48,7 @@ function drawPigeon(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: b
     ctx.fillStyle = color; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.quadraticCurveTo(-15, -15 + flap, -25, -5 + flap); ctx.lineTo(-10, 5); ctx.closePath(); ctx.fill();
 }
 
-function drawShark(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
+function drawShark(ctx: CanvasRenderingContext2D, bird: BirdState, _isDashing: boolean, _frames: number, color: string): void {
     // Optimized Shark
     // const glow = ...
     ctx.fillStyle = color;
@@ -305,8 +305,7 @@ function drawDragonfly(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing
     ctx.globalAlpha = 1.0;
 }
 
-function drawBee(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
-    const glow = isDashing ? '#fff' : color;
+function drawBee(ctx: CanvasRenderingContext2D, bird: BirdState, _isDashing: boolean, _frames: number, color: string): void {
     // Optimized
 
     // Body - Cute rounded egg shape
@@ -386,8 +385,7 @@ function drawBee(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: bool
     ctx.restore();
 }
 
-function drawClassicFlappy(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
-    const glow = isDashing ? '#fff' : color;
+function drawClassicFlappy(ctx: CanvasRenderingContext2D, bird: BirdState, _isDashing: boolean, _frames: number, color: string): void {
     // Optimized
     // Classic Fat Shape
     ctx.fillStyle = color;
@@ -404,8 +402,7 @@ function drawClassicFlappy(ctx: CanvasRenderingContext2D, bird: BirdState, isDas
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(-6, 2, 8, wingH, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 }
 
-function drawJellyfish(ctx: CanvasRenderingContext2D, _bird: BirdState, isDashing: boolean, frames: number, color: string): void {
-    const glow = isDashing ? '#fff' : color;
+function drawJellyfish(ctx: CanvasRenderingContext2D, _bird: BirdState, _isDashing: boolean, frames: number, color: string): void {
     // Optimized
 
     // Bell
@@ -436,8 +433,7 @@ function drawJellyfish(ctx: CanvasRenderingContext2D, _bird: BirdState, isDashin
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
 }
 
-function drawDuck(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
-    const glow = isDashing ? '#fff' : color;
+function drawDuck(ctx: CanvasRenderingContext2D, bird: BirdState, _isDashing: boolean, _frames: number, color: string): void {
     // Optimized
 
     // Body
@@ -528,8 +524,7 @@ function drawBeetle(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: b
     ctx.beginPath(); ctx.arc(20, 4, 2, 0, Math.PI * 2); ctx.fill();
 }
 
-function drawClownfish(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
-    const glow = isDashing ? '#fff' : color;
+function drawClownfish(ctx: CanvasRenderingContext2D, bird: BirdState, _isDashing: boolean, _frames: number, color: string): void {
     // Optimized
 
     // Body (Nemo style)
@@ -958,50 +953,102 @@ export class SkinManager {
         }
 
         if (skinId === 'default') {
-            // Draw Classic Bird (Yellow)
-            ctx.fillStyle = '#facc15'; // Yellow
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 15, 12, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Eye
+            // Tail (Curved upwards)
             ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.arc(6, -6, 5, 0, Math.PI * 2);
+            ctx.moveTo(-15, 0);
+            ctx.quadraticCurveTo(-24, -2, -22, -12); // Curve out and up
+            ctx.quadraticCurveTo(-18, -10, -15, -5);
+            ctx.closePath();
             ctx.fill();
+            ctx.stroke();
+
+            // Draw Classic Bird (Yellow Body with Outline)
+            ctx.fillStyle = '#facc15'; // Yellow
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 18, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Belly (Darker yellow patch)
+            ctx.fillStyle = '#eab308';
+            ctx.beginPath();
+            ctx.ellipse(-2, 5, 12, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+            ctx.stroke();
+
+            // Eye (Large white eye)
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(10, -6, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Pupil
             ctx.fillStyle = '#000';
             ctx.beginPath();
-            ctx.arc(8, -6, 2, 0, Math.PI * 2);
+            ctx.arc(12, -6, 2.5, 0, Math.PI * 2);
             ctx.fill();
 
-            // Wing Animation (Fixed Pivot)
-            ctx.fillStyle = '#fff';
-
-            // Flap range: -0.5 to 0.5 (radians roughly)
-            // Phase shifted for natural feel
-            const flap = Math.sin(bird.wingAngle + Math.PI) * 0.5;
+            // Wing Animation (Flapping) - Even slower and automatic
+            const flap = Math.sin(bird.wingAngle * 0.5) * 4;
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.8;
 
             ctx.save();
-            // Translate to shoulder pivot point (relative to bird center 0,0)
-            const pivotX = -2;
-            const pivotY = 2;
-            ctx.translate(pivotX, pivotY);
-            // Rotate wing around shoulder
-            ctx.rotate(flap * 0.5); // reduced amplitude for realism
+            ctx.translate(-6, 2);
+            ctx.rotate(flap * 0.05);
 
-            // Draw wing shape (relative to pivot 0,0)
+            const wingW = 10;
+            const wingH = Math.max(1, 7 + flap);
+
+            // Wing Path and Clipping
             ctx.beginPath();
-            ctx.ellipse(-6, 0, 8, 5, 0, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.ellipse(-4, 0, wingW, wingH, 0, 0, Math.PI * 2);
+            ctx.save();
+            ctx.clip();
+
+            // Top Half (White)
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(-4 - wingW, -wingH, wingW * 2, wingH);
+
+            // Bottom Half (Yellow)
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(-4 - wingW, 0, wingW * 2, wingH);
+
+            ctx.restore();
+            ctx.stroke();
             ctx.restore();
 
-            // Beak
+            // Beak (More original pointed shape)
             ctx.fillStyle = '#f97316'; // Orange
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+
+            // Upper Beak
             ctx.beginPath();
-            ctx.moveTo(10, 0);
-            ctx.lineTo(22, 4); // Slightly longer beak
-            ctx.lineTo(10, 8);
+            ctx.moveTo(12, 0);
+            ctx.quadraticCurveTo(22, -2, 28, 5); // Pointier tip
+            ctx.lineTo(12, 5);
+            ctx.closePath();
             ctx.fill();
+            ctx.stroke();
+
+            // Lower Beak
+            ctx.beginPath();
+            ctx.moveTo(12, 5);
+            ctx.lineTo(24, 5);
+            ctx.quadraticCurveTo(22, 10, 12, 9);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
         } else {
             const skin = this.getSkinById(skinId);
             if (skin) {

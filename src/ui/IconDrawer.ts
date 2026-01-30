@@ -71,7 +71,7 @@ export class IconDrawer {
             default: return '#888';
         }
     }
-    static getSimpleIcon(type: 'success' | 'error' | 'shop' | 'settings' | 'fullscreen' | 'map_0' | 'map_1' | 'map_2' | 'map_3' | 'map_4' | 'map_5', size: number = 60): string {
+    static getSimpleIcon(type: 'success' | 'error' | 'shop' | 'settings' | 'fullscreen' | 'leaderboard' | 'map_0' | 'map_1' | 'map_2' | 'map_3' | 'map_4' | 'map_5', size: number = 60): string {
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -96,6 +96,9 @@ export class IconDrawer {
                 break;
             case 'fullscreen':
                 this.drawFullscreen(ctx, size);
+                break;
+            case 'leaderboard':
+                this.drawLeaderboard(ctx, size);
                 break;
             case 'map_0': this.drawMapIcon(ctx, size, 'hightech'); break; // Neon City
             case 'map_1': this.drawMapIcon(ctx, size, 'jungle'); break;   // Techno Jungle
@@ -415,6 +418,48 @@ export class IconDrawer {
         ctx.beginPath();
         ctx.moveTo(0, -s * 0.3);
         ctx.lineTo(0, s * 0.1);
+        ctx.stroke();
+    }
+
+    private static drawLeaderboard(ctx: CanvasRenderingContext2D, size: number) {
+        const color = '#00fff7'; // Neon Blue
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+
+        const s = size * 0.35;
+
+        // Base/Pedestal
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.6, s * 0.8);
+        ctx.lineTo(s * 0.6, s * 0.8);
+        ctx.moveTo(0, s * 0.8);
+        ctx.lineTo(0, s * 0.5);
+        ctx.stroke();
+
+        // Cup Bowl
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.5, -s * 0.4);
+        ctx.bezierCurveTo(-s * 0.5, s * 0.5, s * 0.5, s * 0.5, s * 0.5, -s * 0.4);
+        ctx.lineTo(-s * 0.5, -s * 0.4);
+        ctx.stroke();
+
+        // Handles
+        ctx.beginPath();
+        // Left handle
+        ctx.moveTo(-s * 0.5, -s * 0.1);
+        ctx.quadraticCurveTo(-s * 0.8, -s * 0.1, -s * 0.8, -s * 0.4);
+        ctx.quadraticCurveTo(-s * 0.8, -s * 0.6, -s * 0.5, -s * 0.6);
+        // Right handle
+        ctx.moveTo(s * 0.5, -s * 0.1);
+        ctx.quadraticCurveTo(s * 0.8, -s * 0.1, s * 0.8, -s * 0.4);
+        ctx.quadraticCurveTo(s * 0.8, -s * 0.6, s * 0.5, -s * 0.6);
+        ctx.stroke();
+
+        // Star or detail in middle
+        ctx.beginPath();
+        ctx.arc(0, 0, s * 0.15, 0, Math.PI * 2);
         ctx.stroke();
     }
 }

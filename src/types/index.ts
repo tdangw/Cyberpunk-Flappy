@@ -17,6 +17,7 @@ export interface GameConfig {
     dashControl: DashControlType;
     showFPS: boolean;
     showBackgroundDetails: boolean;
+    showGroundDetails: boolean;
 }
 
 export interface StageDefinition {
@@ -47,6 +48,8 @@ export interface PlayerData {
     inventoryBoosts: { [key: string]: number };
     maxDistance?: number;
     mapHighScores?: { [key: string]: number };
+    mapMaxDistances?: { [key: string]: number };
+    mapTotalCoins?: { [key: string]: number };
 }
 
 export interface Particle {
