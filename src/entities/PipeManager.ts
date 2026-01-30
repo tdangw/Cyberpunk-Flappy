@@ -185,13 +185,19 @@ export class PipeManager {
             return;
         }
 
+        if (this.pipeStyle === 'classic') {
+            this.drawClassicPipe(ctx, p.x, p.w, p.top, botY);
+            ctx.restore();
+            return;
+        }
+
         if (this.pipeStyle === 'coral') {
             this.drawOrganicBody(ctx, p.x, p.w, p.top, botY);
         } else {
             drawBody();
         }
 
-        // Universal Body Fill for ALL styles
+        // Universal Body Fill for ALL styles (skipped for 3d_neon and classic)
         ctx.globalAlpha = 0.15; // Subtle fill
         ctx.fillStyle = this.pipeColor;
         ctx.fillRect(p.x, 0, p.w, p.top);
@@ -263,6 +269,54 @@ export class PipeManager {
         }
 
         ctx.restore();
+    }
+
+    private drawClassicPipe(ctx: CanvasRenderingContext2D, x: number, w: number, top: number, botY: number): void {
+        const rimHeight = 26;
+        const rimOverhang = 4;
+        const borderW = 2; // Thinner, smoother border
+        const borderColor = '#2f441a'; // Dark green/black outline
+
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = borderW;
+        ctx.strokeStyle = borderColor;
+
+        // Create Gradient for 3D effect
+        // We create it across the width of the pipe (x to x+w)
+        // Since we reuse it for rim (wider), we need a standardized gradient or function.
+        const drawPart = (bx: number, by: number, bw: number, bh: number) => {
+            const grad = ctx.createLinearGradient(bx, by, bx + bw, by);
+            // 3D Lighting: Dark Edge -> Base -> Highlight -> Base -> Dark Edge
+            grad.addColorStop(0, '#4a8522');     // Darker Shadow
+            grad.addColorStop(0.1, '#65a830');   // Base Green
+            grad.addColorStop(0.4, '#b4e05b');   // Specular Highlight (Yellowish)
+            grad.addColorStop(0.6, '#98d146');   // Soft Highlight
+            grad.addColorStop(0.9, '#65a830');   // Base Green
+            grad.addColorStop(1, '#3b6916');     // Dark Edge
+
+            ctx.fillStyle = grad;
+
+            // Draw
+            ctx.beginPath();
+            ctx.rect(bx, by, bw, bh);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner bevel/highlight line at top of vertical segments for 3D feel? 
+            // The image is clean, so standard gradient + border is closest.
+        };
+
+        // TOP PIPE
+        // Body
+        drawPart(x, -5, w, top - rimHeight + 5);
+        // Rim
+        drawPart(x - rimOverhang, top - rimHeight, w + rimOverhang * 2, rimHeight);
+
+        // BOTTOM PIPE
+        // Rim
+        drawPart(x - rimOverhang, botY, w + rimOverhang * 2, rimHeight);
+        // Body
+        drawPart(x, botY + rimHeight, w, CANVAS.HEIGHT - (botY + rimHeight) - CANVAS.GROUND_HEIGHT + 5);
     }
 
     private drawOrganicBody(ctx: CanvasRenderingContext2D, x: number, w: number, top: number, bot: number): void {

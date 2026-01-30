@@ -339,6 +339,7 @@ export class Game {
         this.state = 'START';
         this.bird.resetStateForRevive();
         this.pipeManager.clearNearPipes(this.bird.x);
+        this.audioManager.setBGMEnabled(true);
         this.resumeWithCountdown();
     }
 

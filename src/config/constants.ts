@@ -4,13 +4,13 @@ import type { GameConfig } from '../types';
  * Default game configuration values
  */
 export const DEFAULT_CONFIG: GameConfig = {
-    speed: 5.0,
-    gravity: 0.8,
-    jump: 15.5,
+    speed: 4.5,
+    gravity: 0.85,
+    jump: 15,
     pipeGap: 200,
     pipeSpacing: 250, // Default spacing
-    bgmVolume: 0.4,
-    sfxVolume: 0.6,
+    bgmVolume: 0.3,
+    sfxVolume: 0.5,
     bgmEnabled: true,
     sfxEnabled: true,
     dashControl: 'button_right',
@@ -79,7 +79,7 @@ export const MAPS: MapDefinition[] = [
             skyColors: ['#000a1a', '#000515', '#000210', '#001a1a', '#10001a', '#001020'],
             groundColors: ['#001525', '#000a18', '#000510', '#002525', '#150025', '#002030'],
             styles: ['coral'], // Unified style
-            decorations: ['bubbles', 'waves', 'shards'],
+            decorations: ['bubbles', 'waves', 'shards', 'rain'],
             patterns: ['hex', 'waves', 'plain']
         }
     },
@@ -114,14 +114,14 @@ export const MAPS: MapDefinition[] = [
         name: 'Sunny Highlands',
         bgm: 'bgm_sunny.mp3',
         palette: {
-            // Full rainbow range for 3D Neon pipes
-            pipeColors: ['#00fff7', '#00ffaa', '#ff00ff', '#ffbb00', '#ffffff', '#ff3333', '#3333ff', '#39ff14'],
-            // Sky moods: Blue (Classic), Grey (Storm), Purple (Sunset), Dark Grey (Rain)
-            skyColors: ['#6366f1', '#4f46e5', '#9ca3af', '#4b5563', '#312e81', '#1e1b4b'],
-            // Ground follows sky mood roughly or stays grassy green variations
-            groundColors: ['#22c55e', '#16a34a', '#15803d', '#166534', '#14532d', '#3f6212'],
-            styles: ['3d_neon'], // Strict style
-            decorations: ['highlands', 'clouds', 'rain', 'storm'], // Weather variants
+            // Classic Flappy Green
+            pipeColors: ['#73bf2e', '#558c22', '#98e346'],
+            // Classic Cyan Sky (Flat or very subtle variation)
+            skyColors: ['#4ec0ca', '#5ee2ec', '#3ea6b0'],
+            // Sand/Ground Color
+            groundColors: ['#ded895', '#d4ce8c'],
+            styles: ['classic'], // Suggesting a classic style if supported, or falling back to defaults
+            decorations: ['clouds', 'highlands'], // Classic elements only
             patterns: ['plain']
         }
     }

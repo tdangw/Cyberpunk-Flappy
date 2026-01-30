@@ -124,6 +124,28 @@ export class UIManager {
             }
         }, { passive: true });
 
+        // Auto Fullscreen on Landscape Rotation (Mobile)
+        const handleOrientationChange = () => {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            // Check if it's a mobile device (touch capable)
+            const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+            if (isMobile && isLandscape && !document.fullscreenElement) {
+                // Attempt to enter fullscreen
+                document.documentElement.requestFullscreen().catch(err => {
+                    // Silent catch - browser might block if no user interaction immediately precedes this
+                    // But often rotating device happens while holding (events fired)
+                    console.log('Auto-fullscreen blocked:', err);
+                });
+            }
+        };
+
+        // Listen for orientation changes via resize and API
+        window.addEventListener('resize', handleOrientationChange);
+        if (screen.orientation) {
+            screen.orientation.addEventListener('change', handleOrientationChange);
+        }
+
         // Close on click outside (Modals)
         window.addEventListener('mousedown', (e) => this.closeOnClickOutside(e));
         window.addEventListener('touchstart', (e) => this.closeOnClickOutside(e), { passive: false });
@@ -220,6 +242,81 @@ export class UIManager {
             if (this.game.getState() === 'START') {
                 e.preventDefault();
                 e.stopPropagation();
+
+                // Animate Map Name to HUD (FLIP - Exact Match)
+                const themeNameEl = document.getElementById('selected-theme-name');
+                const hudLabel = document.getElementById('hud-map-name');
+
+                if (themeNameEl && hudLabel) {
+                    // 1. Setup Content
+                    hudLabel.textContent = themeNameEl.textContent;
+
+                    // 2. Measure Source
+                    const rect = themeNameEl.getBoundingClientRect();
+                    const computedStyle = window.getComputedStyle(themeNameEl);
+
+                    // 3. Set Start State (Exactly matching source)
+                    // We remove the transition temporarily to snap instantly
+                    hudLabel.style.transition = 'none';
+                    hudLabel.style.position = 'fixed';
+                    hudLabel.style.top = rect.top + 'px';
+                    hudLabel.style.left = rect.left + 'px';
+                    hudLabel.style.width = rect.width + 'px';
+                    hudLabel.style.height = rect.height + 'px';
+                    hudLabel.style.fontSize = computedStyle.fontSize;
+                    hudLabel.style.fontWeight = computedStyle.fontWeight;
+                    hudLabel.style.letterSpacing = computedStyle.letterSpacing;
+                    hudLabel.style.color = computedStyle.color;
+                    hudLabel.style.textShadow = computedStyle.textShadow;
+                    hudLabel.style.transform = 'none'; // No transform at start
+                    hudLabel.style.opacity = '1';
+
+                    // HIDE ORIGINAL INSTANTLY to prevent ghosting/bolding
+                    themeNameEl.style.opacity = '0';
+
+                    // 4. Force Reflow
+                    void hudLabel.offsetWidth;
+
+                    // 5. Set End State (HUD Position) - Delayed
+                    // Wait for start screen to fade out (approx 600ms) before moving down
+                    setTimeout(() => {
+                        // Add transition back
+                        hudLabel.style.transition = 'all 2s cubic-bezier(0.2, 0.8, 0.2, 1)';
+
+                        // Target: Bottom 2px. Center X.
+                        const winH = window.innerHeight;
+                        // const finalFontSize = 12; // Unused
+
+                        hudLabel.style.top = (winH - 25) + 'px'; // Move to bottom
+                        hudLabel.style.left = '50%';
+                        hudLabel.style.transform = 'translateX(-50%)';
+                        hudLabel.style.fontSize = '0.7rem';
+                        hudLabel.style.letterSpacing = '0.8px';
+                        hudLabel.style.color = 'rgba(255, 255, 255, 0.9)';
+                        hudLabel.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.8)';
+                    }, 600);
+
+                    // 6. Cleanup after animation (600ms delay + 2000ms duration)
+                    setTimeout(() => {
+                        // Clear inline styles so CSS class takes over (for responsive resizing)
+                        hudLabel.style.transition = '';
+                        hudLabel.style.top = '';
+                        hudLabel.style.left = '';
+                        hudLabel.style.width = '';
+                        hudLabel.style.height = '';
+                        hudLabel.style.fontSize = '';
+                        hudLabel.style.fontWeight = '';
+                        hudLabel.style.letterSpacing = '';
+                        hudLabel.style.color = '';
+                        hudLabel.style.textShadow = '';
+                        hudLabel.style.transform = '';
+                        hudLabel.style.position = ''; // Revert to CSS default (fixed)
+
+                        // Add active class to maintain opacity: 1 and default CSS styling
+                        hudLabel.classList.add('active');
+                    }, 2600);
+                }
+
                 this.hideStartScreen();
                 this.game.resume(true);
             }
@@ -1070,6 +1167,20 @@ export class UIManager {
             screen.style.display = 'flex';
             this.startScreenCooldown = Date.now(); // Set cooldown
             this.setupTutorialIcons();
+
+            // Reset HUD Map Label
+            const hudLabel = document.getElementById('hud-map-name');
+            if (hudLabel) {
+                hudLabel.textContent = '';
+                hudLabel.classList.remove('animate-in', 'active'); // Also remove 'active'
+
+                // Clear inline styles explicitly in case animation was interrupted
+                hudLabel.style.cssText = '';
+            }
+
+            // Restore Original Map Name visibility
+            const themeNameEl = document.getElementById('selected-theme-name');
+            if (themeNameEl) themeNameEl.style.opacity = '';
         }
     }
 

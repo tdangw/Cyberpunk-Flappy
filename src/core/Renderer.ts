@@ -45,7 +45,7 @@ export class Renderer {
 
     drawBackground(frames: number, isClassicMode: boolean = false): void {
         const isSunny = (this.currentTheme as any).mapId === 'sunny';
-        let skyTop = isSunny ? '#a5b4fc' : '#000000';
+        let skyTop = isSunny ? '#4ec0ca' : '#000000'; // Classic Cyan
 
         // Simplified Sky for Classic
         if (isClassicMode) {
@@ -92,9 +92,17 @@ export class Renderer {
             case 'ash': this.drawVolcano(frames); this.drawAsh(frames); break;
             case 'nebula': this.drawStars(frames); break;
             case 'highlands': this.drawHighlands(frames); this.drawClouds(frames, isSunny); break;
-            case 'rain': this.drawHighlands(frames); this.drawRain(frames); break;
+            case 'rain':
+                if (this.currentTheme.mapId === 'ocean') {
+                    this.drawUnderwater(frames);
+                } else {
+                    this.drawHighlands(frames);
+                }
+                this.drawRain(frames);
+                break;
             case 'storm': this.drawHighlands(frames); this.drawRain(frames); this.drawStorm(frames); break;
             case 'clouds': this.drawHighlands(frames); this.drawClouds(frames, isSunny); break;
+            case 'sun_rays': this.drawHighlands(frames); this.drawSun(frames); this.drawClouds(frames, isSunny); break;
         }
     }
 
@@ -230,7 +238,9 @@ export class Renderer {
     }
 
     private drawBuildings(frames: number): void {
-        this.ctx.fillStyle = 'rgba(20, 0, 40, 0.4)';
+        const isSunny = (this.currentTheme as any).mapId === 'sunny';
+        // Classic: Greenish/Teal city silhouette
+        this.ctx.fillStyle = isSunny ? 'rgba(64, 165, 120, 0.4)' : 'rgba(20, 0, 40, 0.4)';
         const w = 150;
         const totalWidth = CANVAS.WIDTH + 200; // Buffer
 
@@ -309,6 +319,54 @@ export class Renderer {
         this.ctx.ellipse(x + 25, y, 40, 20, 0, 0, Math.PI * 2);
         this.ctx.arc(x + 25, y - 10, 25, 0, Math.PI * 2);
         this.ctx.fill();
+    }
+
+    private drawSun(frames: number): void {
+        // Position based on reference image: Top Right, large
+        const cx = CANVAS.WIDTH - 200;
+        const cy = 120;
+
+        // Sun Core - Pale Yellow/White, distinct circle
+        this.ctx.save();
+        this.ctx.fillStyle = 'rgba(254, 252, 232, 0.9)'; // Pale yellow
+        this.ctx.shadowBlur = 40;
+        this.ctx.shadowColor = 'rgba(253, 224, 71, 0.3)'; // Soft yellow glow
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, 50, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+        this.ctx.restore();
+
+        // Rays - Geometric, long beams, very subtle rotation
+        this.ctx.save();
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(frames * 0.002); // Slow rotation
+
+        // Main structural rays
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        const rayCount = 8;
+        for (let i = 0; i < rayCount; i++) {
+            this.ctx.rotate((Math.PI * 2) / rayCount);
+            this.ctx.fillRect(60, -10, 800, 20); // Long rectangular rays
+        }
+
+        // Interleaved smaller rays
+        this.ctx.rotate((Math.PI * 2) / (rayCount * 2)); // Offset
+        this.ctx.fillStyle = 'rgba(255, 241, 118, 0.08)'; // Faint yellow
+        for (let i = 0; i < rayCount; i++) {
+            this.ctx.rotate((Math.PI * 2) / rayCount);
+            this.ctx.fillRect(60, -5, 400, 10);
+        }
+
+        this.ctx.restore();
+
+        // Screen Glare / "Sunny Effect" - Global soft overlay
+        // Creates the "hazy" look of a bright day
+        const grad = this.ctx.createRadialGradient(cx, cy, 50, cx, cy, 800);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        this.ctx.fillStyle = grad;
+        this.ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
     }
 
     drawDistanceMarkers(distanceTraveled: number, isClassicMode: boolean): void {
