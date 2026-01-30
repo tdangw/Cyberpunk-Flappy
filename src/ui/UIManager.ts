@@ -202,16 +202,13 @@ export class UIManager {
 
             if (isMobile && isLandscape && !document.fullscreenElement) {
                 // Attempt to enter fullscreen
-                document.documentElement.requestFullscreen().catch(err => {
-                    // Silent catch - browser might block if no user interaction immediately precedes this
-                    // But often rotating device happens while holding (events fired)
-                    console.log('Auto-fullscreen blocked:', err);
-                });
+                this.game.requestFullscreen();
             }
         };
 
-        // Listen for orientation changes via resize and API
+        // Listen for orientation changes strictly
         window.addEventListener('resize', handleOrientationChange);
+        window.addEventListener('orientationchange', handleOrientationChange);
         if (screen.orientation) {
             screen.orientation.addEventListener('change', handleOrientationChange);
         }
@@ -1376,10 +1373,12 @@ export class UIManager {
     }
 
     private toggleFullscreen(): void {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(() => { });
+        const doc = document as any;
+        if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+            this.game.requestFullscreen();
         } else {
-            if (document.exitFullscreen) document.exitFullscreen();
+            const exit = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+            if (exit) exit.call(doc);
         }
     }
 

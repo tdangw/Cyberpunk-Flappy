@@ -145,6 +145,20 @@ export class Game {
         });
     }
 
+    public requestFullscreen(): void {
+        const docEl = document.documentElement as any;
+        const request = docEl.requestFullscreen ||
+            docEl.webkitRequestFullscreen ||
+            docEl.mozRequestFullScreen ||
+            docEl.msRequestFullscreen;
+
+        if (request) {
+            request.call(docEl).catch((err: any) => {
+                console.warn('Fullscreen request failed:', err);
+            });
+        }
+    }
+
     private resize(): void {
         const aspect = CANVAS.WIDTH / CANVAS.HEIGHT;
         const winW = window.innerWidth;
