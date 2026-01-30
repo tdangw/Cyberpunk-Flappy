@@ -243,7 +243,7 @@ export class UIManager {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Animate Map Name to HUD (FLIP - Exact Match)
+                // Animate Map Name to HUD (True FLIP - GPU Optimized)
                 const themeNameEl = document.getElementById('selected-theme-name');
                 const hudLabel = document.getElementById('hud-map-name');
 
@@ -251,70 +251,53 @@ export class UIManager {
                     // 1. Setup Content
                     hudLabel.textContent = themeNameEl.textContent;
 
-                    // 2. Measure Source
-                    const rect = themeNameEl.getBoundingClientRect();
-                    const computedStyle = window.getComputedStyle(themeNameEl);
-
-                    // 3. Set Start State (Exactly matching source)
-                    // We remove the transition temporarily to snap instantly
+                    // 2. Initial State: Visible at Final position but with no transition
                     hudLabel.style.transition = 'none';
-                    hudLabel.style.position = 'fixed';
-                    hudLabel.style.top = rect.top + 'px';
-                    hudLabel.style.left = rect.left + 'px';
-                    hudLabel.style.width = rect.width + 'px';
-                    hudLabel.style.height = rect.height + 'px';
-                    hudLabel.style.fontSize = computedStyle.fontSize;
-                    hudLabel.style.fontWeight = computedStyle.fontWeight;
-                    hudLabel.style.letterSpacing = computedStyle.letterSpacing;
-                    hudLabel.style.color = computedStyle.color;
-                    hudLabel.style.textShadow = computedStyle.textShadow;
-                    hudLabel.style.transform = 'none'; // No transform at start
                     hudLabel.style.opacity = '1';
+                    hudLabel.style.transform = 'translateX(-50%)'; // Reset to base
 
-                    // HIDE ORIGINAL INSTANTLY to prevent ghosting/bolding
+                    // 3. Measure First (Title) and Last (HUD)
+                    const firstRect = themeNameEl.getBoundingClientRect();
+                    const lastRect = hudLabel.getBoundingClientRect();
+                    const themeStyle = window.getComputedStyle(themeNameEl);
+
+                    // 4. Calculate Invert (Transformation required to make Last look like First)
+                    const deltaX = firstRect.left + firstRect.width / 2 - (lastRect.left + lastRect.width / 2);
+                    const deltaY = firstRect.top + firstRect.height / 2 - (lastRect.top + lastRect.height / 2);
+                    const scale = firstRect.height / lastRect.height;
+
+                    // 5. Apply Invert Snap
+                    hudLabel.style.transform = `translate(calc(-50% + ${deltaX}px), ${deltaY}px) scale(${scale})`;
+                    hudLabel.style.color = themeStyle.color;
+                    hudLabel.style.textShadow = themeStyle.textShadow;
+                    hudLabel.style.letterSpacing = themeStyle.letterSpacing;
+
+                    // Hide original title smoothly
+                    themeNameEl.style.transition = 'opacity 0.2s';
                     themeNameEl.style.opacity = '0';
 
-                    // 4. Force Reflow
+                    // 6. Force Reflow
                     void hudLabel.offsetWidth;
 
-                    // 5. Set End State (HUD Position) - Delayed
-                    // Wait for start screen to fade out (approx 600ms) before moving down
+                    // 7. Transition to HUD (Play) - Delayed
                     setTimeout(() => {
-                        // Add transition back
-                        hudLabel.style.transition = 'all 2s cubic-bezier(0.2, 0.8, 0.2, 1)';
-
-                        // Target: Bottom 2px. Center X.
-                        const winH = window.innerHeight;
-                        // const finalFontSize = 12; // Unused
-
-                        hudLabel.style.top = (winH - 25) + 'px'; // Move to bottom
-                        hudLabel.style.left = '50%';
-                        hudLabel.style.transform = 'translateX(-50%)';
-                        hudLabel.style.fontSize = '0.7rem';
-                        hudLabel.style.letterSpacing = '0.8px';
+                        hudLabel.style.transition = 'transform 2s cubic-bezier(0.16, 1, 0.3, 1), color 2s, text-shadow 2s, letter-spacing 2s';
+                        hudLabel.style.transform = 'translateX(-50%) scale(1)';
                         hudLabel.style.color = 'rgba(255, 255, 255, 0.9)';
                         hudLabel.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.8)';
+                        hudLabel.style.letterSpacing = '0.8px';
                     }, 600);
 
-                    // 6. Cleanup after animation (600ms delay + 2000ms duration)
+                    // 8. Final Cleanup (once animation is done)
                     setTimeout(() => {
-                        // Clear inline styles so CSS class takes over (for responsive resizing)
+                        hudLabel.classList.add('active');
+                        // Clean inline styles to let CSS take over
                         hudLabel.style.transition = '';
-                        hudLabel.style.top = '';
-                        hudLabel.style.left = '';
-                        hudLabel.style.width = '';
-                        hudLabel.style.height = '';
-                        hudLabel.style.fontSize = '';
-                        hudLabel.style.fontWeight = '';
-                        hudLabel.style.letterSpacing = '';
+                        hudLabel.style.transform = '';
                         hudLabel.style.color = '';
                         hudLabel.style.textShadow = '';
-                        hudLabel.style.transform = '';
-                        hudLabel.style.position = ''; // Revert to CSS default (fixed)
-
-                        // Add active class to maintain opacity: 1 and default CSS styling
-                        hudLabel.classList.add('active');
-                    }, 2600);
+                        hudLabel.style.letterSpacing = '';
+                    }, 2700);
                 }
 
                 this.hideStartScreen();
