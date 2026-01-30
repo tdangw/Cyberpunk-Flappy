@@ -66,26 +66,35 @@ export class PipeManager {
         const configGap = this.config.pipeGap;
         const gapVariance = (Math.random() - 0.5) * 20;
         const gap = configGap + gapVariance;
-        const padding = 80;
+        const padding = 100;
         const minY = padding;
         const maxY = CANVAS.HEIGHT - groundH - gap - padding;
 
+        const lastPipe = this.pipes[this.pipes.length - 1];
         let topH: number;
+        let spawnX = CANVAS.WIDTH + 150;
 
-        // Pattern Height Logic
-        // If we are IN a pattern sequence, calculate based on last pipe
-        if (this.patternType === 'stairs_up' && this.patternRemaining > 0) {
-            topH = Math.max(minY, this.lastPipeTop - 100);
-        } else if (this.patternType === 'stairs_down' && this.patternRemaining > 0) {
-            topH = Math.min(maxY, this.lastPipeTop + 100);
-        } else if (this.patternType === 'twins' && this.patternRemaining > 0) {
-            topH = this.lastPipeTop; // Contiguous wall at same height
+        // Pattern Logic
+        if (lastPipe && this.patternRemaining > 0) {
+            spawnX = lastPipe.x + this.currentPipeInterval;
+
+            if (this.patternType === 'stairs_up') {
+                // Gap moves UP (topH decreases) - Allowed for contiguous (80px)
+                topH = Math.max(minY, this.lastPipeTop - 60);
+            } else if (this.patternType === 'stairs_down') {
+                // Gap moves DOWN (topH increases) - ONLY for non-contiguous (e.g. 320px)
+                topH = Math.min(maxY, this.lastPipeTop + 80);
+            } else if (this.patternType === 'twins') {
+                topH = this.lastPipeTop; // Flat wall contiguous
+            } else {
+                topH = Math.random() * (maxY - minY) + minY;
+            }
         } else {
-            // Normal Random or start of a pattern
+            // Normal Random
             topH = Math.random() * (maxY - minY) + minY;
 
-            // Safety: if starting fresh after a pattern, don't jump too far too fast
-            if (this.patternRemaining === 0 && Math.abs(topH - this.lastPipeTop) > 300) {
+            // Safety transition
+            if (lastPipe && Math.abs(topH - this.lastPipeTop) > 300) {
                 topH = this.lastPipeTop + (topH > this.lastPipeTop ? 150 : -150);
             }
         }
@@ -93,7 +102,7 @@ export class PipeManager {
         this.lastPipeTop = topH;
 
         const pipe: Pipe = {
-            x: CANVAS.WIDTH + 100,
+            x: spawnX,
             top: topH,
             w: 80,
             passed: false,
@@ -103,7 +112,9 @@ export class PipeManager {
 
         if (this.patternRemaining > 0) this.patternRemaining--;
 
-        if (spawnCoins && Math.random() > 0.4) {
+        // Less coins in tight spots
+        const isTight = this.currentPipeInterval < 150;
+        if (spawnCoins && Math.random() < (isTight ? 0.1 : 0.4)) {
             const coinX = pipe.x + 40;
             const coinY = topH + gap / 2;
             if (this.isPositionSafe(coinX, coinY, 15)) {
@@ -157,55 +168,52 @@ export class PipeManager {
     private setNextPipeInterval(): void {
         const baseSpacing = this.config.pipeSpacing || 350;
 
-        // 1. Check if we are currently mid-sequence
+        // 1. Logic for currently active patterns
         if (this.patternRemaining > 0) {
-            // Contiguous sequence: pipes touch each other
-            if (['stairs_up', 'stairs_down', 'twins'].includes(this.patternType)) {
-                this.currentPipeInterval = 80; // Pipe width (contiguous)
+            if (this.patternType === 'stairs_up' || this.patternType === 'twins') {
+                this.currentPipeInterval = 80; // CONTIGUOUS (Forbidden for DOWN)
+                return;
+            }
+            if (this.patternType === 'stairs_down') {
+                this.currentPipeInterval = 320; // NON-CONTIGUOUS (Safe for descent)
                 return;
             }
         }
 
-        // 2. Check if a pattern just finished
+        // 2. Transition out of a pattern
         if (this.patternType !== 'none') {
             const prevType = this.patternType;
             this.patternType = 'none';
             this.patternRemaining = 0;
 
-            // Give extra space for player to recover after a dense wall/stairs
             if (prevType !== 'desert') {
-                this.currentPipeInterval = baseSpacing + 250;
+                this.currentPipeInterval = 450; // Recovery gap
                 return;
             }
         }
 
-        // 3. Roll for a NEW pattern or normal spacing
+        // 3. Roll for new patterns
         const rand = Math.random();
 
-        if (rand < 0.15) {
-            // STAIRS UP
+        if (rand < 0.12) {
             this.patternType = 'stairs_up';
-            this.patternRemaining = 2 + Math.floor(Math.random() * 3); // 2-4 more pipes
-            this.currentPipeInterval = baseSpacing;
-        } else if (rand < 0.30) {
-            // STAIRS DOWN
+            this.patternRemaining = 2 + Math.floor(Math.random() * 3);
+            this.currentPipeInterval = 250;
+        } else if (rand < 0.22) {
             this.patternType = 'stairs_down';
             this.patternRemaining = 2 + Math.floor(Math.random() * 3);
-            this.currentPipeInterval = baseSpacing;
-        } else if (rand < 0.40) {
-            // CONTIGUOUS WALL (Twins/Triples/Quads)
+            this.currentPipeInterval = 250;
+        } else if (rand < 0.30) {
             this.patternType = 'twins';
-            this.patternRemaining = 1 + Math.floor(Math.random() * 4); // 2-5 pipes total
-            this.currentPipeInterval = baseSpacing;
-        } else if (rand < 0.45) {
-            // DESERT (Long gap)
+            this.patternRemaining = 2 + Math.floor(Math.random() * 3);
+            this.currentPipeInterval = 250;
+        } else if (rand < 0.35) {
+            // DESERT: Long break (approx 2000px)
             this.patternType = 'desert';
-            this.currentPipeInterval = 1600 + Math.random() * 1000;
+            this.currentPipeInterval = 1800 + Math.random() * 500;
         } else {
-            // Normal rhythmic behavior
-            const variance = 150;
-            const randomDist = baseSpacing + (Math.random() - 0.5) * variance;
-            this.currentPipeInterval = Math.max(350, randomDist);
+            // NORMAL: 250 +- 50
+            this.currentPipeInterval = 200 + Math.random() * 100;
         }
     }
 
