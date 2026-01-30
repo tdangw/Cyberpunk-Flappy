@@ -923,7 +923,8 @@ export class UIManager {
 
         this.saveManager.setEquippedBoost(boost.id, boost.capacity);
         this.renderInventoryGrid();
-        this.game.restart();
+        this.game.syncNitroToBird();
+        this.updateAllUI();
         this.showCentralNotification(`${boost.name.toUpperCase()} EQUIPPED`, 'success');
     }
 

@@ -121,7 +121,7 @@ export class Game {
         });
     }
 
-    private syncNitroToBird(): void {
+    public syncNitroToBird(): void {
         const boostId = this.saveManager.getEquippedBoostId();
         const remaining = this.saveManager.getBoostRemaining();
 
