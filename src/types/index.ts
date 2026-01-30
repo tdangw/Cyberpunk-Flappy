@@ -73,10 +73,14 @@ export interface Coin {
 }
 
 export interface GroundEnemy {
+    type: 'goomba' | 'snail';
     x: number;
     y: number;
     w: number;
     h: number;
+    scaleX: number;
+    scaleY: number;
+    color: string;
     crawlingSpeed: number;
     animFrame: number;
     dead: boolean;

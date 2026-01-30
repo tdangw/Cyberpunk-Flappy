@@ -112,19 +112,40 @@ export class PipeManager {
             }
         }
 
-        // NEW: Spawn Ground Enemy (Goomba)
-        // Only in non-contiguous gaps for fairness, or desert
-        if (this.currentPipeInterval > 150 && Math.random() < 0.2) {
-            const enemyX = spawnX + 150; // Between pipes
-            const enemyW = 40;
-            const enemyH = 40;
+        // NEW: Spawn Ground Enemy (Mario-style animals with variants)
+        if (this.currentPipeInterval > 150 && Math.random() < 0.28) {
+            const types: ('goomba' | 'snail')[] = ['goomba', 'snail'];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            // 3 Size Variants: Std, Small, Large
+            const sizeRand = Math.random();
+            let sx = 1, sy = 1;
+            if (sizeRand < 0.33) { sx = 0.7; sy = 0.7; }      // Smaller
+            else if (sizeRand < 0.66) { sx = 1.4; sy = 1.4; } // Larger
+            // else Standard (1,1)
+
+            // 6 Color Variants (Standard + 5 others)
+            const goombaColors = ['#8b4513', '#4682b4', '#a52a2a', '#2e8b57', '#6a5acd', '#2f4f4f'];
+            const snailColors = ['#ffa07a', '#00ced1', '#32cd32', '#ff69b4', '#ffd700', '#9370db'];
+            const chosenColor = type === 'goomba'
+                ? goombaColors[Math.floor(Math.random() * goombaColors.length)]
+                : snailColors[Math.floor(Math.random() * snailColors.length)];
+
+            const enemyW = 40 * sx;
+            const enemyH = 40 * sy;
+            const enemyX = spawnX + 150;
             const enemyY = CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT - enemyH;
+
             this.groundEnemies.push({
+                type,
                 x: enemyX,
                 y: enemyY,
                 w: enemyW,
                 h: enemyH,
-                crawlingSpeed: 1 + Math.random() * 2,
+                scaleX: sx,
+                scaleY: sy,
+                color: chosenColor,
+                crawlingSpeed: (type === 'snail' ? 0.3 : 1.0) * (sizeRand < 0.2 ? 1.3 : 1.0), // Smaller ones move faster
                 animFrame: 0,
                 dead: false
             });
@@ -237,50 +258,76 @@ export class PipeManager {
             }
             ctx.restore();
         });
-        this.groundEnemies.forEach(e => this.drawGoomba(ctx, e));
+        this.groundEnemies.forEach(e => this.drawGroundEnemy(ctx, e));
     }
 
-    private drawGoomba(ctx: CanvasRenderingContext2D, e: GroundEnemy): void {
-        const walk = Math.sin(e.animFrame) * 3;
+    private drawGroundEnemy(ctx: CanvasRenderingContext2D, e: GroundEnemy): void {
         ctx.save();
         ctx.translate(e.x + e.w / 2, e.y + e.h / 2);
+        ctx.scale(e.scaleX, e.scaleY); // Apply size variant scaling
 
-        // Body Shadow
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#000';
+        const walk = Math.sin(e.animFrame) * 4;
+        const baseW = 40;
+        const baseH = 40;
 
-        // Mushroom Head (Brown)
-        ctx.fillStyle = '#8b4513';
-        ctx.beginPath();
-        ctx.moveTo(-e.w * 0.5, e.h * 0.2); // Left base
-        ctx.bezierCurveTo(-e.w * 0.6, -e.h * 0.6, e.w * 0.6, -e.h * 0.6, e.w * 0.5, e.h * 0.2); // Top curve
-        ctx.lineTo(-e.w * 0.5, e.h * 0.2);
-        ctx.fill();
+        switch (e.type) {
+            case 'goomba':
+                // Mario Goomba with color variants
+                ctx.fillStyle = e.color; // Main Head Color
+                ctx.beginPath();
+                ctx.moveTo(-baseW * 0.5, baseH * 0.2);
+                ctx.bezierCurveTo(-baseW * 0.6, -baseH * 0.6, baseW * 0.6, -baseH * 0.6, baseW * 0.5, baseH * 0.2);
+                ctx.fill();
 
-        // Stalk/Face (Tan)
-        ctx.fillStyle = '#ffdead';
-        ctx.fillRect(-e.w * 0.25, e.h * 0.1, e.w * 0.5, e.h * 0.4);
+                ctx.fillStyle = '#ffdead'; // Stalk (Keep tan for recognizable face)
+                ctx.fillRect(-baseW * 0.2, baseH * 0.1, baseW * 0.4, baseH * 0.4);
 
-        // Eyes (Mean looking)
-        ctx.fillStyle = '#000';
-        // Left
-        ctx.beginPath();
-        ctx.moveTo(-e.w * 0.15, e.h * 0.2);
-        ctx.lineTo(-e.w * 0.05, e.h * 0.25);
-        ctx.stroke();
-        ctx.fillRect(-e.w * 0.15, e.h * 0.25, 4, 4);
-        // Right
-        ctx.beginPath();
-        ctx.moveTo(e.w * 0.15, e.h * 0.2);
-        ctx.lineTo(e.w * 0.05, e.h * 0.25);
-        ctx.stroke();
-        ctx.fillRect(e.w * 0.08, e.h * 0.25, 4, 4);
+                ctx.fillStyle = '#000'; // Eyes
+                ctx.fillRect(-baseW * 0.15, baseH * 0.2, 3, 3);
+                ctx.fillRect(baseW * 0.05, baseH * 0.2, 3, 3);
 
-        // Feet (Black) - Walking animation
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#000';
-        ctx.fillRect(-e.w * 0.4 + walk, e.h * 0.4, e.w * 0.3, e.h * 0.15);
-        ctx.fillRect(e.w * 0.1 - walk, e.h * 0.4, e.w * 0.3, e.h * 0.15);
+                ctx.fillStyle = '#000'; // Feet
+                ctx.fillRect(-baseW * 0.35 + walk, baseH * 0.4, baseW * 0.25, baseH * 0.1);
+                ctx.fillRect(baseW * 0.1 - walk, baseH * 0.4, baseW * 0.25, baseH * 0.1);
+                break;
+
+            case 'snail':
+                // Refined Snail with color variants
+                ctx.fillStyle = e.color; // Body color variant
+                ctx.beginPath();
+                // Extended body (Flipped to face LEFT)
+                ctx.ellipse(baseW * 0.1, baseH * 0.3, baseW * 0.4, baseH * 0.15, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Head part
+                ctx.beginPath();
+                ctx.arc(-baseW * 0.3, baseH * 0.1, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eye Stalks
+                ctx.strokeStyle = e.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-baseW * 0.25, baseH * 0.1);
+                ctx.lineTo(-baseW * 0.2, -baseH * 0.1);
+                ctx.moveTo(-baseW * 0.35, baseH * 0.1);
+                ctx.lineTo(-baseW * 0.4, -baseH * 0.1);
+                ctx.stroke();
+
+                // Eyes
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(-baseW * 0.2, -baseH * 0.1, 2, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(-baseW * 0.4, -baseH * 0.1, 2, 0, Math.PI * 2); ctx.fill();
+
+                // Shell (Usually Brown/Orange, constant or varied)
+                ctx.fillStyle = '#d2691e';
+                ctx.beginPath();
+                ctx.arc(baseW * 0.1, baseH * 0.05, baseH * 0.35, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#8b4513'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(baseW * 0.1, baseH * 0.05, baseH * 0.15, 0, Math.PI * 2); ctx.stroke();
+                break;
+        }
 
         ctx.restore();
     }
@@ -292,7 +339,7 @@ export class PipeManager {
         ctx.fillStyle = '#050010';
         ctx.strokeStyle = this.pipeColor;
         ctx.lineWidth = 4;
-        ctx.shadowBlur = 15; ctx.shadowColor = this.pipeColor;
+        ctx.shadowBlur = 5; ctx.shadowColor = this.pipeColor; // Reduced from 15 to 5
 
         const drawBody = () => {
             ctx.strokeRect(p.x, 0, p.w, p.top);
@@ -312,10 +359,10 @@ export class PipeManager {
         }
 
         if (['cyber', 'neon', 'glitch', 'plasma'].includes(this.pipeStyle)) {
-            ctx.globalAlpha = 0.1; ctx.fillStyle = this.pipeColor;
+            ctx.globalAlpha = 0.05; ctx.fillStyle = this.pipeColor; // Reduced from 0.1 to 0.05
             ctx.fillRect(p.x + 5, 0, p.w - 10, p.top);
             ctx.fillRect(p.x + 5, botY, p.w - 10, CANVAS.HEIGHT - botY);
-            ctx.globalAlpha = 0.5; ctx.beginPath();
+            ctx.globalAlpha = 0.3; ctx.beginPath(); // Reduced from 0.5 to 0.3
             for (let y = 20; y < p.top; y += 40) { ctx.moveTo(p.x, y); ctx.lineTo(p.x + p.w, y); }
             for (let y = botY + 20; y < CANVAS.HEIGHT; y += 40) { ctx.moveTo(p.x, y); ctx.lineTo(p.x + p.w, y); }
             ctx.stroke();
