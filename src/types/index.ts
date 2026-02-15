@@ -59,6 +59,7 @@ export interface Particle {
     vy: number;
     life: number;
     color: string;
+    text?: string;
 }
 
 export interface Pipe {
@@ -67,6 +68,10 @@ export interface Pipe {
     w: number;
     passed: boolean;
     seed: number;
+    // Data-driven mechanics
+    mechanic?: string;    // Tên hiệu ứng (ví dụ: 'falling', 'pixelate', 'hologram'...)
+    animTimer?: number;   // Timer dùng chung cho mọi hiệu ứng
+    mechanicState?: any;  // Dữ liệu phụ trợ nếu cần (vận tốc, vị trí ban đầu...)
 }
 
 export interface Coin {

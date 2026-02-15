@@ -2,6 +2,8 @@ import type { GameState as GameStateType, GameConfig } from '../types';
 import { DEFAULT_CONFIG, CANVAS, COLORS, MAPS } from '../config/constants';
 import { Bird } from '../entities/Bird';
 import { PipeManager } from '../entities/PipeManager';
+import { CoinManager } from '../entities/CoinManager';
+import { EnemyManager } from '../entities/EnemyManager';
 import { ParticleSystem } from '../entities/ParticleSystem';
 import { SkinManager } from '../managers/SkinManager';
 import { SaveManager } from '../managers/SaveManager';
@@ -12,6 +14,7 @@ import { LevelGenerator } from './LevelGenerator';
 import { BOOSTS } from '../config/boosts';
 import { GroundDecorationManager } from '../entities/GroundDecorationManager';
 import { BackgroundBirdManager } from '../entities/BackgroundBirdManager';
+import { CollisionSystem } from '../systems/CollisionSystem';
 
 /**
  * Main Game class - orchestrates all game systems
@@ -32,6 +35,8 @@ export class Game {
     private config: GameConfig;
     private bird: Bird;
     private pipeManager: PipeManager;
+    private coinManager: CoinManager;
+    private enemyManager: EnemyManager;
     private particleSystem: ParticleSystem;
     private groundDecorationManager: GroundDecorationManager;
     private backgroundBirdManager: BackgroundBirdManager;
@@ -41,6 +46,7 @@ export class Game {
     private inputManager: InputManager;
     private renderer: Renderer;
     private audioManager: AudioManager;
+    private collisionSystem: CollisionSystem;
 
     private rafId: number | null = null;
     private screenShake = 0;
@@ -71,10 +77,15 @@ export class Game {
         this.audioManager = AudioManager.getInstance();
 
         this.bird = new Bird(this.config, () => this.handleGroundCollision());
-        this.pipeManager = new PipeManager(this.config);
+
+        this.coinManager = new CoinManager(this.config);
+        this.enemyManager = new EnemyManager();
+        this.pipeManager = new PipeManager(this.config, this.coinManager, this.enemyManager);
+
         this.particleSystem = new ParticleSystem();
         this.groundDecorationManager = new GroundDecorationManager();
         this.backgroundBirdManager = new BackgroundBirdManager();
+        this.collisionSystem = new CollisionSystem();
 
         this.setupInput();
         this.setupDebugKeys();
@@ -303,7 +314,9 @@ export class Game {
             this.distanceTraveled += moveStep;
 
             // Update pipes with Coin Spawn Flag (Disable coins if classic mode)
-            this.pipeManager.update(speed, dtRatio, !this.isClassicMode, this.isClassicMode);
+            this.pipeManager.update(speed, dtRatio, this.isClassicMode, this.score);
+            this.coinManager.update(speed, dtRatio, this.pipeManager.getPipes(), this.state === 'PLAYING' && !this.isClassicMode);
+            this.enemyManager.update(speed, dtRatio);
 
             // Ground Decorations
             if (!this.isClassicMode) {
@@ -345,6 +358,9 @@ export class Game {
             if (this.bird.isDashing && this.frames % 2 === 0) {
                 this.particleSystem.emit(this.bird.x - 10, this.bird.y, 1, 'rgba(255, 255, 255, 0.4)');
             }
+            if (this.bird.y + this.bird.radius >= CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT) {
+                this.handleGroundCollision();
+            }
         } else if (this.state === 'DYING') {
             this.bird.updateFall(dtRatio);
 
@@ -359,108 +375,29 @@ export class Game {
         this.particleSystem.update(particleSpeed, dtRatio);
     }
 
+    // Collision check delegated to system
     private checkCollisions(): void {
-        const birdRect = {
-            t: this.bird.y - this.bird.radius * 0.6,
-            b: this.bird.y + this.bird.radius * 0.6,
-            l: this.bird.x - this.bird.radius * 0.6,
-            r: this.bird.x + this.bird.radius * 0.6,
-        };
-
-        this.pipeManager.getPipes().forEach((pipe) => {
-            const gapBot = pipe.top + this.config.pipeGap;
-            if (birdRect.r > pipe.x && birdRect.l < pipe.x + pipe.w) {
-                if (birdRect.t < pipe.top || birdRect.b > gapBot) {
-                    if (this.bird.isInvulnerable()) {
-                        // Sticky Invulnerability:
-                        // If the safety timer is running out but we are STILL inside a pipe hazard,
-                        // extend the timer slightly to ensure we don't die instantly upon appearing.
-                        // This allows the "Anti-Drop" pop to carry us out of danger.
-                        if (!this.bird.isDashing && this.bird.getInvulnerableTimer() < 5) {
-                            this.bird.extendInvulnerability(5);
-                        }
-                    } else {
-                        this.triggerDying();
-                    }
-                }
-            }
-            if (!pipe.passed && this.bird.x > pipe.x + pipe.w) {
-                pipe.passed = true;
-                this.score++;
-                this.updateScoreUI();
-            }
+        const result = this.collisionSystem.checkCollisions({
+            bird: this.bird,
+            pipes: this.pipeManager.getPipes(),
+            coins: this.coinManager.getCoins(),
+            enemies: this.enemyManager.getEnemies(),
+            saveManager: this.saveManager,
+            audioManager: this.audioManager,
+            particleSystem: this.particleSystem,
+            config: this.config,
+            score: this.score,
+            sessionCoins: this.sessionCoins,
+            isClassicMode: this.isClassicMode,
+            state: this.state,
+            triggerDying: this.triggerDying.bind(this),
+            createScorePopup: this.createScorePopup.bind(this),
+            updateScoreUI: this.updateScoreUI.bind(this),
+            updateCoinUI: this.updateCoinUI.bind(this)
         });
 
-        this.pipeManager.getCoins().forEach((coin) => {
-            const dx = this.bird.x - coin.x;
-            const dy = this.bird.y - coin.y;
-            if (Math.sqrt(dx * dx + dy * dy) < this.bird.radius + coin.r + 5) {
-                coin.collected = true;
-                this.sessionCoins++;
-                this.saveManager.addCoins(1);
-                this.audioManager.play('coin');
-                this.updateCoinUI();
-                this.particleSystem.emit(coin.x, coin.y, 8, COLORS.NEON_GOLD);
-            }
-        });
-
-        // New: Collision with Ground Enemies (Goombas, Bullets)
-        this.pipeManager.getEnemies().forEach((enemy) => {
-            if (enemy.dead || (enemy as any).dying) return;
-
-            const enemyRect = {
-                l: enemy.x + 5,
-                r: enemy.x + enemy.w - 5,
-                t: enemy.y + 5,
-                b: enemy.y + enemy.h - 5
-            };
-
-            if (birdRect.r > enemyRect.l && birdRect.l < enemyRect.r &&
-                birdRect.b > enemyRect.t && birdRect.t < enemyRect.b) {
-
-                // STOMP LOGIC: More generous stomp zone
-                const isNotJumpingUp = this.bird.getVelocity().y > -2;
-                const hitTopPart = birdRect.b < enemy.y + enemy.h * 0.8;
-
-                if (isNotJumpingUp && hitTopPart) {
-                    // Successful Stomp (works even with shield!)
-                    (enemy as any).dying = true;
-
-                    if (enemy.type === 'bullet') {
-                        // Drop Straight Down
-                        enemy.vy = -5; // Tiny hop then fall looks more natural physics
-                        enemy.crawlingSpeed = 0;
-                        this.score += 5;
-                        this.createScorePopup(enemy.x, enemy.y, '+5$ 🪙');
-                        this.audioManager.play('coin');
-                    } else {
-                        // Flatten & Linger
-                        const originalH = enemy.h;
-                        enemy.scaleY = 0.2;
-                        enemy.y += originalH * 0.4; // Align to bottom
-                        enemy.crawlingSpeed = 0;
-
-                        setTimeout(() => { enemy.dead = true; }, 400);
-
-                        this.score += 2;
-                        this.createScorePopup(enemy.x, enemy.y, '+2$ 🪙');
-                        this.audioManager.play('coin');
-                    }
-
-                    // Refresh shield and bounce
-                    this.bird.extendInvulnerability(60);
-                    this.bird.bounce();
-                    return;
-                }
-
-                if (this.bird.isInvulnerable()) {
-                    // Skip or extend safety
-                    this.bird.extendInvulnerability(2);
-                } else {
-                    this.triggerDying();
-                }
-            }
-        });
+        this.score = result.score;
+        this.sessionCoins = result.sessionCoins;
     }
 
     private createScorePopup(x: number, y: number, text: string): void {
@@ -474,18 +411,23 @@ export class Game {
         this.state = 'DYING';
         this.screenShake = 15;
         this.audioManager.play('hit'); // Sync: Hit Pipe
+        this.audioManager.play('die'); // Play Die sound immediately
         this.particleSystem.emit(this.bird.x, this.bird.y, 15, COLORS.NEON_RED);
 
         // Stop music when dying starts
-        this.audioManager.setBGMEnabled(false);
+        this.audioManager.stopBGM();
     }
 
     private handleGroundCollision(): void {
         if (this.state === 'GAMEOVER') return;
 
+        // Play die sound if hitting ground directly (skipped triggerDying)
+        if (this.state === 'PLAYING') {
+            this.audioManager.play('die');
+        }
+
         this.audioManager.play('hit'); // Sync: Impact Ground
-        this.audioManager.play('die'); // Game over sound
-        this.audioManager.setBGMEnabled(false);
+        this.audioManager.stopBGM();
         this.gameOver();
     }
 
@@ -501,29 +443,38 @@ export class Game {
         this.state = 'START';
         this.bird.resetStateForRevive();
         this.pipeManager.clearNearPipes(this.bird.x);
-        this.audioManager.setBGMEnabled(true);
+        this.coinManager.reset();
+        this.enemyManager.reset();
+
+        this.audioManager.startBGM(this.renderer.getThemeMapId());
         this.resumeWithCountdown();
     }
 
     private render(): void {
-        this.ctx.save();
-        if (this.screenShake > 0 && !this.isClassicMode) {
-            this.ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
-        }
-
         this.renderer.clear();
 
-        // Pass Classic flags to renderer
-        this.renderer.drawBackground(this.frames, this.isClassicMode);
+        // Render distant background BEFORE screen shake/translate
+        // This makes stars/nebula/forest feel like a "separate layout"
+        this.renderer.drawBackground(this.frames, this.distanceTraveled, this.isClassicMode);
 
         if (!this.isClassicMode && this.config.showBackgroundDetails) {
             this.backgroundBirdManager.render(this.ctx, this.frames);
         }
 
+        // Draw Start Zone Decoration (Nest, Pad, etc.)
+        this.renderer.drawStartZone(this.distanceTraveled);
+
+        this.ctx.save();
+        if (this.screenShake > 0 && !this.isClassicMode) {
+            this.ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
+        }
+
         this.renderer.drawDistanceMarkers(this.distanceTraveled, this.isClassicMode);
         this.renderer.drawGround(this.frames, this.state === 'PLAYING' ? this.config.speed : 0);
 
-        this.pipeManager.render(this.ctx, this.isClassicMode);
+        this.pipeManager.render(this.ctx, this.frames, this.isClassicMode);
+        this.coinManager.draw(this.ctx);
+        this.enemyManager.draw(this.ctx);
 
         if (!this.isClassicMode && this.config.showGroundDetails) {
             this.groundDecorationManager.render(this.ctx);
@@ -611,6 +562,8 @@ export class Game {
         this.bird.reset();
         this.syncNitroToBird(); // Ensure fresh boost state from save
         this.pipeManager.reset();
+        this.coinManager.reset();
+        this.enemyManager.reset();
         this.particleSystem.clear();
         this.groundDecorationManager.reset(CANVAS.WIDTH, CANVAS.HEIGHT, CANVAS.GROUND_HEIGHT);
         this.backgroundBirdManager.reset();
@@ -618,8 +571,7 @@ export class Game {
         this.updateScoreUI();
         this.updateCoinUI();
 
-        // Resume music on restart
-        this.audioManager.setBGMEnabled(true);
+        this.audioManager.stopBGM();
 
         // Re-apply mode settings to ensure consistent state
         this.setGameMode(this.isClassicMode ? 'classic' : 'advance');
@@ -670,6 +622,7 @@ export class Game {
         this.config = { ...this.config, ...newConfig };
         this.bird.setConfig(this.config);
         this.pipeManager.setConfig(this.config);
+        this.coinManager.setConfig(this.config);
         this.inputManager.setDashControl(this.config.dashControl);
     }
     getConfig(): GameConfig { return { ...this.config }; }
@@ -723,6 +676,8 @@ export class Game {
         const container = document.getElementById('game-container');
         if (this.isClassicMode) {
             container?.classList.add('classic-mode');
+            // Force Sunny map for Classic mode
+            this.setStartMap(5);
         } else {
             container?.classList.remove('classic-mode');
         }

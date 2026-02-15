@@ -65,6 +65,10 @@ export class AudioManager {
         }
     }
 
+    stopBGM(): void {
+        if (this.bgm) this.bgm.stop();
+    }
+
     playBGM(file: string = 'bgm_city.mp3'): void {
         if (this.bgm) this.bgm.stop();
 

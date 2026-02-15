@@ -7,14 +7,11 @@
     display: none !important;
 }
 
+/* Score styling inherited from main style.css for consistency */
 .classic-mode #score {
-    font-size: 3rem;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     color: #fff;
-    position: fixed;
-    top: 2%;
-    left: 50%;
-    transform: translateX(-50%);
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    /* Soft shadow for readability on light bg */
 }
 
 .classic-mode #top-hud {

@@ -3,7 +3,12 @@
  * Utility to generate custom code-drawn icons for the shop
  */
 export class IconDrawer {
+    private static cache: Map<string, string> = new Map();
+
     static getNitroIcon(type: string, size: number = 60): string {
+        const cacheKey = `nitro_${type}_${size}`;
+        if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -56,7 +61,9 @@ export class IconDrawer {
         }
 
         ctx.restore();
-        return canvas.toDataURL();
+        const dataUrl = canvas.toDataURL();
+        this.cache.set(cacheKey, dataUrl);
+        return dataUrl;
     }
 
     private static getColorForType(type: string): string {
@@ -74,6 +81,9 @@ export class IconDrawer {
     }
 
     static getCoinIcon(size: number = 60): string {
+        const cacheKey = `coin_${size}`;
+        if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -106,10 +116,15 @@ export class IconDrawer {
         ctx.textBaseline = 'middle';
         ctx.fillText('$', 0, 0);
 
-        return canvas.toDataURL();
+        const dataUrl = canvas.toDataURL();
+        this.cache.set(cacheKey, dataUrl);
+        return dataUrl;
     }
 
     static getSimpleIcon(type: 'success' | 'error' | 'shop' | 'settings' | 'fullscreen' | 'leaderboard' | 'map_0' | 'map_1' | 'map_2' | 'map_3' | 'map_4' | 'map_5' | 'coin' | 'hand', size: number = 60): string {
+        const cacheKey = `simple_${type}_${size}`;
+        if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -151,7 +166,9 @@ export class IconDrawer {
             case 'backpack' as any: this.drawBackpack(ctx, size); break;
         }
 
-        return canvas.toDataURL();
+        const dataUrl = canvas.toDataURL();
+        this.cache.set(cacheKey, dataUrl);
+        return dataUrl;
     }
 
     private static drawTapIcon(ctx: CanvasRenderingContext2D, size: number) {

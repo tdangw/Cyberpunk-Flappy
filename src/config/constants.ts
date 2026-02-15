@@ -43,6 +43,7 @@ export interface MapDefinition {
     name: string;
     bgm: string;
     palette: MapPalette;
+    isDark?: boolean;
 }
 
 export const MAPS: MapDefinition[] = [
@@ -50,6 +51,7 @@ export const MAPS: MapDefinition[] = [
         id: 'neon',
         name: 'Neon District',
         bgm: 'bgm_city.mp3',
+        isDark: true,
         palette: {
             pipeColors: ['#00fff7', '#ff00ff', '#39ff14', '#ff3333', '#ffd700', '#0099ff', '#ff6600'],
             skyColors: ['#05001a', '#0a0025', '#001a05', '#1a0000', '#1a1a00', '#000000'],
@@ -61,15 +63,17 @@ export const MAPS: MapDefinition[] = [
     },
     {
         id: 'jungle',
-        name: 'Techno Jungle',
+        name: 'Emerald Forest',
         bgm: 'bgm_jungle.mp3',
         palette: {
-            pipeColors: ['#39ff14', '#00ff88', '#88ff00', '#ffff00', '#ffbb00', '#00cc44'],
-            skyColors: ['#001a05', '#002010', '#101a00', '#1a1a00', '#1a1005', '#052525'],
-            groundColors: ['#001000', '#001a08', '#081500', '#151500', '#150a00', '#001515'],
-            styles: ['bamboo', 'stone', 'toxic'],
-            decorations: ['trees', 'vines', 'slime'], // Removed rain-forest per user request
-            patterns: ['rust', 'stripes', 'plain']
+            // Bright neon-ish pipes to contrast with dark forest
+            pipeColors: ['#bef264', '#d9f99d', '#84cc16', '#65a30d'],
+            // Deep forest canopy (much lower brightness)
+            skyColors: ['#134e4a', '#064e3b', '#065f46'],
+            groundColors: ['#022c22', '#064e3b'],
+            styles: ['mossy'],
+            decorations: ['dense_forest'],
+            patterns: ['plain']
         }
     },
     {
@@ -77,12 +81,14 @@ export const MAPS: MapDefinition[] = [
         name: 'Cyber Ocean',
         bgm: 'bgm_ocean.mp3',
         palette: {
-            pipeColors: ['#00fff7', '#0088ff', '#0044ff', '#00ffff', '#cc00ff', '#ffffff'],
-            skyColors: ['#000a1a', '#000515', '#000210', '#001a1a', '#10001a', '#001020'],
-            groundColors: ['#001525', '#000a18', '#000510', '#002525', '#150025', '#002030'],
-            styles: ['coral'], // Unified style
-            decorations: ['bubbles', 'waves', 'shards', 'rain'],
-            patterns: ['hex', 'waves', 'plain']
+            // Slate and steel greys
+            pipeColors: ['#64748b', '#475569', '#94a3b8', '#334155'],
+            // Near-white pale blue
+            skyColors: ['#f8fafc', '#f1f5f9', '#f0f9ff'],
+            groundColors: ['#1e293b', '#0f172a'],
+            styles: ['coral'],
+            decorations: ['bubbles', 'waves'],
+            patterns: ['plain']
         }
     },
     {
@@ -90,25 +96,29 @@ export const MAPS: MapDefinition[] = [
         name: 'Volcano Core',
         bgm: 'bgm_volcano.mp3',
         palette: {
-            pipeColors: ['#ff3333', '#ff6600', '#ff9900', '#ffcc00', '#ffff00', '#cc0000'],
-            skyColors: ['#150000', '#200500', '#2a0a00', '#351000', '#401500', '#250000'],
-            groundColors: ['#250000', '#300a00', '#401000', '#501500', '#601a00', '#300000'],
-            styles: ['rusty', 'lava', 'magma'],
-            decorations: ['embers', 'fire', 'smoke', 'ash'], // Added smoke, ash
-            patterns: ['cracks', 'magma', 'plain']
+            // Muted brick and warm greys
+            pipeColors: ['#a8a29e', '#78716c', '#d6d3d1', '#57534e'],
+            // Near-white warm beige
+            skyColors: ['#fafaf9', '#fff7ed', '#fff1f2'],
+            groundColors: ['#44403c', '#292524'],
+            styles: ['magma'],
+            decorations: ['fire', 'smoke'],
+            patterns: ['plain']
         }
     },
     {
         id: 'forge',
         name: 'Star Forge',
         bgm: 'bgm_space.mp3',
+        isDark: true,
         palette: {
-            pipeColors: ['#ffd700', '#ffffff', '#00fff7', '#ff00ff', '#39ff14', '#00aaff'],
-            skyColors: ['#050510', '#0a0a20', '#001030', '#100030', '#051505', '#000000'],
-            groundColors: ['#101015', '#1a1a25', '#0a2040', '#200a40', '#0a250a', '#111'],
-            styles: ['golden', 'crystal', 'laser', 'star-metal'],
-            decorations: ['nebula', 'shards', 'stars', 'beams'],
-            patterns: ['ornate', 'minimal', 'plain']
+            pipeColors: ['#ffffff', '#00fff7', '#cbd5e1', '#94a3b8'],
+            // Richer Deep Cosmic Blue Gradient
+            skyColors: ['#020617', '#030712', '#080a24', '#0c0e33'],
+            groundColors: ['#020617', '#000000'],
+            styles: ['star_forge'],
+            decorations: ['cosmic_nebula', 'glowing_stars', 'shooting_stars'],
+            patterns: ['minimal', 'plain']
         }
     },
     {
@@ -116,11 +126,8 @@ export const MAPS: MapDefinition[] = [
         name: 'Sunny Highlands',
         bgm: 'bgm_sunny.mp3',
         palette: {
-            // Highland Greens
             pipeColors: ['#2d5a27', '#4a8c3d', '#73bf2e'],
-            // Deeper Sky Blue (Improved contrast for white/blue HUD)
-            skyColors: ['#0ea5e9', '#0284c7', '#0369a1'],
-            // Grass/Highland Green
+            skyColors: ['#e0f2fe', '#bae6fd', '#7dd3fc', '#0ea5e9'],
             groundColors: ['#15803d', '#166534'],
             styles: ['classic'],
             decorations: ['clouds', 'highlands'],
