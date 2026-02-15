@@ -1,6 +1,10 @@
 import { CANVAS, MAPS } from '../config/constants';
 import type { StageDefinition } from '../config/constants';
 import { WeatherSystem } from '../systems/WeatherSystem';
+import jungleBg from '../assets/forest_bg_wide.png';
+import neonBg from '../assets/neon_bg_wide.png';
+import oceanBg from '../assets/ocean_bg_wide.jpg';
+import volcanoBg from '../assets/volcano_bg_wide.png';
 
 /**
  * Rendering system for backgrounds and effects
@@ -36,10 +40,10 @@ export class Renderer {
 
     private loadMapAssets(): void {
         const mapsToLoad = [
-            { id: 'jungle', src: '/forest_bg_wide.png' },
-            { id: 'neon', src: '/neon_bg_wide.png' },
-            { id: 'ocean', src: '/ocean_bg_wide.jpg' },
-            { id: 'volcano', src: '/volcano_bg_wide.png' }
+            { id: 'jungle', src: jungleBg },
+            { id: 'neon', src: neonBg },
+            { id: 'ocean', src: oceanBg },
+            { id: 'volcano', src: volcanoBg }
         ];
 
         mapsToLoad.forEach(mapData => {
