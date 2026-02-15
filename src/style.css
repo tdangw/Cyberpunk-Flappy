@@ -31,6 +31,45 @@
   }
 }
 
+/* Mobile Landscape (Tablet & Mobile) */
+@media (max-width: 600px) {
+  :root {
+    font-size: 12px;
+  }
+
+  .full-shop {
+    max-width: 90vw;
+    height: 80vh;
+    padding: 1rem;
+  }
+
+  .shop-grid {
+    gap: 0.8rem;
+  }
+
+  .modal-panel {
+    max-width: 90vw;
+    max-height: 85vh;
+    padding: 1rem 1.5rem;
+  }
+
+  #top-hud {
+    left: 0.75rem;
+    right: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  #action-buttons {
+    gap: 0.5rem;
+  }
+
+  .btn-icon {
+    width: 1.8rem;
+    height: 1.8rem;
+    font-size: 0.8rem;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -50,7 +89,7 @@ body {
 
 #game-container {
   position: relative;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   background: #06060a;
   overflow: hidden;
@@ -406,21 +445,10 @@ canvas {
   }
 
   .close-modal {
-    top: 0.5rem;
-    right: 0.8rem;
-    font-size: 2.5rem;
-    /* Large icon */
-    width: 4rem;
-    /* Large touch area (44px min recommended) */
-    height: 4rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 0, 0, 0.2);
-    /* Slight tint to see target */
-    border-radius: 50%;
+    top: 0.2rem;
+    right: 0.5rem;
+    font-size: 2rem;
     z-index: 2000;
-    /* Ensure it stays above everything in modal */
   }
 
   .setting-row {
@@ -723,7 +751,6 @@ h2 {
 
 /* SHOP */
 .full-shop {
-  width: 50rem;
   max-width: 95vw;
   height: 36rem;
   max-height: 95vh;
