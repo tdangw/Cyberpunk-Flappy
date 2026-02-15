@@ -37,19 +37,11 @@
     font-size: 12px;
   }
 
-  .full-shop {
-    max-width: 90vw;
-    height: 80vh;
-    padding: 1rem;
-  }
-
-  .shop-grid {
-    gap: 0.8rem;
-  }
-
   .modal-panel {
-    max-width: 90vw;
-    max-height: 85vh;
+    width: 80vw !important;
+    height: 85vh !important;
+    max-width: none !important;
+    max-height: none !important;
     padding: 1rem 1.5rem;
   }
 
@@ -406,15 +398,38 @@ canvas {
   /* Space for scrollbar if needed, but we hide it */
 }
 
-/* Hide Scrollbar */
-.settings-content::-webkit-scrollbar,
-.shop-main-layout::-webkit-scrollbar {
+.settings-content::-webkit-scrollbar {
   display: none;
+}
+
+.shop-main-layout::-webkit-scrollbar {
+  width: 5px;
+  display: block;
+}
+
+.shop-main-layout::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.shop-main-layout::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--neon-blue), var(--neon-pink));
+  border-radius: 10px;
+  box-shadow: 0 0 8px var(--neon-blue);
+}
+
+.shop-main-layout::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-pink);
+  box-shadow: 0 0 12px var(--neon-pink);
 }
 
 .settings-content,
 .shop-main-layout {
-  -ms-overflow-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--neon-blue) rgba(255, 255, 255, 0.05);
+}
+
+.settings-content {
   scrollbar-width: none;
 }
 
@@ -428,11 +443,12 @@ canvas {
 
 @media (max-height: 500px) {
   .modal-panel {
-    padding: 0.25rem 1rem;
-    width: 90vw;
-    max-height: 95vh;
+    padding: 0.5rem 1.5rem;
+    width: 82vw !important;
+    height: 88vh !important;
+    max-width: 82vw !important;
+    max-height: 88vh !important;
     display: none !important;
-    /* Force hide unless active */
   }
 
   .modal-panel.modal-active {
@@ -763,11 +779,6 @@ h2 {
 }
 
 @media (max-height: 500px) {
-  .full-shop {
-    height: 95vh;
-    padding: 0.75rem;
-  }
-
   .shop-grid {
     height: 14rem;
     gap: 0.8rem;
@@ -844,8 +855,8 @@ h2 {
 }
 
 .skin-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid #333;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.75rem;
   padding: 0.8rem;
   /* Slightly more compact */
@@ -872,9 +883,7 @@ h2 {
   box-shadow:
     0 0 20px rgba(0, 255, 204, 0.2),
     inset 0 0 10px rgba(0, 255, 204, 0.1);
-  background: linear-gradient(135deg,
-      rgba(0, 255, 204, 0.05) 0%,
-      rgba(10, 10, 20, 0.95) 100%);
+  background: rgba(0, 255, 204, 0.05);
 }
 
 .skin-card.limited::before {
@@ -1271,12 +1280,8 @@ h2 {
 }
 
 @media (max-height: 500px) {
-  .compact-settings {
-    width: 95vw !important;
-    max-width: none;
-    height: 96vh;
-  }
 
+  /* Settings-specific landscape tweaks */
   .setting-row {
     margin-bottom: 0.25rem;
     min-height: 1.5rem;
