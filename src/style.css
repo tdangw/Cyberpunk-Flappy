@@ -1826,7 +1826,57 @@ h2 {
   width: 100%;
   height: 100%;
   transform: translateY(-3rem);
-  /* CHANGE THIS VALUE to adjust vertical position. E.g: 0 for center, -10rem for higher, 5rem for lower. */
+}
+
+.loading-container {
+  width: 300px;
+  margin-top: 15rem;
+  /* Move to bottom area */
+  position: relative;
+  z-index: 10;
+}
+
+.splash-status {
+  color: var(--neon-blue);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 255, 247, 0.5);
+}
+
+.loading-bar-wrapper {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 247, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.loading-bar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+  box-shadow: 0 0 15px var(--neon-blue);
+  transition: width 0.1s ease-out;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .main-play-btn {

@@ -9,6 +9,7 @@ export class HUD {
         this.ui = ui;
         this.replaceIcons();
         setInterval(() => this.updateEnergyBar(), 100);
+        this.startSplashLoading();
     }
 
     updateAllUI(): void {
@@ -19,6 +20,44 @@ export class HUD {
         this.updateEnergyBar();
         this.updateShopBalance();
         this.updateControlUI();
+    }
+
+    private startSplashLoading(): void {
+        const container = document.getElementById('loading-container');
+        const bar = document.getElementById('loading-bar');
+        const status = document.getElementById('splash-status');
+        const playBtn = document.getElementById('play-btn');
+        if (!bar || !status || !playBtn || !container) return;
+
+        let progress = 0;
+        const messages = [
+            "INITIALIZING NEON CORE...",
+            "LOADING ASSETS...",
+            "CONNECTING TO GRID...",
+            "READY FOR DEPLOYMENT"
+        ];
+
+        const interval = setInterval(() => {
+            // Speed varies for realistic look
+            progress += Math.random() * 5 + 1;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+
+                status.textContent = messages[messages.length - 1] + " 100%";
+                bar.style.width = '100%';
+
+                setTimeout(() => {
+                    container.style.display = 'none';
+                    playBtn.style.display = 'block';
+                    playBtn.classList.add('fade-in');
+                }, 500);
+            } else {
+                const msgIndex = Math.floor((progress / 100) * (messages.length - 1));
+                status.textContent = `${messages[msgIndex]} ${Math.floor(progress)}%`;
+                bar.style.width = `${progress}%`;
+            }
+        }, 80);
     }
 
     private updateShopBalance(): void {
@@ -67,6 +106,11 @@ export class HUD {
             btnGround.classList.remove('on', 'off', 'active');
             btnGround.classList.add(isOn ? 'on' : 'off');
         }
+
+        const inventoryBtn = document.getElementById('backpack-btn');
+        const shopBtn = document.getElementById('shop-btn');
+        if (inventoryBtn) inventoryBtn.style.display = isClassic ? 'none' : 'flex';
+        if (shopBtn) shopBtn.style.display = isClassic ? 'none' : 'flex';
 
         if (dashContainer) {
             if (isClassic || config.dashControl === 'touch') {

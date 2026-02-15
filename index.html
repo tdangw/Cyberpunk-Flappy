@@ -193,7 +193,13 @@
       <!-- Splash Screen (Landing) -->
       <div id="splash-screen" class="screen-overlay splash-active">
         <div class="splash-content">
-          <div id="play-btn" class="main-play-btn">PLAY</div>
+          <div id="loading-container" class="loading-container">
+            <div id="splash-status" class="splash-status">INITIALIZING SYSTEM... 0%</div>
+            <div class="loading-bar-wrapper">
+              <div id="loading-bar" class="loading-bar"></div>
+            </div>
+          </div>
+          <div id="play-btn" class="main-play-btn" style="display: none;">PLAY</div>
         </div>
       </div>
 
