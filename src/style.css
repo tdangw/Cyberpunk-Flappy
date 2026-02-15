@@ -391,9 +391,13 @@ canvas {
   .modal-panel {
     padding: 0.25rem 1rem;
     width: 90vw;
-    height: 94vh;
-    display: flex;
-    flex-direction: column;
+    max-height: 95vh;
+    display: none !important;
+    /* Force hide unless active */
+  }
+
+  .modal-panel.modal-active {
+    display: flex !important;
   }
 
   h2 {
@@ -402,8 +406,21 @@ canvas {
   }
 
   .close-modal {
-    top: 0.2rem;
-    right: 0.5rem;
+    top: 0.5rem;
+    right: 0.8rem;
+    font-size: 2.5rem;
+    /* Large icon */
+    width: 4rem;
+    /* Large touch area (44px min recommended) */
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 0, 0, 0.2);
+    /* Slight tint to see target */
+    border-radius: 50%;
+    z-index: 2000;
+    /* Ensure it stays above everything in modal */
   }
 
   .setting-row {
