@@ -1,10 +1,10 @@
 import { CANVAS, MAPS } from '../config/constants';
 import type { StageDefinition } from '../config/constants';
 import { WeatherSystem } from '../systems/WeatherSystem';
-import jungleBg from '../assets/forest_bg_wide.png';
-import neonBg from '../assets/neon_bg_wide.png';
+import jungleBg from '../assets/forest_bg_wide.jpg';
+import neonBg from '../assets/neon_bg_wide.jpg';
 import oceanBg from '../assets/ocean_bg_wide.jpg';
-import volcanoBg from '../assets/volcano_bg_wide.png';
+import volcanoBg from '../assets/volcano_bg_wide.jpg';
 
 /**
  * Rendering system for backgrounds and effects
