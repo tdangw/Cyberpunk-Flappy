@@ -662,9 +662,10 @@ h2 {
   justify-content: center;
   gap: 1.2rem;
   /* Reduced from 2rem */
-  margin-top: 1.2rem;
-  /* Raised up slightly to prevent text cut off */
-  margin-bottom: 2.2rem;
+  margin-top: 0.2rem;
+  /* Pushed HIGHER for mobile clearance */
+  margin-bottom: 1.8rem;
+  /* Reduced to balance central cluster */
   background: rgba(0, 10, 20, 0.85);
   padding: 0.8rem 2rem;
   /* Reduced from 1.2rem 3rem */
@@ -787,9 +788,10 @@ h2 {
 
 /* SHOP */
 .full-shop {
-  max-width: 95vw;
-  height: 36rem;
-  max-height: 95vh;
+  width: 38rem;
+  height: 35rem;
+  max-width: 90vw;
+  max-height: 90vh;
   padding: 1.2rem;
 }
 
@@ -846,7 +848,8 @@ h2 {
   overflow-y: auto;
   scrollbar-width: none;
   padding: 0.2rem 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 0.2rem;
+  /* Pulled up to save space */
   height: 22rem;
   /* Mobile scrolling fixes */
   touch-action: pan-y;
@@ -1007,10 +1010,9 @@ h2 {
   justify-content: center;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.1rem;
-  /* Tucked closer to items */
-  padding: 0.1rem 0.5rem 0.4rem;
-  /* Minimized bottom space */
+  margin-top: 0;
+  padding: 0 0.5rem 0.1rem;
+  /* Hugging the bottom edge */
 }
 
 .page-btn {
@@ -1308,8 +1310,10 @@ h2 {
 
 /* SETTINGS (Balanced Rows) */
 .compact-settings {
-  width: 36rem;
+  width: 38rem;
+  height: 35rem;
   max-width: 90vw;
+  max-height: 90vh;
 }
 
 @media (max-height: 500px) {

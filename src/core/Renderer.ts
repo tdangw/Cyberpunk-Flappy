@@ -565,6 +565,44 @@ export class Renderer {
 
         ctx.save();
 
+        // 0. Seaweed / Algae Support (Anchor the shell to the left)
+        ctx.save();
+        ctx.lineCap = 'round';
+        const drawVibrantSeaweed = (startX: number, startY: number, endX: number, endY: number, sway: number, thickness: number, color: string) => {
+            ctx.strokeStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 4;
+            ctx.lineWidth = thickness;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+
+            // Curved path with swaying middle points
+            const midX1 = startX + (endX - startX) * 0.33;
+            const midY1 = startY + (endY - startY) * 0.33 + Math.sin(time * 1.2 + sway) * 15;
+            const midX2 = startX + (endX - startX) * 0.66;
+            const midY2 = startY + (endY - startY) * 0.66 + Math.cos(time * 0.8 + sway) * 10;
+
+            ctx.bezierCurveTo(midX1, midY1, midX2, midY2, endX, endY);
+            ctx.stroke();
+
+            // Small glowing leaves along the vine
+            ctx.fillStyle = color;
+            for (let i = 1; i < 4; i++) {
+                const t = i / 4;
+                const lx = startX + (endX - startX) * t + Math.sin(time * 1.2 + t * 5) * 5;
+                const ly = startY + (endY - startY) * t;
+                ctx.beginPath();
+                ctx.arc(lx, ly, thickness * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        };
+
+        // Vines coming from the left/bottom to "hold" the shell
+        drawVibrantSeaweed(-300, 150, -35, 18, 0, 7, 'rgba(45, 212, 191, 0.7)'); // Teal
+        drawVibrantSeaweed(-250, -80, -40, 10, 2, 5, 'rgba(20, 184, 166, 0.6)'); // Light Teal
+        drawVibrantSeaweed(-280, 50, -25, 22, 4, 6, 'rgba(13, 148, 136, 0.8)');  // Deep Teal
+        ctx.restore();
+
         // Shell Style - Classic Pink
         ctx.fillStyle = '#f472b6';
         ctx.strokeStyle = '#ffffff';
