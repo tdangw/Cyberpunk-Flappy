@@ -1916,9 +1916,9 @@ h2 {
   left: 0;
   width: 70px;
   height: 70px;
-  z-index: 10000;
+  z-index: 10001;
   cursor: pointer;
-  pointer-events: none;
+  pointer-events: auto;
   perspective: 800px;
   /* Optimized for smooth loading movement */
   transition: left 0.1s linear, top 0.1s linear, opacity 0.5s ease-out;

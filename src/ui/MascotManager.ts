@@ -77,8 +77,41 @@ export class MascotManager {
         window.addEventListener('touchmove', (e) => this.onDragMove(e), { passive: false });
         window.addEventListener('touchend', (e) => this.onDragEnd(e));
 
+        // Resize / Orientation change
+        window.addEventListener('resize', () => {
+            // Small timeout to allow browser layout to stabilize
+            setTimeout(() => this.handleResize(), 100);
+        });
 
         this.startBlinking();
+    }
+
+    private handleResize() {
+        if (this.state === 'loading') {
+            const bar = document.getElementById('loading-bar');
+            if (bar) {
+                const rect = bar.getBoundingClientRect();
+                this.lastBarY = rect.top;
+                this.pos.x = rect.left + rect.width - 35;
+                this.pos.y = rect.top - 20;
+                this.apply();
+            }
+        } else if (this.state === 'idle' || this.state === 'sleeping' || this.state === 'acting') {
+            // Relocate to button
+            const btnRect = this.playBtn.getBoundingClientRect();
+            if (btnRect.width > 0) {
+                this.container.style.transition = "none";
+                this.pos.x = btnRect.left + (btnRect.width / 2) - 35;
+                this.pos.y = btnRect.top - 60;
+                this.apply();
+            }
+        }
+
+        // Update lastBarY reference for general use
+        const barRect = this.loadingContainer.getBoundingClientRect();
+        if (barRect.height > 0) {
+            this.lastBarY = barRect.top;
+        }
     }
 
     // --- Drag & Drop Logic ---
