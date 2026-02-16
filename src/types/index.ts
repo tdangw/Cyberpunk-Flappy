@@ -119,6 +119,7 @@ export interface BirdState {
     rotation: number;
     energy: number;
     isDashing: boolean;
+    isStunned: boolean;
     wingAngle: number;
     stabilizeTimer: number;
     invulnerableTimer: number;

@@ -15,6 +15,7 @@ export class Bird implements BirdState {
     nitroCapacity: number;
     nitroType: string;
     isDashing: boolean;
+    isStunned: boolean;
     wingAngle: number;
     stabilizeTimer: number;
     invulnerableTimer: number;
@@ -39,6 +40,7 @@ export class Bird implements BirdState {
         this.nitroRechargeRate = 1.0;
 
         this.isDashing = false;
+        this.isStunned = false;
         this.wingAngle = 0;
         this.stabilizeTimer = 0;
         this.invulnerableTimer = 0;
@@ -209,6 +211,7 @@ export class Bird implements BirdState {
                 window.dispatchEvent(new CustomEvent('groundBounce'));
             } else {
                 this.y = groundY - this.radius;
+                this.isStunned = true;
                 this.onGameOver();
             }
         }
@@ -251,6 +254,7 @@ export class Bird implements BirdState {
         this.speed = 0;
         this.rotation = 0;
         this.isDashing = false;
+        this.isStunned = false;
         this.stabilizeTimer = 0;
         this.invulnerableTimer = 300; // Extended invulnerability (approx 5s at 60fps)
         this.y = Math.max(100, Math.min(this.y, CANVAS.HEIGHT - 250)); // Safety reposition
@@ -258,7 +262,7 @@ export class Bird implements BirdState {
 
     reset(): void {
         this.x = 200; this.y = 350; this.speed = 0; this.rotation = 0;
-        this.isDashing = false; this.wingAngle = 0; this.stabilizeTimer = 0; this.invulnerableTimer = 0;
+        this.isDashing = false; this.isStunned = false; this.wingAngle = 0; this.stabilizeTimer = 0; this.invulnerableTimer = 0;
         this.dashAwaitingMeters = 0;
         this.stopRequested = false;
     }

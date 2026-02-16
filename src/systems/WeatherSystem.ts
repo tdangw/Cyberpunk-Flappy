@@ -103,7 +103,8 @@ export class WeatherSystem {
         for (const p of this.rainParticles) {
             p.update(CONFIG, CANVAS.WIDTH, CANVAS.HEIGHT);
             ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x + (CONFIG.WIND * 0.2), p.y + p.len);
+            // Increased tilt multiplier to make the "falling towards left" effect clear
+            ctx.lineTo(p.x + (CONFIG.WIND * 1.5), p.y + p.len);
         }
         ctx.stroke();
         ctx.globalAlpha = 1.0;

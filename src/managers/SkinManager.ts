@@ -1,6 +1,6 @@
 import type { BirdState, SkinDefinition } from '../types';
 import { SKINS } from '../config/skins';
-import { drawShield, drawOriginalBird } from '../renderers/SkinDrawers';
+import { drawShield, drawOriginalBird, drawStunnedEffect } from '../renderers/SkinDrawers';
 
 export class SkinManager {
     private static instance: SkinManager;
@@ -18,6 +18,7 @@ export class SkinManager {
         ctx.rotate(bird.rotation);
 
         drawShield(ctx, bird, isDashing, frames);
+        drawStunnedEffect(ctx, bird, frames);
 
         if (skinId === 'default') {
             drawOriginalBird(ctx, bird);
@@ -41,7 +42,7 @@ export class SkinManager {
         const ctx = canvas.getContext('2d')!;
         const mockBird: BirdState = {
             x: 50, y: 60, radius: 15, rotation: 0, speed: 0, energy: 100, isDashing: false,
-            // @ts-ignore
+            isStunned: false,
             wingAngle: 0, stabilizeTimer: 0, invulnerableTimer: 0
         };
         ctx.translate(50, 60); // Offset down slightly for taller stick figures

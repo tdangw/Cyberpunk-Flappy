@@ -13,9 +13,51 @@ export function createVariations(baseId: string, baseName: string, baseDesc: str
     });
 }
 
-export function drawEye(ctx: CanvasRenderingContext2D, dx: number, dy: number): void {
+export function drawEye(ctx: CanvasRenderingContext2D, dx: number, dy: number, isStunned: boolean = false): void {
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(dx, dy, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(dx + 2, dy, 2, 0, Math.PI * 2); ctx.fill();
+    if (isStunned) {
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(dx - 3, dy - 3); ctx.lineTo(dx + 3, dy + 3);
+        ctx.moveTo(dx + 3, dy - 3); ctx.lineTo(dx - 3, dy + 3);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(dx + 2, dy, 2, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+export function drawStunnedEffect(ctx: CanvasRenderingContext2D, bird: BirdState, frames: number): void {
+    if (!bird.isStunned) return;
+
+    ctx.save();
+    // Rotate slightly opposite of bird rotation so stars stay upright-ish
+    ctx.rotate(-bird.rotation);
+
+    const starCount = 3;
+    const radius = 22;
+    for (let i = 0; i < starCount; i++) {
+        const angle = (frames * 0.04) + (i * Math.PI * 2 / starCount); // Slower: 0.04 instead of 0.1
+        const sx = Math.cos(angle) * radius;
+        const sy = Math.sin(angle) * radius * 0.4 - 25; // Elliptical path above head
+
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        // Simple star shape
+        for (let j = 0; j < 10; j++) {
+            const starAngle = (Math.PI * 2 / 10) * j + (frames * 0.05);
+            const r = (j % 2 === 0) ? 5 : 2;
+            const px = sx + Math.cos(starAngle) * r;
+            const py = sy + Math.sin(starAngle) * r;
+            if (j === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+    ctx.restore();
 }
 
 export function drawShield(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, frames: number): void {
@@ -120,10 +162,20 @@ export function drawOriginalBird(ctx: CanvasRenderingContext2D, bird: BirdState)
     ctx.arc(10, -6, 7, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(12, -6, 2.5, 0, Math.PI * 2);
-    ctx.fill();
+
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(10 - 4, -6 - 4); ctx.lineTo(10 + 4, -6 + 4);
+        ctx.moveTo(10 + 4, -6 - 4); ctx.lineTo(10 - 4, -6 + 4);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(12, -6, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
     const flap = Math.sin(bird.wingAngle * 0.5) * 4;
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1.8;
@@ -166,7 +218,7 @@ export function drawSphere(ctx: CanvasRenderingContext2D, bird: BirdState, isDas
     const glow = isDashing ? '#fff' : color;
     ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.fillStyle = '#111'; ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
-    drawEye(ctx, 8, -4);
+    drawEye(ctx, 8, -4, bird.isStunned);
     ctx.fillStyle = glow; ctx.beginPath(); ctx.moveTo(10, 2); ctx.quadraticCurveTo(18, 5, 10, 8); ctx.lineTo(6, 5); ctx.closePath(); ctx.fill();
     const flap = Math.sin(bird.wingAngle) * 6;
     ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.quadraticCurveTo(-15, -15 + flap, -25, -5 + flap); ctx.lineTo(-10, 5); ctx.closePath(); ctx.fill();
@@ -176,7 +228,7 @@ export function drawPigeon(ctx: CanvasRenderingContext2D, bird: BirdState, isDas
     const glow = isDashing ? '#fff' : color;
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(0, 0, 18, 14, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
-    drawEye(ctx, 12, -4);
+    drawEye(ctx, 12, -4, bird.isStunned);
     ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.moveTo(18, -2); ctx.lineTo(26, 0); ctx.lineTo(18, 2); ctx.closePath(); ctx.fill();
     const flap = Math.sin(bird.wingAngle) * 6;
     ctx.fillStyle = color; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.quadraticCurveTo(-15, -15 + flap, -25, -5 + flap); ctx.lineTo(-10, 5); ctx.closePath(); ctx.fill();
@@ -186,7 +238,7 @@ export function drawShark(ctx: CanvasRenderingContext2D, bird: BirdState, _isDas
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(-25, 0); ctx.bezierCurveTo(-25, -20, 25, -20, 35, 0); ctx.bezierCurveTo(25, 20, -25, 20, -25, 0); ctx.fill();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 1; ctx.stroke();
-    drawEye(ctx, 20, -5);
+    drawEye(ctx, 20, -5, bird.isStunned);
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(10, -25); ctx.lineTo(15, -12); ctx.closePath(); ctx.fill(); ctx.stroke();
     const wobble = Math.sin(bird.wingAngle * 1.2) * 6;
@@ -248,14 +300,14 @@ export function drawButterfly(ctx: CanvasRenderingContext2D, bird: BirdState, is
     drawDetailedWing(true);
     drawDetailedWing(false);
     ctx.globalAlpha = 1.0;
-    drawEye(ctx, 14, -3);
+    drawEye(ctx, 14, -3, bird.isStunned);
 }
 
 export function drawChicken(ctx: CanvasRenderingContext2D, bird: BirdState, isDashing: boolean, _frames: number, color: string): void {
     const flap = Math.sin(bird.wingAngle) * 8;
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
-    drawEye(ctx, 10, -5);
+    drawEye(ctx, 10, -5, bird.isStunned);
     ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.moveTo(15, -2); ctx.lineTo(25, 4); ctx.lineTo(15, 8); ctx.fill();
     ctx.fillStyle = isDashing ? '#fff' : color;
     ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-24, flap - 4); ctx.lineTo(-24, flap + 12); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -266,7 +318,7 @@ export function drawFish(ctx: CanvasRenderingContext2D, bird: BirdState, isDashi
     const wobble = Math.sin(bird.wingAngle * 1.5) * 8;
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(0, 0, 22, 14, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = isDashing ? 2.5 : 1.5; ctx.stroke();
-    drawEye(ctx, 12, -4);
+    drawEye(ctx, 12, -4, bird.isStunned);
     ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(-35, -15 + wobble); ctx.lineTo(-28, 0); ctx.lineTo(-35, 15 - wobble); ctx.closePath(); ctx.fill(); ctx.stroke();
 }
 
@@ -275,7 +327,7 @@ export function drawChimera(ctx: CanvasRenderingContext2D, bird: BirdState, isDa
     const glow = isDashing ? '#fff' : color;
     ctx.fillStyle = '#0a0a0a'; ctx.beginPath(); ctx.moveTo(25, 0); ctx.bezierCurveTo(20, -15, -5, -15, -15, 0); ctx.lineTo(-30, 0); ctx.bezierCurveTo(-15, 15, 20, 15, 25, 0); ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
-    drawEye(ctx, 15, -4);
+    drawEye(ctx, 15, -4, bird.isStunned);
     ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, -5); ctx.quadraticCurveTo(-20, -40 + flap, -50, -10 + flap); ctx.lineTo(-25, 0); ctx.quadraticCurveTo(-20, 40 - flap, -50, 10 - flap); ctx.closePath(); ctx.fill(); ctx.stroke();
 }
 
@@ -283,7 +335,7 @@ export function drawWhale(ctx: CanvasRenderingContext2D, bird: BirdState, isDash
     const glow = isDashing ? '#fff' : color;
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(0, 0, 30, 18, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
-    drawEye(ctx, 18, -5);
+    drawEye(ctx, 18, -5, bird.isStunned);
     const wobble = Math.sin(bird.wingAngle * 0.8) * 6;
     ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(-28, 0); ctx.quadraticCurveTo(-45, -20 + wobble, -55, -10 + wobble); ctx.lineTo(-55, 10 - wobble); ctx.quadraticCurveTo(-45, 20 - wobble, -28, 0); ctx.fill(); ctx.stroke();
 }
@@ -309,18 +361,25 @@ export function drawPhoenix(ctx: CanvasRenderingContext2D, bird: BirdState, isDa
     ctx.bezierCurveTo(-10, 12, 20, 12, 25, 0);
     ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.ellipse(14, -4, 6, 4, 0.2, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(15, -4, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.ellipse(15, -4, 1.2, 3, 0, 0, Math.PI * 2);
-    ctx.fill();
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(15 - 2.5, -4 - 2.5); ctx.lineTo(15 + 2.5, -4 + 2.5);
+        ctx.moveTo(15 + 2.5, -4 - 2.5); ctx.lineTo(15 - 2.5, -4 + 2.5);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(15, -4, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(15, -4, 1.2, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.moveTo(22, -2);
@@ -365,7 +424,7 @@ export function drawDragonfly(ctx: CanvasRenderingContext2D, bird: BirdState, is
     ctx.ellipse(0, 0, 25, 5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = glow; ctx.lineWidth = 1.5; ctx.stroke();
-    drawEye(ctx, 18, -2);
+    drawEye(ctx, 18, -2, bird.isStunned);
     const flap = Math.sin(bird.wingAngle * 2.5) * 0.6;
     ctx.fillStyle = color; ctx.globalAlpha = 0.4;
     for (let i = 0; i < 2; i++) {
@@ -407,10 +466,18 @@ export function drawBee(ctx: CanvasRenderingContext2D, bird: BirdState, _isDashi
     ctx.beginPath(); ctx.arc(18, 0, 4, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(16, -6, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.arc(17.5, -6, 2.5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(16.5, -7, 1.2, 0, Math.PI * 2); ctx.fill();
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(16 - 2.5, -6 - 2.5); ctx.lineTo(16 + 2.5, -6 + 2.5);
+        ctx.moveTo(16 + 2.5, -6 - 2.5); ctx.lineTo(16 - 2.5, -6 + 2.5);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.arc(17.5, -6, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(16.5, -7, 1.2, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.strokeStyle = '#3a2a0d'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.arc(15, -1, 4, 0.2, 2.5); ctx.stroke();
     ctx.lineWidth = 2;
@@ -439,14 +506,22 @@ export function drawClassicFlappy(ctx: CanvasRenderingContext2D, bird: BirdState
     ctx.beginPath(); ctx.ellipse(0, 0, 18, 15, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(10, -6, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(12, -6, 2.5, 0, Math.PI * 2); ctx.fill();
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(10 - 4, -6 - 4); ctx.lineTo(10 + 4, -6 + 4);
+        ctx.moveTo(10 + 4, -6 - 4); ctx.lineTo(10 - 4, -6 + 4);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(12, -6, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.ellipse(15, 4, 10, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     const flap = Math.sin(bird.wingAngle) * 5;
     const wingH = Math.max(1, 6 + flap);
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(-6, 2, 8, wingH, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 }
 
-export function drawJellyfish(ctx: CanvasRenderingContext2D, _bird: BirdState, _isDashing: boolean, frames: number, color: string): void {
+export function drawJellyfish(ctx: CanvasRenderingContext2D, bird: BirdState, _isDashing: boolean, frames: number, color: string): void {
     ctx.fillStyle = color;
     ctx.globalAlpha = 0.6;
     ctx.beginPath();
@@ -457,9 +532,24 @@ export function drawJellyfish(ctx: CanvasRenderingContext2D, _bird: BirdState, _
     ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
     ctx.globalAlpha = 1.0;
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(-5, -5, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(5, -5, 3, 0, Math.PI * 2); ctx.fill();
+
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2;
+        // Left X
+        ctx.beginPath();
+        ctx.moveTo(-5 - 2, -5 - 2); ctx.lineTo(-5 + 2, -5 + 2);
+        ctx.moveTo(-5 + 2, -5 - 2); ctx.lineTo(-5 - 2, -5 + 2);
+        ctx.stroke();
+        // Right X
+        ctx.beginPath();
+        ctx.moveTo(5 - 2, -5 - 2); ctx.lineTo(5 + 2, -5 + 2);
+        ctx.moveTo(5 + 2, -5 - 2); ctx.lineTo(5 - 2, -5 + 2);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(-5, -5, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(5, -5, 3, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.beginPath();
     for (let i = 0; i < 3; i++) {
         const x = -10 + i * 10;
@@ -479,8 +569,16 @@ export function drawDuck(ctx: CanvasRenderingContext2D, bird: BirdState, _isDash
     ctx.beginPath();
     ctx.ellipse(20, -2, 8, 4, 0, 0, Math.PI * 2);
     ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.arc(14, -8, 2, 0, Math.PI * 2); ctx.fill();
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(14 - 3, -8 - 3); ctx.lineTo(14 + 3, -8 + 3);
+        ctx.moveTo(14 + 3, -8 - 3); ctx.lineTo(14 - 3, -8 + 3);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.arc(14, -8, 2, 0, Math.PI * 2); ctx.fill();
+    }
     const flap = Math.sin(bird.wingAngle) * 5;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.beginPath(); ctx.ellipse(-8, 5, 10, 6 + flap, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -527,9 +625,19 @@ export function drawBeetle(ctx: CanvasRenderingContext2D, bird: BirdState, isDas
     ctx.lineTo(35, 0);
     ctx.quadraticCurveTo(28, 4, 22, 2);
     ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(20, -4, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(20, 4, 2, 0, Math.PI * 2); ctx.fill();
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(20 - 2, -4 - 2); ctx.lineTo(20 + 2, -4 + 2);
+        ctx.moveTo(20 + 2, -4 - 2); ctx.lineTo(20 - 2, -4 + 2);
+        ctx.moveTo(20 - 2, 4 - 2); ctx.lineTo(20 + 2, 4 + 2);
+        ctx.moveTo(20 + 2, 4 - 2); ctx.lineTo(20 - 2, 4 + 2);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(20, -4, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(20, 4, 2, 0, Math.PI * 2); ctx.fill();
+    }
 }
 
 export function drawClownfish(ctx: CanvasRenderingContext2D, bird: BirdState, _isDashing: boolean, _frames: number, color: string): void {
@@ -550,10 +658,18 @@ export function drawClownfish(ctx: CanvasRenderingContext2D, bird: BirdState, _i
     ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(14, -4, 5.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.arc(16, -4, 2.5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(15.5, -5, 1.2, 0, Math.PI * 2); ctx.fill();
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(16 - 2.5, -4 - 2.5); ctx.lineTo(16 + 2.5, -4 + 2.5);
+        ctx.moveTo(16 + 2.5, -4 - 2.5); ctx.lineTo(16 - 2.5, -4 + 2.5);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.arc(16, -4, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(15.5, -5, 1.2, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.arc(15, 1, 4, 0.3, 2.2); ctx.stroke();
     const wobble = Math.sin(bird.wingAngle * 1.5) * 8;
@@ -595,10 +711,18 @@ export function drawSwordSurfer(ctx: CanvasRenderingContext2D, bird: BirdState, 
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.ellipse(eyeX, eyeY, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(eyeX, eyeY, 3.5 + eyePulse, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.ellipse(eyeX, eyeY, 1.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(eyeX - 3, eyeY - 3); ctx.lineTo(eyeX + 3, eyeY + 3);
+        ctx.moveTo(eyeX + 3, eyeY - 3); ctx.lineTo(eyeX - 3, eyeY + 3);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(eyeX, eyeY, 3.5 + eyePulse, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.ellipse(eyeX, eyeY, 1.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.strokeStyle = glow; ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(-35, 5); ctx.lineTo(-15, 5);
@@ -656,7 +780,15 @@ export function drawReaper(ctx: CanvasRenderingContext2D, bird: BirdState, isDas
     ctx.strokeStyle = glow; ctx.lineWidth = 1.2; ctx.stroke();
     const eyeX = -15; const eyeY = 4;
     ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(eyeX, eyeY, 6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(eyeX, eyeY, 2 + Math.sin(_frames * 0.1) * 1, 0, Math.PI * 2); ctx.fill();
+    if (bird.isStunned) {
+        ctx.strokeStyle = color; ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(eyeX - 3, eyeY - 3); ctx.lineTo(eyeX + 3, eyeY + 3);
+        ctx.moveTo(eyeX + 3, eyeY - 3); ctx.lineTo(eyeX - 3, eyeY + 3);
+        ctx.stroke();
+    } else {
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(eyeX, eyeY, 2 + Math.sin(_frames * 0.1) * 1, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.restore();
     ctx.save();
     ctx.translate(5, 4);
@@ -698,6 +830,13 @@ export function drawLancer(ctx: CanvasRenderingContext2D, bird: BirdState, isDas
     ctx.beginPath(); ctx.moveTo(8, -32); ctx.quadraticCurveTo(-20, -35 + flap, -60, -25 - flap); ctx.lineTo(-55, -15); ctx.lineTo(5, -25); ctx.closePath(); ctx.fill();
     ctx.globalAlpha = 1.0;
     ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(12, -40, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    if (bird.isStunned) {
+        ctx.strokeStyle = glow; ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(12 - 3, -40 - 3); ctx.lineTo(12 + 3, -40 + 3);
+        ctx.moveTo(12 + 3, -40 - 3); ctx.lineTo(12 - 3, -40 + 3);
+        ctx.stroke();
+    }
     ctx.restore();
 }
 
@@ -726,6 +865,13 @@ export function drawSamurai(ctx: CanvasRenderingContext2D, bird: BirdState, isDa
     ctx.closePath(); ctx.fill();
     ctx.globalAlpha = 1.0;
     ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(5, -42, 5.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    if (bird.isStunned) {
+        ctx.strokeStyle = glow; ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(5 - 3, -42 - 3); ctx.lineTo(5 + 3, -42 + 3);
+        ctx.moveTo(5 + 3, -42 - 3); ctx.lineTo(5 - 3, -42 + 3);
+        ctx.stroke();
+    }
     ctx.restore();
 }
 
@@ -792,7 +938,13 @@ export function drawAetherDragon(ctx: CanvasRenderingContext2D, bird: BirdState,
     ctx.moveTo(10, -13); ctx.lineTo(6, -32); ctx.lineTo(18, -16);
     ctx.moveTo(22, -11); ctx.lineTo(22, -26); ctx.lineTo(30, -13);
     ctx.fill();
-    if (!isBlinking) {
+    if (bird.isStunned) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(33 - 3.5, -3 - 3.5); ctx.lineTo(33 + 3.5, -3 + 3.5);
+        ctx.moveTo(33 + 3.5, -3 - 3.5); ctx.lineTo(33 - 3.5, -3 + 3.5);
+        ctx.stroke();
+    } else if (!isBlinking) {
         ctx.fillStyle = '#fff';
         ctx.beginPath(); ctx.ellipse(33, -3, 4.2, 3.2, 0.1, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#000';
