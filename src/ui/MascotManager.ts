@@ -102,7 +102,8 @@ export class MascotManager {
             if (btnRect.width > 0) {
                 this.container.style.transition = "none";
                 this.pos.x = btnRect.left + (btnRect.width / 2) - 35;
-                this.pos.y = btnRect.top - 60;
+                const targetY = btnRect.top - 60;
+                this.pos.y = Math.max(10, targetY); // Safety for landscape
                 this.apply();
             }
         }
@@ -252,9 +253,11 @@ export class MascotManager {
             this.setMood('sad'); // Regret getting thrown
 
             // FALL TO DEATH
-            // Use a safe floor level. Tantrum uses (this.lastBarY || window.innerHeight - 100) - 48.
-            // We'll mimic that to be consistent.
-            const floorY = (this.lastBarY || window.innerHeight - 100) - 20;
+            // Safe floor level: Try loading bar, but cap it so mascot stays visible.
+            // Mascot container is 70px, scaled 0.5. To be safe, we want bottom of container
+            // to be at most window.innerHeight - 10px.
+            const rawFloorY = (this.lastBarY || window.innerHeight - 100) - 20;
+            const floorY = Math.min(rawFloorY, window.innerHeight - 75);
 
             // Longer fall if high up
             this.container.style.transition = "top 0.6s cubic-bezier(0.6, 0.04, 0.98, 0.335)";
@@ -402,7 +405,8 @@ export class MascotManager {
         const startX = this.pos.x;
         const startY = this.pos.y;
         const endX = btnRect.left + (btnRect.width / 2) - 35;
-        const endY = btnRect.top - 60; // Slightly above button
+        const targetY = btnRect.top - 60; // Slightly above button
+        const endY = Math.max(10, targetY); // Safety for narrow landscape screens
 
         let startTime: number | null = null;
         const duration = 1200;
@@ -655,8 +659,9 @@ export class MascotManager {
     private actionFallEpic() {
         if (this.state !== 'idle') return;
         this.state = 'falling';
-        // Use cached lastBarY because the container might be hidden (getBoundingClientRect would be 0)
-        const landY = (this.lastBarY || window.innerHeight - 100) - 48;
+        // Use cached lastBarY with a safety cap for landscape mode
+        const rawLandY = (this.lastBarY || window.innerHeight - 100) - 48;
+        const landY = Math.min(rawLandY, window.innerHeight - 75);
 
         // Fall down animation
         this.container.style.transition = "top 0.7s cubic-bezier(0.6, 0.04, 0.98, 0.335), left 0.7s ease-out";
@@ -699,7 +704,8 @@ export class MascotManager {
         const screenW = window.innerWidth;
         const btnRect = this.playBtn.getBoundingClientRect();
         const landX = btnRect.left + (btnRect.width / 2) - 35;
-        const landY = btnRect.top - 60;
+        const targetY = btnRect.top - 60;
+        const landY = Math.max(10, targetY); // Safety cap
 
         // Force dash direction logic
         // If left of center, dash right. If right of center, dash left.
