@@ -311,7 +311,11 @@ export class UIManager implements IUIManager {
 
         // Mobile offset adjustment to avoid being under finger
         if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-            posY = y - rect.height - 40; // Show ABOVE finger on mobile
+            if (y < window.innerHeight * 0.4) {
+                posY = y + 45; // Show BELOW if touching elements at the top (like mode buttons)
+            } else {
+                posY = y - rect.height - 40; // Show ABOVE finger for other elements
+            }
         }
 
         if (posX + rect.width > window.innerWidth) posX = x - rect.width - 15;

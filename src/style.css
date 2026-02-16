@@ -792,7 +792,8 @@ h2 {
   height: 35rem;
   max-width: 90vw;
   max-height: 90vh;
-  padding: 1.2rem;
+  padding: 1.2rem 1.2rem 0.2rem;
+  /* Reduced bottom padding */
 }
 
 .full-shop.modal-active {
@@ -1757,6 +1758,13 @@ h2 {
 
   .start-instruction {
     font-size: 0.9rem;
+  }
+
+  .tutorial-guide {
+    margin-top: -0.8rem;
+    /* Push up even further on mobile */
+    margin-bottom: 1.4rem;
+    transform: scale(0.9);
   }
 }
 
