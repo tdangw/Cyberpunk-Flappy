@@ -141,6 +141,7 @@ export class Renderer {
                     this.drawBuildings(distanceTraveled, frames);
                     this.drawCyberGrid(frames);
                 }
+                break;
             case 'trees':
                 if (this.currentTheme.mapId === 'jungle' && this.mapImages.has('jungle')) {
                     this.drawImageBackground(distanceTraveled, frames, 'jungle');
