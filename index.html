@@ -192,6 +192,87 @@
 
       <!-- Splash Screen (Landing) -->
       <div id="splash-screen" class="screen-overlay splash-active">
+        <div id="mascot-container">
+          <div class="stars-container">
+            <div class="star-item star-1">⭐</div>
+            <div class="star-item star-2">⭐</div>
+            <div class="star-item star-3">⭐</div>
+          </div>
+
+          <div id="mascot-graphic">
+            <div class="mascot-layer layer-tail">
+              <svg class="svg-content" viewBox="0 0 50 50">
+                <!-- Fanned out curved tail feathers -->
+                <path class="bird-tail-feather" d="M15,25 C10,12 2,15 4,20 L15,25 Z" />
+                <path class="bird-tail-feather" d="M15,25 C5,20 0,25 0,25 C0,25 5,30 15,25 Z" />
+                <path class="bird-tail-feather" d="M15,25 C10,38 2,35 4,30 L15,25 Z" />
+                <!-- Glow core -->
+                <path class="bird-tail-glow" d="M15,25 Q5,25 2,25" fill="none" stroke="var(--neon-blue)"
+                  stroke-width="1.5" />
+              </svg>
+            </div>
+            <div class="mascot-layer layer-wing-back">
+              <svg class="svg-content" viewBox="0 0 50 50">
+                <!-- Raised wing path slightly (M10,30 Q15,10 30,30) -->
+                <path class="bird-wing-shape" d="M10,30 Q15,10 30,30" />
+              </svg>
+            </div>
+            <div class="mascot-layer layer-eye-back">
+              <svg class="svg-content" viewBox="0 0 50 50">
+                <circle class="bird-eye-shape blink-eye" cx="33" cy="20" r="3.5" />
+                <path class="bird-eye-x" d="M30,17 L36,23 M36,17 L30,23" />
+              </svg>
+            </div>
+            <div class="mascot-layer layer-body">
+              <svg class="svg-content" viewBox="0 0 50 50">
+                <defs>
+                  <radialGradient id="mascotGradient" cx="40%" cy="40%" r="50%">
+                    <stop offset="0%" style="stop-color:#fde68a" />
+                    <stop offset="100%" style="stop-color:#fbbf24" />
+                  </radialGradient>
+                  <filter id="cyberGlow">
+                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+                    <feMerge>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                <!-- Beak split for hooting -->
+                <g class="beak-group">
+                  <path class="bird-beak-top" d="M38,23 L48,25 L38,25 Z" />
+                  <path class="bird-beak-bottom" d="M38,25 L48,25 L38,27 Z" />
+                </g>
+                <circle class="bird-body-shape" cx="25" cy="25" r="16" />
+                <!-- Cyber mechanical line -->
+                <path d="M15,15 Q25,10 35,15" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="1" />
+              </svg>
+            </div>
+            <div class="mascot-layer layer-eye-front">
+              <svg class="svg-content" viewBox="0 0 50 50">
+                <circle class="bird-eye-shape blink-eye" cx="33" cy="20" r="3.5" />
+                <path class="bird-eye-x" d="M30,17 L36,23 M36,17 L30,23" />
+              </svg>
+            </div>
+            <div class="mascot-layer layer-wing-front">
+              <svg class="svg-content" viewBox="0 0 50 50">
+                <!-- Raised wing path slightly (M15,30 Q20,15 35,30) -->
+                <path class="bird-wing-shape" d="M15,30 Q20,15 35,30" />
+              </svg>
+            </div>
+            <div class="zzz-container" style="display: none;">
+              <span class="zzz z1">Z</span>
+              <span class="zzz z2">z</span>
+              <span class="zzz z3">z</span>
+            </div>
+            <div class="notes-container" style="display: none;">
+              <span class="note n1">♪</span>
+              <span class="note n2">♫</span>
+              <span class="note n3">♪</span>
+            </div>
+          </div>
+        </div>
+
         <div class="splash-content">
           <div id="play-btn" class="main-play-btn" style="display: none;">PLAY</div>
         </div>

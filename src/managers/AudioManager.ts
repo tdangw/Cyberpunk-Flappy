@@ -44,7 +44,8 @@ export class AudioManager {
             { id: 'gameover', file: 'gameover.wav' },
             { id: 'unlock', file: 'coin.wav' },
             { id: 'buy_success', file: 'match.mp3' },
-            { id: 'buy_fail', file: 'wrong.mp3' }
+            { id: 'buy_fail', file: 'wrong.mp3' },
+            { id: 'stunt', file: 'stunt.mp3' }
         ];
 
         soundFiles.forEach(s => {

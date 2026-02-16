@@ -15,6 +15,9 @@ import { UIManager } from './ui/UIManager';
       return;
     }
 
+    // Prevent context menu (right-click) globally to avoid accidental interruptions
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+
     // Initialize game (Private instance)
     const game = new Game(canvas);
 

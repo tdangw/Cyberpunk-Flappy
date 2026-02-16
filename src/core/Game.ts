@@ -459,6 +459,7 @@ export class Game {
         }
 
         this.audioManager.play('hit'); // Sync: Impact Ground
+        this.audioManager.play('stunt'); // Game Over Stunt Sound
         this.audioManager.stopBGM();
         this.bird.isStunned = true;
         this.gameOver();

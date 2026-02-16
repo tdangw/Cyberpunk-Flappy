@@ -1,18 +1,25 @@
 import type { IUIManager } from '../IUIManager';
 import { IconDrawer } from '../IconDrawer';
 import splashBg from '../../assets/menu_bg.jpg';
+import { MascotManager } from '../MascotManager';
 
 export class HUD {
     private ui: IUIManager;
     private reviveTimer: any = null;
     private energyInterval: any = null;
     private splashInterval: any = null;
+    private mascot: MascotManager | null = null;
 
     constructor(ui: IUIManager) {
         this.ui = ui;
         this.replaceIcons();
         this.energyInterval = setInterval(() => this.updateEnergyBar(), 100);
-        this.startSplashLoading();
+
+        // Initialize mascot after DOM is ready
+        setTimeout(() => {
+            this.mascot = new MascotManager();
+            this.startSplashLoading();
+        }, 50);
     }
 
     updateAllUI(): void {
@@ -55,16 +62,23 @@ export class HUD {
 
                 status.textContent = messages[messages.length - 1] + " 100%";
                 bar.style.width = '100%';
+                if (this.mascot) this.mascot.updatePosition(100);
 
                 setTimeout(() => {
                     container.style.display = 'none';
                     playBtn.style.display = 'block';
                     playBtn.classList.add('fade-in');
+
+                    // Mascot logic for completion
+                    if (this.mascot) {
+                        this.mascot.onLoadComplete();
+                    }
                 }, 500);
             } else {
                 const msgIndex = Math.floor((progress / 100) * (messages.length - 1));
                 status.textContent = `${messages[msgIndex]} ${Math.floor(progress)}%`;
                 bar.style.width = `${progress}%`;
+                if (this.mascot) this.mascot.updatePosition(progress);
             }
         }, 80);
     }

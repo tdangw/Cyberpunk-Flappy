@@ -1909,6 +1909,568 @@ h2 {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
 }
 
+/* --- MASCOT 3D Environment Setup --- */
+#mascot-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 70px;
+  height: 70px;
+  z-index: 10000;
+  cursor: pointer;
+  pointer-events: none;
+  perspective: 800px;
+  /* Optimized for smooth loading movement */
+  transition: left 0.1s linear, top 0.1s linear, opacity 0.5s ease-out;
+  will-change: left, top, transform;
+  opacity: 0;
+  /* Hidden initially to prevent flying from corner */
+}
+
+#mascot-graphic {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.4));
+  /* Reduced size by another 10% (Total 20%) */
+  /* Reduced size by another 10% (Total 50%) */
+  transform: scale(0.5);
+}
+
+.mascot-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: visible;
+}
+
+#mascot-graphic.is-sleeping {
+  opacity: 0.9;
+  /* Removed grayscale as requested */
+}
+
+#mascot-graphic.is-happy {
+  filter: drop-shadow(0 0 10px var(--neon-pink));
+}
+
+#mascot-graphic.is-sad {
+  /* Removed grayscale as requested */
+  transform: translateY(5px) rotateZ(10deg);
+}
+
+/* --- CYBERPUNK DETAILS --- */
+.bird-body-shape {
+  fill: url(#mascotGradient);
+  stroke: rgba(0, 0, 0, 0.1);
+  stroke-width: 0.5px;
+}
+
+.bird-beak-top,
+.bird-beak-bottom {
+  fill: #f59e0b;
+  transition: transform 0.2s;
+  transform-origin: 38px 25px;
+}
+
+/* Singing Animation */
+.singing .bird-beak-top {
+  transform: rotate(-25deg);
+}
+
+.singing .bird-beak-bottom {
+  transform: rotate(15deg);
+}
+
+@keyframes singing-shake {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.singing {
+  animation: singing-shake 0.2s infinite;
+}
+
+.bird-wing-shape {
+  fill: #fcd34d;
+  stroke: #b45309;
+  stroke-width: 1px;
+  transform-origin: 20px 25px;
+  /* Pivot as per sample */
+}
+
+/* Flapping Animation */
+@keyframes flap {
+
+  0%,
+  100% {
+    transform: rotate(-10deg);
+  }
+
+  50% {
+    transform: rotate(-50deg);
+  }
+}
+
+.flapping .bird-wing-shape {
+  animation: flap 0.15s infinite ease-in-out;
+}
+
+/* cyber tail feathers */
+.bird-tail-feather {
+  fill: #fcd34d;
+  stroke: #b45309;
+  stroke-width: 1px;
+}
+
+.bird-tail-glow {
+  filter: url(#cyberGlow);
+  opacity: 1;
+  /* Maximum glow for cyberpunk feel */
+  stroke-linecap: round;
+}
+
+.layer-wing-back {
+  /* Shifted back and slightly higher than before set to 6px */
+  transform: translate3d(-32px, 6px, -12px);
+}
+
+.layer-wing-front {
+  /* Shifted back and slightly higher than before set to 6px */
+  transform: translate3d(-32px, 6px, 12px);
+}
+
+.layer-tail {
+  /* Attached closer and rotated 30 degrees up as requested for realistic curve */
+  transform: translate3d(-5px, 0px, -5px) rotateZ(-30deg);
+}
+
+/* Blinking */
+.blinking .bird-eye-shape {
+  transform: scaleY(0.1);
+}
+
+.blink-eye {
+  transform-origin: center;
+  transition: transform 0.2s;
+}
+
+#mascot-graphic.is-sleeping .blink-eye,
+.sleeping .bird-eye-shape {
+  transform: scaleY(0.1);
+}
+
+/* Breathing while sleeping */
+@keyframes sleep-breathe {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(2px) scale(0.98);
+  }
+}
+
+.is-sleeping {
+  animation: sleep-breathe 2s infinite ease-in-out;
+}
+
+/* Zzz Animation - Near eyes */
+.zzz-container {
+  position: absolute;
+  top: 15%;
+  /* Near the eye level */
+  left: 65%;
+  /* Toward the face */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.zzz {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 5px var(--neon-blue);
+  opacity: 0;
+  animation: zzz-float 3s infinite;
+}
+
+.z1 {
+  font-size: 18px;
+  animation-delay: 0s;
+}
+
+.z2 {
+  font-size: 14px;
+  animation-delay: 1s;
+}
+
+.z3 {
+  font-size: 10px;
+  animation-delay: 1.2s;
+}
+
+@keyframes float-z {
+  0% {
+    transform: translate(0, 10px) scale(0.5);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(15px, -20px) scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes zzz-float {
+  0% {
+    transform: translateY(10px) scale(0.5);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translateY(-40px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* --- Angry State (Vein + Squint) --- */
+.anger-mark {
+  position: absolute;
+  top: -20px;
+  right: -25px;
+  width: 40px;
+  height: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23ef4444' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20,50 Q50,20 80,50 M50,20 L50,80 M20,50 L80,50' /%3E%3C/svg%3E");
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+  z-index: 20;
+}
+
+#mascot-container.is-angry .anger-mark {
+  opacity: 1;
+  transform: scale(1) rotate(15deg);
+}
+
+#mascot-container.is-angry .mascot-eye-left,
+#mascot-container.is-angry .mascot-eye-right {
+  height: 6px !important;
+  /* Squint */
+  border-radius: 2px !important;
+  background: #000;
+  top: 10px !important;
+}
+
+#mascot-container.is-angry .mascot-eye-left {
+  transform: rotate(20deg) !important;
+}
+
+#mascot-container.is-angry .mascot-eye-right {
+  transform: rotate(-20deg) !important;
+}
+
+/* --- Dragging Cursor --- */
+#mascot-container.is-dragging {
+  cursor: grabbing;
+  transition: none !important;
+}
+
+/* Music Notes Animation - Near beak */
+.notes-container {
+  position: absolute;
+  top: 40%;
+  /* Beak level */
+  left: 85%;
+  /* At the front */
+  pointer-events: none;
+}
+
+.note {
+  position: absolute;
+  font-size: 20px;
+  color: var(--neon-pink);
+  text-shadow: 0 0 5px var(--neon-pink);
+  opacity: 0;
+}
+
+.singing .note {
+  animation: note-float 1.5s ease-out forwards;
+}
+
+.n1 {
+  animation-delay: 0s;
+}
+
+.n2 {
+  animation-delay: 0.3s;
+  transform: translateX(10px);
+}
+
+.n3 {
+  animation-delay: 0.6s;
+  transform: translateX(-10px);
+}
+
+@keyframes note-float {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(15px, -40px) rotate(20deg) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.mascot-dash-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.dashing .mascot-dash-lines {
+  opacity: 1;
+}
+
+.mascot-dash-line {
+  position: absolute;
+  height: 2px;
+  background: var(--neon-blue);
+  box-shadow: 0 0 10px var(--neon-blue);
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+/* Position lines behind the mascot with varying lengths */
+.line-1 {
+  width: 50px;
+  top: 20%;
+  left: -60px;
+}
+
+.line-2 {
+  width: 80px;
+  top: 40%;
+  left: -100px;
+}
+
+.line-3 {
+  width: 40px;
+  top: 60%;
+  left: -50px;
+}
+
+.line-4 {
+  width: 90px;
+  top: 50%;
+  left: -120px;
+}
+
+.line-5 {
+  width: 60px;
+  top: 80%;
+  left: -75px;
+}
+
+/* Invert dash lines for leftward movement */
+#mascot-graphic[style*="rotateY(180deg)"]~.mascot-dash-lines .mascot-dash-line {
+  left: auto;
+  right: -80px;
+}
+
+.mascot-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: visible;
+}
+
+/* Z-Index 3D Layers */
+.layer-wing-back {
+  transform: translateZ(-16px);
+}
+
+.layer-eye-back {
+  transform: translateZ(-6px);
+}
+
+.layer-body {
+  transform: translateZ(0px);
+}
+
+.layer-eye-front {
+  transform: translateZ(6px);
+}
+
+.layer-wing-front {
+  transform: translateZ(16px);
+}
+
+/* Styles */
+.svg-content {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.bird-body-shape {
+  fill: url(#mascotGradient);
+  stroke: #d97706;
+  stroke-width: 1.5;
+}
+
+.bird-wing-shape {
+  fill: #f59e0b;
+  stroke: #d97706;
+  stroke-width: 1;
+  transform-origin: 25px 25px;
+}
+
+.bird-eye-shape {
+  fill: #000;
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+.bird-eye-x {
+  display: none;
+  stroke: #333;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.bird-beak-shape {
+  fill: #f97316;
+  stroke: #c2410c;
+  stroke-width: 1;
+}
+
+/* Animations */
+@keyframes flap {
+
+  0%,
+  100% {
+    transform: rotate(-10deg);
+  }
+
+  50% {
+    transform: rotate(-50deg);
+  }
+}
+
+.flapping .bird-wing-shape {
+  animation: flap 0.15s infinite ease-in-out;
+}
+
+/* Trạng thái Dizzy */
+.dizzy-eyes .bird-eye-shape {
+  display: none;
+}
+
+.dizzy-eyes .bird-eye-x {
+  display: block;
+}
+
+/* --- MASCOT STUN STARS (Improved & Stable) --- */
+.stars-container {
+  position: absolute;
+  top: -20px;
+  /* Center of orbit relative to bird head */
+  left: 50%;
+  width: 0;
+  height: 0;
+  display: none;
+  z-index: 200;
+  pointer-events: none;
+  /* Flatten the orbit into an ellipse like the game */
+  transform: scaleY(0.4);
+}
+
+.stun-active .stars-container {
+  display: block;
+}
+
+/* Position for when bird is fallen (upside down) */
+.upside-down-stars .stars-container {
+  top: 55px;
+}
+
+.star-item {
+  position: absolute;
+  font-size: 16px;
+  color: #fbbf24;
+  /* Black outline effect to match game's stroke */
+  text-shadow:
+    1.5px 1.5px 0 #000,
+    -1.5px -1.5px 0 #000,
+    1.5px -1.5px 0 #000,
+    -1.5px 1.5px 0 #000;
+  /* Orbit animation: rotation + counter-rotation + counter-scale */
+  animation: mascot-star-orbit-stable 1.8s infinite linear;
+}
+
+.star-1 {
+  animation-delay: 0s;
+}
+
+.star-2 {
+  animation-delay: -0.6s;
+}
+
+.star-3 {
+  animation-delay: -1.2s;
+}
+
+@keyframes mascot-star-orbit-stable {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) translateX(24px) rotate(0deg) scaleY(2.5);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg) translateX(24px) rotate(-360deg) scaleY(2.5);
+  }
+}
+
 .loading-bar {
   width: 0%;
   height: 100%;
@@ -1919,38 +2481,8 @@ h2 {
   overflow: visible;
 }
 
-/* NEON BIRD HEAD EFFECT */
-.loading-bar::after {
-  content: '';
-  position: absolute;
-  right: -2rem;
-  top: -2.8rem;
-  /* Positioned ABOVE the bar */
-  width: 4.5rem;
-  /* Super Prominent Sphere */
-  height: 4.5rem;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M15,24 Q5,10 -5,18 L10,28 Z' fill='%2300fff7' opacity='0.5'/%3E%3Ccircle cx='24' cy='24' r='10' fill='%23111' stroke='%2300fff7' stroke-width='2'/%3E%3Ccircle cx='30' cy='20' r='3.5' fill='white'/%3E%3Ccircle cx='31.5' cy='20' r='1.5' fill='black'/%3E%3Cpath d='M32,26 L40,28 L32,32 Z' fill='%2300fff7'/%3E%3C/svg%3E") no-repeat center;
-  background-size: contain;
-  filter: drop-shadow(0 0 15px var(--neon-blue)) drop-shadow(0 0 8px #fff);
-  animation: birdFly 0.6s infinite ease-in-out;
-}
+/* Removed old Bird Head after loading-bar */
 
-@keyframes birdFly {
-  0% {
-    transform: translateY(0) rotate(-5deg);
-    filter: drop-shadow(0 0 0.5rem var(--neon-blue));
-  }
-
-  50% {
-    transform: translateY(-0.5rem) rotate(5deg);
-    filter: drop-shadow(0 0 1rem var(--neon-blue));
-  }
-
-  100% {
-    transform: translateY(0) rotate(-5deg);
-    filter: drop-shadow(0 0 0.5rem var(--neon-blue));
-  }
-}
 
 .fade-in {
   animation: fadeIn 0.5s ease-out forwards;
