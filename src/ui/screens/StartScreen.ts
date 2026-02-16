@@ -5,11 +5,16 @@ export class StartScreen {
     private ui: IUIManager;
     private startScreenCooldown: number = 0;
     private lastStartTouchTime: number = 0;
+    private abortController = new AbortController();
 
     constructor(ui: IUIManager) {
         this.ui = ui;
         this.setupMapSelector();
         this.setupStartListener();
+    }
+
+    destroy(): void {
+        this.abortController.abort();
     }
 
     show(): void {
@@ -50,8 +55,8 @@ export class StartScreen {
                 this.ui.game.resume(true);
             }
         };
-        startScreen?.addEventListener('mousedown', startHandler);
-        startScreen?.addEventListener('touchstart', startHandler, { passive: false });
+        startScreen?.addEventListener('mousedown', startHandler, { signal: this.abortController.signal });
+        startScreen?.addEventListener('touchstart', startHandler, { passive: false, signal: this.abortController.signal });
 
         window.addEventListener('keydown', (e) => {
             // Space handled by game input, but if we need interception:
@@ -61,7 +66,7 @@ export class StartScreen {
                 // So we don't strictly need this keydown unless we trigger start ourselves.
                 // The InputManager likely triggers 'gameStarted' which calls this.hide().
             }
-        });
+        }, { signal: this.abortController.signal });
     }
 
     private setupMapSelector(): void {
@@ -73,8 +78,8 @@ export class StartScreen {
             const mapId = parseInt(opt.getAttribute('data-map') || '0');
             const description = this.getMapDescription(mapId);
 
-            opt.addEventListener('mouseenter', (e: MouseEvent) => this.ui.showTooltip(description, e.clientX, e.clientY));
-            opt.addEventListener('mouseleave', () => this.ui.hideTooltip());
+            opt.addEventListener('mouseenter', (e: MouseEvent) => this.ui.showTooltip(description, e.clientX, e.clientY), { signal: this.abortController.signal });
+            opt.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
 
             const handler = (e: Event) => {
                 e.preventDefault();
@@ -88,7 +93,7 @@ export class StartScreen {
                 this.setupTutorialIcons();
             };
 
-            opt.addEventListener('click', handler);
+            opt.addEventListener('click', handler, { signal: this.abortController.signal });
         });
 
         this.setupModeSelector();
@@ -102,8 +107,8 @@ export class StartScreen {
                 ? "CLASSIC MODE: Pure skill. No nitro, no shops, standard physics."
                 : "ADVANCE MODE: Full experience. Nitro, skins, and sectors.";
 
-            modeBtn.addEventListener('mouseenter', (e) => this.ui.showTooltip(description, e.clientX, e.clientY));
-            modeBtn.addEventListener('mouseleave', () => this.ui.hideTooltip());
+            modeBtn.addEventListener('mouseenter', (e) => this.ui.showTooltip(description, e.clientX, e.clientY), { signal: this.abortController.signal });
+            modeBtn.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
 
             const handler = (e: Event) => {
                 e.stopPropagation();
@@ -143,7 +148,7 @@ export class StartScreen {
                 this.setupTutorialIcons();
                 this.ui.updateAllUI();
             };
-            modeBtn.addEventListener('click', handler);
+            modeBtn.addEventListener('click', handler, { signal: this.abortController.signal });
         });
     }
 

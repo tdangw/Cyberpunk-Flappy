@@ -397,6 +397,12 @@ export class UIManager implements IUIManager {
     }
 
     destroy(): void {
+        this.shopScreen.destroy();
+        this.inventoryScreen.destroy();
+        this.leaderboardScreen.destroy();
+        this.settingsScreen.destroy();
+        this.startScreen.destroy();
+        this.hud.destroy();
         this.abortController.abort();
     }
 }

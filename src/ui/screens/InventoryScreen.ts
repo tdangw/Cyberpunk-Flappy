@@ -7,10 +7,15 @@ export class InventoryScreen {
     private currentTab: 'skins' | 'boosts' = 'skins';
     private currentPage: number = 1;
     private readonly itemsPerPage: number = 20;
+    private abortController = new AbortController();
 
     constructor(ui: IUIManager) {
         this.ui = ui;
         this.setupEventListeners();
+    }
+
+    destroy(): void {
+        this.abortController.abort();
     }
 
     private setupEventListeners(): void {
@@ -27,8 +32,8 @@ export class InventoryScreen {
                     this.currentPage = 1;
                     this.renderInventoryGrid();
                 };
-                tab.addEventListener('click', handler);
-                tab.addEventListener('touchstart', handler, { passive: false });
+                tab.addEventListener('click', handler, { signal: this.abortController.signal });
+                tab.addEventListener('touchstart', handler, { passive: false, signal: this.abortController.signal });
             });
         }
     }
@@ -79,8 +84,8 @@ export class InventoryScreen {
             const isLimited = skin.id.includes('limited');
             card.className = `skin-card ${isEquipped ? 'equipped' : ''} ${isLimited ? 'limited' : ''}`;
 
-            card.addEventListener('mouseenter', (e) => this.ui.showTooltip(skin.description, e.clientX, e.clientY));
-            card.addEventListener('mouseleave', () => this.ui.hideTooltip());
+            card.addEventListener('mouseenter', (e) => this.ui.showTooltip(skin.description, e.clientX, e.clientY), { signal: this.abortController.signal });
+            card.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
 
             card.innerHTML = `
                 <div class="card-preview-box">
@@ -98,7 +103,7 @@ export class InventoryScreen {
                 this.ui.saveManager.equipSkin(skin.id);
                 this.renderInventoryGrid();
                 this.ui.showCentralNotification(`${skin.name.toUpperCase()} EQUIPPED`, 'success');
-            });
+            }, { signal: this.abortController.signal });
 
             gridEl.appendChild(card);
             const previewBox = card.querySelector(`#inv-preview-${skin.id}`);
@@ -130,14 +135,14 @@ export class InventoryScreen {
                 </button>
             `;
 
-            card.addEventListener('mouseenter', (e) => this.ui.showTooltip(boost.description, e.clientX, e.clientY));
-            card.addEventListener('mouseleave', () => this.ui.hideTooltip());
+            card.addEventListener('mouseenter', (e) => this.ui.showTooltip(boost.description, e.clientX, e.clientY), { signal: this.abortController.signal });
+            card.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
 
             card.querySelector('.activate')?.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.ui.playClick();
                 this.handleInvBoostActivate(boost);
-            });
+            }, { signal: this.abortController.signal });
 
             gridEl.appendChild(card);
         });
@@ -169,7 +174,7 @@ export class InventoryScreen {
                     this.ui.playClick();
                     this.currentPage = page;
                     this.renderInventoryGrid();
-                });
+                }, { signal: this.abortController.signal });
             }
             return btn;
         };

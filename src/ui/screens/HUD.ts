@@ -5,12 +5,20 @@ import splashBg from '../../assets/menu_bg.jpg';
 export class HUD {
     private ui: IUIManager;
     private reviveTimer: any = null;
+    private energyInterval: any = null;
+    private abortController = new AbortController();
 
     constructor(ui: IUIManager) {
         this.ui = ui;
         this.replaceIcons();
-        setInterval(() => this.updateEnergyBar(), 100);
+        this.energyInterval = setInterval(() => this.updateEnergyBar(), 100);
         this.startSplashLoading();
+    }
+
+    destroy(): void {
+        this.stopReviveTimer();
+        if (this.energyInterval) clearInterval(this.energyInterval);
+        this.abortController.abort();
     }
 
     updateAllUI(): void {
@@ -348,7 +356,7 @@ export class HUD {
                 this.ui.playClick();
                 securityModal.classList.remove('modal-active');
                 this.ui.game.resume();
-            }, { once: true });
+            }, { once: true, signal: this.abortController.signal });
         }
     }
 
@@ -397,22 +405,22 @@ export class HUD {
             if (!el) return;
 
             // PC Interface
-            el.addEventListener('mouseenter', (e) => this.ui.showTooltip(icon.text, e.clientX, e.clientY));
-            el.addEventListener('mouseleave', () => this.ui.hideTooltip());
+            el.addEventListener('mouseenter', (e) => this.ui.showTooltip(icon.text, e.clientX, e.clientY), { signal: this.abortController.signal });
+            el.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
 
             // Mobile Interface - Prevent sticking
             el.addEventListener('touchstart', (e) => {
                 const t = e.touches[0];
                 // Show tooltip slightly offset to not be under finger
                 this.ui.showTooltip(icon.text, t.clientX, t.clientY + 50);
-            }, { passive: true });
+            }, { passive: true, signal: this.abortController.signal });
 
             el.addEventListener('touchend', () => {
                 // Delay hiding slightly so it's readable, but ensure it hides to prevent sticking
                 setTimeout(() => this.ui.hideTooltip(), 400);
-            });
+            }, { signal: this.abortController.signal });
 
-            el.addEventListener('touchcancel', () => this.ui.hideTooltip());
+            el.addEventListener('touchcancel', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
         });
     }
 }
