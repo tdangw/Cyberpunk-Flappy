@@ -32,6 +32,10 @@ export class HUD {
         this.updateControlUI();
     }
 
+    setMascotVisible(visible: boolean): void {
+        if (this.mascot) this.mascot.setVisible(visible);
+    }
+
     private startSplashLoading(): void {
         const container = document.getElementById('loading-container');
         const bar = document.getElementById('loading-bar');
@@ -237,11 +241,13 @@ export class HUD {
     showSplashScreen(): void {
         const screen = document.getElementById('splash-screen');
         if (screen) screen.classList.add('splash-active');
+        this.setMascotVisible(true);
     }
 
     hideSplashScreen(): void {
         const screen = document.getElementById('splash-screen');
         if (screen) screen.classList.remove('splash-active');
+        this.setMascotVisible(false);
     }
 
     animateMapName(): void {

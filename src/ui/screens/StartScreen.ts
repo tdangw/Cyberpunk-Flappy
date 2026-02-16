@@ -37,8 +37,8 @@ export class StartScreen {
             if (e.type === 'mousedown' && Date.now() - this.lastStartTouchTime < 500) return;
 
             const target = e.target as HTMLElement;
-            // If user clicked a button (map, mode, settings), don't start the game
-            if (target.closest('.map-option, .mode-option, .btn-icon, .modal-panel')) return;
+            // If user clicked a button or the mascot, don't start the game
+            if (target.closest('.map-option, .mode-option, .btn-icon, .modal-panel, #mascot-container')) return;
 
             // Otherwise, initiate
             if (this.ui.game.getState() === 'START') {

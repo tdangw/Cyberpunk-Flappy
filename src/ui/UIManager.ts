@@ -221,6 +221,7 @@ export class UIManager implements IUIManager {
         });
 
         window.addEventListener('gameOver', ((e: CustomEvent) => {
+            this.hud.setMascotVisible(false); // Keep hidden on Game Over as well
             this.hud.showGameOver(
                 e.detail.score,
                 e.detail.coins,
@@ -232,7 +233,10 @@ export class UIManager implements IUIManager {
         }) as EventListener);
 
         window.addEventListener('updateUI', () => this.updateAllUI());
-        window.addEventListener('showStartScreen', () => this.hud.resetMapNameAnimation());
+        window.addEventListener('showStartScreen', () => {
+            this.hud.resetMapNameAnimation();
+            this.hud.setMascotVisible(false); // Ensure hidden in Start Screen
+        });
 
         window.addEventListener('openSettings', () => {
             const panel = document.getElementById('settings-panel');

@@ -118,6 +118,8 @@ export class MascotManager {
     // --- Drag & Drop Logic ---
 
     private onDragStart(e: MouseEvent | TouchEvent) {
+        e.stopPropagation(); // Always stop propagation so background menu doesn't catch it
+
         if (this.state !== 'idle' && this.state !== 'sleeping') return;
 
         e.preventDefault();
@@ -291,6 +293,7 @@ export class MascotManager {
                     this.apply();
 
                     // Recover jump to button using the nice arc animation
+                    AudioManager.getInstance().play('jump');
                     this.flyToButton();
 
                 }, 2000); // Stay stunned for 2s
@@ -367,10 +370,21 @@ export class MascotManager {
         this.graphic.style.transform = `rotateY(${this.rotY}deg) rotateZ(${this.rotZ}deg) rotateX(${this.rotX}deg)`;
     }
 
+    public setVisible(visible: boolean) {
+        this.container.style.display = visible ? 'block' : 'none';
+        if (visible) {
+            // Force a refresh of position when showing back
+            this.handleResize();
+        }
+    }
+
     onLoadComplete() {
         this.rotY = 180; // Turn to look at menu
         this.apply();
-        setTimeout(() => this.flyToButton(), 800);
+        setTimeout(() => {
+            AudioManager.getInstance().play('jump');
+            this.flyToButton();
+        }, 800);
     }
 
     private flyToButton() {
@@ -689,7 +703,8 @@ export class MascotManager {
                 this.syncPositionFromDOM();
                 this.apply();
 
-                // Use unified flyToButton logic for consistent recovery arc
+                // Jump back to button
+                AudioManager.getInstance().play('jump');
                 this.flyToButton();
 
             }, 2000);
