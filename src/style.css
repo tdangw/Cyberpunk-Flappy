@@ -662,10 +662,9 @@ h2 {
   justify-content: center;
   gap: 1.2rem;
   /* Reduced from 2rem */
-  margin-top: 2rem;
-  /* Increased from 1.5rem */
-  margin-bottom: 3rem;
-  /* Increased from 2.5rem */
+  margin-top: 1.2rem;
+  /* Raised up slightly to prevent text cut off */
+  margin-bottom: 2.2rem;
   background: rgba(0, 10, 20, 0.85);
   padding: 0.8rem 2rem;
   /* Reduced from 1.2rem 3rem */
@@ -890,7 +889,8 @@ h2 {
   transition: 0.2s;
   position: relative;
   /* Mobile UX fixes */
-  touch-action: manipulation;
+  touch-action: pan-y;
+  /* Explicitly allow vertical panning */
   user-select: none;
   -webkit-user-drag: none;
 }
@@ -935,6 +935,8 @@ h2 {
   align-items: center;
   justify-content: center;
   margin-bottom: 0.2rem;
+  pointer-events: none;
+  /* Let touches pass through to the card for scrolling */
 }
 
 .card-preview-box canvas {
@@ -948,6 +950,8 @@ h2 {
   font-size: 0.7rem;
   font-weight: 900;
   color: #fff;
+  pointer-events: none;
+  /* Let touches pass through */
   text-transform: uppercase;
   letter-spacing: 1px;
   text-align: center;
@@ -1003,8 +1007,10 @@ h2 {
   justify-content: center;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.5rem;
-  padding: 0.5rem;
+  margin-top: 0.1rem;
+  /* Tucked closer to items */
+  padding: 0.1rem 0.5rem 0.4rem;
+  /* Minimized bottom space */
 }
 
 .page-btn {

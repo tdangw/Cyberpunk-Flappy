@@ -79,6 +79,9 @@ export class InventoryScreen {
             const isLimited = skin.id.includes('limited');
             card.className = `skin-card ${isEquipped ? 'equipped' : ''} ${isLimited ? 'limited' : ''}`;
 
+            card.addEventListener('mouseenter', (e) => this.ui.showTooltip(skin.description, e.clientX, e.clientY));
+            card.addEventListener('mouseleave', () => this.ui.hideTooltip());
+
             card.innerHTML = `
                 <div class="card-preview-box">
                     <div id="inv-preview-${skin.id}"></div>
