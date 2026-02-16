@@ -1,5 +1,4 @@
 import { BOOSTS } from '../config/boosts';
-import { GAMEPLAY } from '../config/gameplay';
 import { SaveManager } from '../managers/SaveManager';
 import { Bird } from '../entities/Bird';
 
@@ -38,7 +37,7 @@ export class NitroSystem {
 
         // Safety fallback for default
         if (boostId === 'nitro_default' && capacity <= 0) {
-            capacity = GAMEPLAY.MECHANICS.NITRO.DEFAULT_CAPACITY;
+            capacity = BOOSTS[0].capacity;
         }
 
         this.bird.setNitroState(
@@ -68,7 +67,7 @@ export class NitroSystem {
         }
 
         // Fallback to default if no boosters left or using default
-        this.saveManager.setEquippedBoost('nitro_default', GAMEPLAY.MECHANICS.NITRO.DEFAULT_CAPACITY);
+        this.saveManager.setEquippedBoost('nitro_default', BOOSTS[0].capacity);
         this.syncToBird();
 
         // Notify UI to update inventory counts
@@ -77,7 +76,7 @@ export class NitroSystem {
 
     public resetDefault(): void {
         if (this.saveManager.getEquippedBoostId() === 'nitro_default') {
-            this.saveManager.updateBoostRemaining(GAMEPLAY.MECHANICS.NITRO.DEFAULT_CAPACITY);
+            this.saveManager.updateBoostRemaining(BOOSTS[0].capacity);
         }
     }
 
