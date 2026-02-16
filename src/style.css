@@ -1986,7 +1986,7 @@ h2 {
   text-shadow: 0 0 10px var(--neon-blue);
   clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
   text-indent: 15px;
-  margin-right: 5rem;
+  margin-right: 0rem;
   /* Moved left as requested */
   overflow: hidden;
   /* For sweep effect */
