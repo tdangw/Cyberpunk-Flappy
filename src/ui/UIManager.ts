@@ -92,9 +92,9 @@ export class UIManager implements IUIManager {
         document.querySelectorAll('.modal-panel').forEach(modal => {
             modal.addEventListener('mousedown', (e) => e.stopPropagation());
             // ALLOW touchstart to bubble so scrolling actually works!
-            modal.addEventListener('touchstart', (e) => {
-                // We stop propagation only on mousedown/click, but for touch, 
-                // stopping here breaks the browser's scroll detection.
+            modal.addEventListener('touchstart', () => {
+                // We stop propagation only on mousedown (PC), but for touch (Mobile), 
+                // we allow bubbling so the browser can detect vertical scrolling.
             }, { passive: true });
         });
 
