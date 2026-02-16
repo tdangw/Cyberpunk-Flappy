@@ -14,8 +14,14 @@ export class InputManager {
     private dashControl: 'touch' | 'button_left' | 'button_right' = 'button_right';
     private isClassic: boolean = false;
 
+    private abortController = new AbortController();
+
     constructor() {
         this.setupListeners();
+    }
+
+    public destroy(): void {
+        this.abortController.abort();
     }
 
     public setDashControl(val: 'touch' | 'button_left' | 'button_right'): void {
@@ -29,18 +35,19 @@ export class InputManager {
     private lastTouchTime = 0;
 
     private setupListeners(): void {
+        const signal = this.abortController.signal;
         // Keyboard events
         window.addEventListener('keydown', (e) => {
             if (!this.keysPressed.has(e.key)) {
                 this.keysPressed.add(e.key);
                 this.handleKeyDown(e.key);
             }
-        });
+        }, { signal });
 
         window.addEventListener('keyup', (e) => {
             this.keysPressed.delete(e.key);
             this.handleKeyUp(e.key);
-        });
+        }, { signal });
 
         // Pointer events (Mobile/Touch focus)
         window.addEventListener('mousedown', (e) => {
@@ -52,8 +59,9 @@ export class InputManager {
             if (e.button === 0) {
                 this.processPointerDown(e.clientX);
             }
-        });
-        window.addEventListener('mouseup', () => this.onDashEnd?.());
+        }, { signal });
+
+        window.addEventListener('mouseup', () => this.onDashEnd?.(), { signal });
 
         window.addEventListener('touchstart', (e) => {
             const target = e.target as HTMLElement;
@@ -68,7 +76,7 @@ export class InputManager {
 
             const touch = e.touches[0];
             this.processPointerDown(touch.clientX);
-        }, { passive: false });
+        }, { passive: false, signal });
 
         window.addEventListener('touchend', (e) => {
             const target = e.target as HTMLElement;
@@ -76,19 +84,19 @@ export class InputManager {
 
             if (e.cancelable) e.preventDefault();
             this.onDashEnd?.();
-        }, { passive: false });
+        }, { passive: false, signal });
 
         // Context Menu (Right Click) for Dash
         window.addEventListener('contextmenu', (e) => {
             if (this.isUIElement(e.target as HTMLElement)) return;
             e.preventDefault();
             this.onDashStart?.();
-        });
+        }, { signal });
 
         // Ensure right-click release also stops dash
         window.addEventListener('mouseup', (e) => {
             if (e.button === 2) this.onDashEnd?.();
-        });
+        }, { signal });
     }
 
     private isUIElement(target: HTMLElement): boolean {

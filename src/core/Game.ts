@@ -58,6 +58,7 @@ export class Game {
     private fps = 60;
     private frameCount = 0;
     private lastFpsUpdate = performance.now();
+    private abortController = new AbortController();
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -66,9 +67,11 @@ export class Game {
         this.canvas.height = CANVAS.HEIGHT;
         this.config = { ...DEFAULT_CONFIG };
 
+        const signal = this.abortController.signal;
+
         // Handle Responsive Layout (Aspect Fit)
         this.resize();
-        window.addEventListener('resize', () => this.resize());
+        window.addEventListener('resize', () => this.resize(), { signal });
 
         this.skinManager = SkinManager.getInstance();
         this.saveManager = SaveManager.getInstance();
@@ -95,11 +98,15 @@ export class Game {
             this.audioManager.play('jump');
             this.particleSystem.emit(this.bird.x, CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT, 10, '#00fff7');
             this.screenShake = 5;
-        });
+        }, { signal });
         window.addEventListener('shieldActive', (e: any) => {
-            this.audioManager.play('hit');
+            // No sound for pipe sliding as requested
             this.particleSystem.emit(e.detail.x, e.detail.y, 8, COLORS.NEON_BLUE);
-        });
+        }, { signal });
+        window.addEventListener('enemyStomp', (e: any) => {
+            this.audioManager.play('jump'); // Play bounce sound for stomp
+            this.particleSystem.emit(e.detail.x, e.detail.y, 15, COLORS.NEON_GOLD);
+        }, { signal });
         this.setupNitroEvents();
         this.syncNitroToBird();
 
@@ -429,8 +436,13 @@ export class Game {
         // If bird is invulnerable (has shield aura), allow one bounce
         if (this.bird.isInvulnerable()) {
             this.bird.bounce();
-            // Consume the shield so they aren't immortal 
-            this.bird.invulnerableTimer = 0;
+
+            // If the shield was a "real" one (from stomp/dash), let it persist
+            // If it was just a tiny sticky safety, consume it.
+            if (this.bird.invulnerableTimer < 15) {
+                this.bird.invulnerableTimer = 0;
+            }
+
             if (this.bird.isDashing) {
                 // @ts-ignore - access private but needed for logic sync
                 this.bird.finishDash();
@@ -713,5 +725,9 @@ export class Game {
         // REMOVED: Automatic reset to default config here to allow user settings to persist.
     }
 
-    destroy(): void { if (this.rafId) cancelAnimationFrame(this.rafId); }
+    destroy(): void {
+        if (this.rafId) cancelAnimationFrame(this.rafId);
+        this.abortController.abort();
+        this.inputManager.destroy();
+    }
 }

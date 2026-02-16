@@ -17,4 +17,5 @@ export interface IUIManager {
     showError(msg: string): void;
     updateAllUI(): void;
     closeActiveModals(onFinalComplete?: () => void): void;
+    destroy(): void;
 }

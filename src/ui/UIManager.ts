@@ -32,6 +32,7 @@ export class UIManager implements IUIManager {
     private tooltipEl: HTMLElement | null = null;
     private notifTimeout: any = null;
     private tooltipTimeout: any = null;
+    private abortController = new AbortController();
 
     constructor(game: Game) {
         this.game = game;
@@ -66,11 +67,12 @@ export class UIManager implements IUIManager {
     }
 
     private setupGlobalListeners(): void {
+        const signal = this.abortController.signal;
         const bindAction = (id: string, callback: (e?: Event) => void) => {
             const el = document.getElementById(id);
             if (!el) return;
-            el.addEventListener('click', (e) => { e.stopPropagation(); callback(e); });
-            el.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); callback(e); }, { passive: false });
+            el.addEventListener('click', (e) => { e.stopPropagation(); callback(e); }, { signal });
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); callback(e); }, { passive: false, signal });
         };
 
         bindAction('settings-btn', () => { this.playClick(); this.settingsScreen.show(); });
@@ -85,17 +87,17 @@ export class UIManager implements IUIManager {
                 this.playClick();
                 this.closeActiveModals();
             };
-            btn.addEventListener('click', handler);
-            btn.addEventListener('touchstart', handler, { passive: false });
+            btn.addEventListener('click', handler, { signal });
+            btn.addEventListener('touchstart', handler, { passive: false, signal });
         });
 
         document.querySelectorAll('.modal-panel').forEach(modal => {
-            modal.addEventListener('mousedown', (e) => e.stopPropagation());
+            modal.addEventListener('mousedown', (e) => e.stopPropagation(), { signal });
             // ALLOW touchstart to bubble so scrolling actually works!
             modal.addEventListener('touchstart', () => {
                 // We stop propagation only on mousedown (PC), but for touch (Mobile), 
                 // we allow bubbling so the browser can detect vertical scrolling.
-            }, { passive: true });
+            }, { passive: true, signal });
         });
 
         // Tooltip hide on touch outside
@@ -105,7 +107,7 @@ export class UIManager implements IUIManager {
             if (!target.closest('.skin-card, .mode-option, .boost-card, .map-option, .btn-icon, .shop-item, .inventory-item')) {
                 this.hideTooltip();
             }
-        }, { passive: true });
+        }, { passive: true, signal });
 
         // Orientation
         // Orientation
@@ -127,7 +129,7 @@ export class UIManager implements IUIManager {
                 }
             }
         };
-        window.addEventListener('resize', handleOrientationChange);
+        window.addEventListener('resize', handleOrientationChange, { signal });
         window.addEventListener('orientationchange', handleOrientationChange);
         if (screen.orientation) screen.orientation.addEventListener('change', handleOrientationChange);
 
@@ -392,5 +394,9 @@ export class UIManager implements IUIManager {
             const exit = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
             if (exit) exit.call(doc);
         }
+    }
+
+    destroy(): void {
+        this.abortController.abort();
     }
 }

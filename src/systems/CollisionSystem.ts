@@ -131,6 +131,8 @@ export class CollisionSystem {
 
                     bird.extendInvulnerability(60);
                     bird.bounce();
+                    // Dispatch stomp event for specific effects
+                    window.dispatchEvent(new CustomEvent('enemyStomp', { detail: { x: enemy.x, y: enemy.y } }));
                     continue;
                 }
 
