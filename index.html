@@ -17,13 +17,13 @@
     <div class="ui-layer">
       <!-- Main HUD (will be moved) -->
 
-      <div id="bonus-notification" class="bonus-popup">
+      <div id="bonus-notification" class="bonus-popup" style="display: none;">
         <div class="bonus-title">PHASE REWARD</div>
         <div class="bonus-amount">+10 CREDITS</div>
       </div>
 
       <!-- Settings Panel -->
-      <div id="settings-panel" class="modal-panel compact-settings">
+      <div id="settings-panel" class="modal-panel compact-settings" style="display: none;">
         <span class="close-modal">&times;</span>
         <h2>SYSTEM CONFIG</h2>
 
@@ -96,7 +96,7 @@
       </div>
 
       <!-- Shop Panel -->
-      <div id="shop-panel" class="modal-panel full-shop">
+      <div id="shop-panel" class="modal-panel full-shop" style="display: none;">
         <span class="close-modal">&times;</span>
         <h2>CYBER SHOP</h2>
 
@@ -119,7 +119,7 @@
         </div>
       </div>
       <!-- Inventory Panel (Backpack) -->
-      <div id="inventory-panel" class="modal-panel full-shop">
+      <div id="inventory-panel" class="modal-panel full-shop" style="display: none;">
         <span class="close-modal">&times;</span>
         <h2>BACKPACK</h2>
 
@@ -140,7 +140,7 @@
         </div>
       </div>
 
-      <div id="confirm-modal" class="modal-panel confirm-dialog">
+      <div id="confirm-modal" class="modal-panel confirm-dialog" style="display: none;">
         <h2 id="confirm-title">PURCHASE</h2>
         <p id="confirm-msg"></p>
         <div id="confirm-qty-container" style="display: none; margin: 1rem 0;">
@@ -153,7 +153,7 @@
         </div>
       </div>
 
-      <div id="security-modal" class="modal-panel confirm-dialog security-alert">
+      <div id="security-modal" class="modal-panel confirm-dialog security-alert" style="display: none;">
         <h2 style="color: var(--neon-red);">SECURITY ALERT</h2>
         <p id="security-msg">Local data has been modified illegally. For your safety, credits and progress have been
           restored from the last secure backup.</p>
@@ -163,7 +163,7 @@
         </div>
       </div>
 
-      <div id="leaderboard-panel" class="modal-panel full-shop">
+      <div id="leaderboard-panel" class="modal-panel full-shop" style="display: none;">
         <span class="close-modal">&times;</span>
         <h2 class="neon-text-blue">LEADERBOARD</h2>
 
@@ -193,13 +193,13 @@
       <!-- Splash Screen (Landing) -->
       <div id="splash-screen" class="screen-overlay splash-active">
         <div class="splash-content">
-          <div id="loading-container" class="loading-container">
-            <div id="splash-status" class="splash-status">INITIALIZING SYSTEM... 0%</div>
-            <div class="loading-bar-wrapper">
-              <div id="loading-bar" class="loading-bar"></div>
-            </div>
-          </div>
           <div id="play-btn" class="main-play-btn" style="display: none;">PLAY</div>
+        </div>
+        <div id="loading-container" class="loading-container">
+          <div id="splash-status" class="splash-status">INITIALIZING SYSTEM... 0%</div>
+          <div class="loading-bar-wrapper">
+            <div id="loading-bar" class="loading-bar"></div>
+          </div>
         </div>
       </div>
 
@@ -317,7 +317,7 @@
   </div>
 
   <!-- Notification Popup (Central) -->
-  <div id="notification-popup" class="notification-popup">
+  <div id="notification-popup" class="notification-popup" style="display: none;">
     <div class="notification-content">
       <div id="notif-icon" class="notif-text">✅</div>
       <div id="notif-message" class="notif-text">PURCHASE SUCCESSFUL</div>

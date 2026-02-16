@@ -28,7 +28,7 @@ export class Game {
     private score = 0;
     private sessionCoins = 0;
     private lastThemeName = '';
-    private startMapIndex = 5; // Default to Sunny Highlands
+    private startMapIndex = 5; // Default to Sunny Highlands as requested
     private distanceTraveled = 0;
     private isClassicMode = false;
 

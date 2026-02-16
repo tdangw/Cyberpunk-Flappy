@@ -2,7 +2,10 @@
     color: var(--neon-blue);
     font-size: 1.2rem;
     letter-spacing: 4px;
-    margin-bottom: 1rem;
+    margin-top: 6rem;
+    /* Pushed significantly lower from top HUD */
+    /* Shifting lower for better balance */
+    margin-bottom: 0.8rem;
     text-transform: uppercase;
     font-weight: 900;
     text-shadow: 0 0 15px rgba(0, 255, 247, 0.6);
@@ -11,7 +14,8 @@
 .mode-selector-container {
     display: flex;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 0.5rem;
+    /* Pulled closer to map icons */
     pointer-events: auto;
 }
 

@@ -31,6 +31,7 @@ export class UIManager implements IUIManager {
     private confirmCallback: ((qty?: number) => void) | null = null;
     private tooltipEl: HTMLElement | null = null;
     private notifTimeout: any = null;
+    private tooltipTimeout: any = null;
 
     constructor(game: Game) {
         this.game = game;
@@ -90,13 +91,18 @@ export class UIManager implements IUIManager {
 
         document.querySelectorAll('.modal-panel').forEach(modal => {
             modal.addEventListener('mousedown', (e) => e.stopPropagation());
-            modal.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+            // ALLOW touchstart to bubble so scrolling actually works!
+            modal.addEventListener('touchstart', (e) => {
+                // We stop propagation only on mousedown/click, but for touch, 
+                // stopping here breaks the browser's scroll detection.
+            }, { passive: true });
         });
 
         // Tooltip hide on touch outside
         window.addEventListener('touchstart', (e) => {
             const target = e.target as HTMLElement;
-            if (!target.closest('.skin-card') && !target.closest('.mode-option') && !target.closest('.boost-card')) {
+            // Hide if not touching a trigger or the tooltip itself
+            if (!target.closest('.skin-card, .mode-option, .boost-card, .map-option, .btn-icon, .shop-item, .inventory-item')) {
                 this.hideTooltip();
             }
         }, { passive: true });
@@ -292,20 +298,37 @@ export class UIManager implements IUIManager {
 
     showTooltip(text: string, x: number, y: number): void {
         if (!this.tooltipEl) return;
+
+        // Auto-hide old timer
+        if (this.tooltipTimeout) clearTimeout(this.tooltipTimeout);
+
         this.tooltipEl.textContent = text;
         this.tooltipEl.style.display = 'block';
 
         const rect = this.tooltipEl.getBoundingClientRect();
         let posX = x + 15;
         let posY = y + 15;
+
+        // Mobile offset adjustment to avoid being under finger
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+            posY = y - rect.height - 40; // Show ABOVE finger on mobile
+        }
+
         if (posX + rect.width > window.innerWidth) posX = x - rect.width - 15;
         if (posY + rect.height > window.innerHeight) posY = y - rect.height - 15;
+        if (posY < 5) posY = y + 30; // Don't go off top
 
         this.tooltipEl.style.left = `${posX}px`;
         this.tooltipEl.style.top = `${posY}px`;
+
+        // Auto-hide on mobile after 2.5 seconds
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+            this.tooltipTimeout = setTimeout(() => this.hideTooltip(), 2500);
+        }
     }
 
     hideTooltip(): void {
+        if (this.tooltipTimeout) clearTimeout(this.tooltipTimeout);
         if (this.tooltipEl) this.tooltipEl.style.display = 'none';
     }
 

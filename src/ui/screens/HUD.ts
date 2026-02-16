@@ -1,5 +1,6 @@
 import type { IUIManager } from '../IUIManager';
 import { IconDrawer } from '../IconDrawer';
+import splashBg from '../../assets/menu_bg.jpg';
 
 export class HUD {
     private ui: IUIManager;
@@ -27,7 +28,12 @@ export class HUD {
         const bar = document.getElementById('loading-bar');
         const status = document.getElementById('splash-status');
         const playBtn = document.getElementById('play-btn');
-        if (!bar || !status || !playBtn || !container) return;
+        const splashScreen = document.getElementById('splash-screen');
+        if (!bar || !status || !playBtn || !container || !splashScreen) return;
+
+        // Set background via JS import for maximum reliability in Vite
+        splashScreen.style.backgroundImage = `url(${splashBg})`;
+        splashScreen.style.backgroundColor = '#0b0e14';
 
         let progress = 0;
         const messages = [

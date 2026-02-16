@@ -201,11 +201,13 @@ export class Renderer {
             const h = bSizes[i % bSizes.length];
 
             ctx.fillRect(wrappedX, cityY - h, w + 2, h);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            // Windows
-            for (let wy = cityY - h + 10; wy < cityY - 10; wy += 20) {
-                for (let wx = wrappedX + 10; wx < wrappedX + w - 10; wx += 15) {
-                    if (Math.random() > 0.3) ctx.fillRect(wx, wy, 8, 12);
+            // Windows - Only draw detailed windows if it's a dark theme or not the Sunny map
+            if (isDark || this.currentTheme.mapId !== 'sunny') {
+                ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)';
+                for (let wy = cityY - h + 10; wy < cityY - 10; wy += 20) {
+                    for (let wx = wrappedX + 10; wx < wrappedX + w - 10; wx += 15) {
+                        if (Math.random() > 0.4) ctx.fillRect(wx, wy, 8, 12);
+                    }
                 }
             }
             ctx.fillStyle = isDark ? 'rgba(49, 46, 129, 0.2)' : 'rgba(15, 23, 42, 0.3)';
@@ -231,13 +233,13 @@ export class Renderer {
                 this.drawNeonLaunchpad();
                 break;
             case 'forge':
-                this.drawUFOPlatform();
+                this.drawStarForgeStart();
                 break;
             case 'jungle':
                 this.drawLeafNest();
                 break;
             case 'ocean':
-                this.drawCoralThrone();
+                this.drawClamShell();
                 break;
             case 'volcano':
                 this.drawVolcanoRock();
@@ -289,14 +291,32 @@ export class Renderer {
         ctx.fill();
         ctx.stroke();
 
-        // Arrows indicating forward
-        const arrowOffset = (Date.now() / 15) % 20;
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.5 + Math.sin(Date.now() / 200) * 0.5})`;
-        ctx.beginPath();
-        ctx.moveTo(0 + arrowOffset, 0);
-        ctx.lineTo(10 + arrowOffset, 5);
-        ctx.lineTo(0 + arrowOffset, 10);
-        ctx.fill();
+        // Arrows indicating forward - SLOWER and optimized for mobile performance
+        const slowFactor = 45; // Increased from 15 to reduce visual "jitter" and CPU load
+        const arrowOffset = (Date.now() / slowFactor) % 60;
+        const pulseSpeed = 600; // Slower pulsing
+        const arrowAlpha = 0.4 + Math.sin(Date.now() / pulseSpeed) * 0.4;
+        ctx.fillStyle = `rgba(0, 255, 247, ${arrowAlpha})`; // Use Neon Blue
+
+        // Arrow 1
+        let x1 = -30 + arrowOffset;
+        if (x1 > -40 && x1 < 35) {
+            ctx.beginPath();
+            ctx.moveTo(x1, 0);
+            ctx.lineTo(x1 + 10, 5);
+            ctx.lineTo(x1, 10);
+            ctx.fill();
+        }
+
+        // Arrow 2 (Double Arrow as requested)
+        let x2 = -60 + arrowOffset;
+        if (x2 > -40 && x2 < 35) {
+            ctx.beginPath();
+            ctx.moveTo(x2, 0);
+            ctx.lineTo(x2 + 10, 5);
+            ctx.lineTo(x2, 10);
+            ctx.fill();
+        }
 
         // Vertical stabilizer (hanging down a bit but not to ground)
         ctx.strokeStyle = '#00fff7';
@@ -311,78 +331,117 @@ export class Renderer {
         ctx.stroke();
     }
 
-    private drawUFOPlatform() {
-        // Star Forge: Alien/Tech UFO Saucer
+    private drawStarForgeStart() {
         const ctx = this.ctx;
+        const time = Date.now() / 1000;
 
-        // Hover animation
-        const t = Date.now() / 500;
-        const hoverY = Math.sin(t) * 5;
+        // 1. ADVANCED STAR PLATFORM (Below Bird) - Based on reference image
+        ctx.save();
 
+        // Platform Base Shadow/Body
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.ellipse(0, 5, 60, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Outer Magenta Glow Ring
+        ctx.strokeStyle = '#f0abfc'; // Pink 300
+        ctx.lineWidth = 4;
+        ctx.shadowColor = '#d946ef';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 55, 15, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Inner Flat Surface (Magenta Tint)
+        ctx.fillStyle = 'rgba(217, 70, 239, 0.1)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 55, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Central Cyan Core (Radiant)
+        const coreGlow = 10 + Math.sin(time * 4) * 5;
+        ctx.shadowColor = '#22d3ee';
+        ctx.shadowBlur = coreGlow;
+        ctx.fillStyle = '#22d3ee';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 25, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Internal Core Shine
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 12, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Floating Dust Particles (Rotating) - Optimized for Mobile
+        for (let i = 0; i < 6; i++) {
+            const angle = time * 0.8 + (i * Math.PI * 2 / 6);
+            const dist = 65 + Math.sin(time + i) * 5;
+            const px = Math.cos(angle) * dist;
+            const py = Math.sin(angle) * (dist / 4) - 5;
+
+            const alpha = 0.4 + Math.sin(time * 2 + i) * 0.4;
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+
+        // 2. UFO SAUCER (Higher Above Bird)
+        ctx.save();
+        const hoverY = -180 + Math.sin(time * 1.5) * 10; // Moved HIGHER
         ctx.translate(0, hoverY);
 
-        // Saucer Dome (Dark glass)
+        // Saucer Dome
         ctx.fillStyle = '#0f172a';
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 2;
         ctx.shadowColor = '#38bdf8';
         ctx.shadowBlur = 10;
-
         ctx.beginPath();
-        ctx.ellipse(0, -5, 25, 10, 0, Math.PI, 0); // Top dome
+        ctx.ellipse(0, -5, 20, 8, 0, Math.PI, 0);
         ctx.fill();
         ctx.stroke();
 
-        // Saucer Ring (Main Body)
+        // Saucer Main Body
         ctx.fillStyle = '#1e293b';
-        ctx.shadowBlur = 0;
-        ctx.lineWidth = 1;
         ctx.strokeStyle = '#94a3b8';
-
         ctx.beginPath();
-        ctx.ellipse(0, 5, 50, 12, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 2, 40, 10, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
-        // Lights on rim
-        const lightCount = 8;
-        const rot = (Date.now() / 1000) % (Math.PI * 2);
-
+        // Rim Lights
+        const lightCount = 6;
         for (let i = 0; i < lightCount; i++) {
-            const angle = (i / lightCount) * Math.PI * 2 + rot;
-            const lx = Math.cos(angle) * 45;
-            const ly = Math.sin(angle) * 10 + 5;
-
-            // Only draw front lights or change size/alpha for perspective
-            // Simple depth sort: if ly > 5 draw bright, else dim
-            const isFront = Math.sin(angle) > 0;
-
-            ctx.fillStyle = isFront ? '#38bdf8' : '#0c4a6e';
-            ctx.shadowColor = isFront ? '#38bdf8' : 'transparent';
-            ctx.shadowBlur = isFront ? 5 : 0;
-
-            ctx.beginPath();
-            ctx.arc(lx, ly, isFront ? 3 : 2, 0, Math.PI * 2);
-            ctx.fill();
+            const angle = (i / lightCount) * Math.PI * 2 + time;
+            const lx = Math.cos(angle) * 35;
+            const ly = Math.sin(angle) * 6 + 2;
+            if (Math.sin(angle) > 0) {
+                ctx.fillStyle = '#38bdf8';
+                ctx.beginPath(); ctx.arc(lx, ly, 2, 0, Math.PI * 2); ctx.fill();
+            }
         }
 
-        // Beam Emitter
-        ctx.fillStyle = '#38bdf8';
-        ctx.beginPath();
-        ctx.ellipse(0, 15, 10, 3, 0, 0, Math.PI * 2);
-        ctx.fill();
+        // 3. TRACTOR BEAM (Fading out as it reaches the platform)
+        const beamGrad = ctx.createLinearGradient(0, 5, 0, 180);
+        beamGrad.addColorStop(0, 'rgba(56, 189, 248, 0.5)'); // Top
+        beamGrad.addColorStop(0.7, 'rgba(56, 189, 248, 0.2)'); // Bird level
+        beamGrad.addColorStop(1, 'rgba(56, 189, 248, 0)'); // Fade to total transparency
 
-        // Faint Beam going down
-        const beamGrad = ctx.createLinearGradient(0, 15, 0, 100);
-        beamGrad.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
-        beamGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
         ctx.fillStyle = beamGrad;
         ctx.beginPath();
-        ctx.moveTo(-10, 15);
-        ctx.lineTo(10, 15);
-        ctx.lineTo(20, 100);
-        ctx.lineTo(-20, 100);
+        ctx.moveTo(-15, 5);
+        ctx.lineTo(15, 5);
+        ctx.lineTo(45, 180);
+        ctx.lineTo(-45, 180);
         ctx.fill();
+
+        ctx.restore();
     }
 
     private drawLeafNest() {
@@ -404,17 +463,62 @@ export class Renderer {
 
         ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(-120, 2); ctx.lineTo(-100, -15); ctx.stroke();
+
+        // Small Leaf on the upper branch (More Realistic)
+        ctx.save();
+        ctx.translate(-100, -15);
+        ctx.rotate(-0.4);
+
+        // Leaf Body with a more natural, pointed shape
+        ctx.fillStyle = '#2e7d32';
+        ctx.strokeStyle = '#1b5e20'; // Dark Green outline instead of brown
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(5, -12, 25, -12, 35, 0); // Top edge
+        ctx.bezierCurveTo(25, 12, 5, 12, 0, 0);   // Bottom edge
+        ctx.fill();
+        ctx.stroke();
+
+        // Midrib (Vein)
+        ctx.strokeStyle = 'rgba(129, 199, 132, 0.4)'; // Matching veinColor with alpha
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(15, 2, 35, 0);
+        ctx.stroke();
+
+        ctx.restore();
+
         ctx.beginPath(); ctx.moveTo(-80, 2); ctx.lineTo(-70, 10); ctx.stroke();
+
+        // Fireflies / Đom đóm (Behind the leaf) - Optimized for Mobile
+        const time = Date.now() / 1000;
+        ctx.save();
+        for (let i = 0; i < 6; i++) {
+            const seed = i * 1.5;
+            // Smooth natural movement
+            const fx = Math.cos(time * 0.8 + seed) * 50;
+            const fy = Math.sin(time * 1.2 + seed) * 25 - 15;
+            const fPulse = 0.3 + Math.sin(time * 3 + seed) * 0.3;
+
+            ctx.fillStyle = `rgba(168, 255, 120, ${fPulse})`; // Glowy green-yellow
+            ctx.shadowColor = '#a8ff78';
+            ctx.shadowBlur = 8 * fPulse;
+            ctx.beginPath();
+            ctx.arc(fx, fy, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
 
         // Natural Leaf Nest
         // Darker, more natural green (Forest Green)
-        const leafColor = '#388e3c';
-        const veinColor = '#81c784'; // Lighter green for veins
+        const leafColor = '#2e7d32'; // Slightly deeper green
+        const veinColor = '#81c784';
 
         ctx.fillStyle = leafColor;
-        // Reduce shadow to avoid glowing look
-        ctx.shadowColor = 'rgba(0,0,0,0.3)';
-        ctx.shadowBlur = 5;
+        ctx.shadowColor = 'rgba(0,0,0,0.2)';
+        ctx.shadowBlur = 4;
 
         ctx.beginPath();
         ctx.moveTo(-60, 0);
@@ -455,68 +559,98 @@ export class Renderer {
         ctx.fill();
     }
 
-    private drawCoralThrone() {
+    private drawClamShell() {
         const ctx = this.ctx;
+        const time = Date.now() / 1000;
 
-        // Floating Coral Ledge
+        ctx.save();
 
-        // Coral Base (Brain coral texture)
-        ctx.fillStyle = '#f472b6'; // Pink
+        // Shell Style - Classic Pink
+        ctx.fillStyle = '#f472b6';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
         ctx.shadowColor = '#db2777';
         ctx.shadowBlur = 10;
 
+        // 1. Lower Shell (Base)
         ctx.beginPath();
-        ctx.moveTo(-50, 10);
-        ctx.quadraticCurveTo(-20, -5, 0, 0); // Ledge top
-        ctx.quadraticCurveTo(20, -5, 40, 10);
-        ctx.quadraticCurveTo(0, 40, -50, 10);
+        ctx.ellipse(0, 15, 45, 12, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
 
-        // Texture spots
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.beginPath(); ctx.arc(-10, 10, 4, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(15, 15, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(5, 5, 5, 0, Math.PI * 2); ctx.fill();
-
-        // Bubbles from coral
-        const t = Date.now() / 1000;
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-        ctx.lineWidth = 1;
+        // 2. The Pearl - Fixed position
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(0, 5, 8, 0, Math.PI * 2);
+        ctx.fill();
         ctx.shadowBlur = 0;
-        ctx.beginPath(); ctx.arc(-20, 10 - (t % 1) * 50, 2, 0, Math.PI * 2); ctx.stroke();
+
+        // 3. Upper Shell (Open Lid)
+        // Joint at the bottom-left point
+        ctx.translate(-40, 10);
+        const openAngle = -0.7 - Math.sin(time * 1.5) * 0.1; // "Breathing" open
+        ctx.rotate(openAngle);
+
+        ctx.fillStyle = '#ff9edb'; // Slightly lighter on top
+        ctx.beginPath();
+        ctx.ellipse(40, 0, 45, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
     }
 
     private drawVolcanoRock() {
         const ctx = this.ctx;
 
-        // Anti-gravity rock shard
+        // Anti-gravity rock shard (SCALED UP)
         ctx.fillStyle = '#1c1917'; // Stone 900
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ef4444'; // Red glow
+        ctx.shadowBlur = 15;
 
-        // Jagged shape
+        // Larger jagged shape
         ctx.beginPath();
-        ctx.moveTo(-40, 0);
-        ctx.lineTo(-20, -10);
-        ctx.lineTo(20, -5);
-        ctx.lineTo(40, 5); // Pad
-        ctx.lineTo(10, 25);
-        ctx.lineTo(-30, 20);
+        ctx.moveTo(-50, 0);
+        ctx.lineTo(-25, -12);
+        ctx.lineTo(25, -6);
+        ctx.lineTo(50, 6);
+        ctx.lineTo(15, 35);
+        ctx.lineTo(-40, 30);
         ctx.closePath();
         ctx.fill();
 
-        // Magma Veins
-        ctx.strokeStyle = '#ef4444';
+        // Lava glow vein inside the rock
+        const pulse = 0.5 + Math.sin(Date.now() / 400) * 0.5;
+        ctx.strokeStyle = `rgba(239, 68, 68, ${pulse})`;
         ctx.lineWidth = 2;
+        ctx.shadowBlur = 5;
+
         ctx.beginPath();
-        ctx.moveTo(-25, 0); ctx.lineTo(-5, 10); ctx.lineTo(15, 5);
+        ctx.moveTo(-35, 10);
+        ctx.lineTo(0, 5);
+        ctx.lineTo(35, 15);
         ctx.stroke();
 
-        // Heat distortion hint (particles)
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+        // Heat rising effect (particles) - Optimized for mobile performance
         const t = Date.now();
-        const yOff = Math.sin(t / 300) * 5; // Floating effect
-        ctx.fillRect(-10, 30 + yOff, 4, 4); // Drop of lava?
+        ctx.shadowBlur = 0; // Disable blur for small particles on mobile
+
+        for (let i = 0; i < 3; i++) {
+            const seed = i * 1234;
+            const cycle = 1500; // 1.5s lifespan
+            const progress = ((t + seed) % cycle) / cycle;
+
+            // Rise up and fade out
+            const px = -20 + (i * 20);
+            const py = 20 - (progress * 50); // Rise up
+            const pAlpha = (1 - progress) * 0.8;
+            const pSize = 2 + (progress * 2);
+
+            ctx.fillStyle = `rgba(239, 68, 68, ${pAlpha})`;
+            ctx.fillRect(px, py, pSize, pSize);
+        }
     }
 
     private drawWoodenPerch() {
@@ -552,6 +686,54 @@ export class Renderer {
         ctx.moveTo(-80, 5); ctx.lineTo(-50, 5);
         ctx.moveTo(-150, 15); ctx.lineTo(-120, 15);
         ctx.stroke();
+
+        // Advanced Branches and Swaying Leaves (Optimized for Mobile)
+        const time = Date.now() / 1000;
+        ctx.fillStyle = '#4caf50';
+        ctx.strokeStyle = '#5d4037';
+        ctx.lineWidth = 2;
+
+        const drawBetterLeaf = (x: number, y: number, angle: number) => {
+            ctx.save();
+            ctx.translate(x, y);
+            // GENTLE SWAY: Subtle rotation based on time
+            const sway = Math.sin(time * 2 + x) * 0.15;
+            ctx.rotate(angle + sway);
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0); // Stem base
+            ctx.bezierCurveTo(5, -10, 20, -10, 25, 0); // Upper edge
+            ctx.bezierCurveTo(20, 10, 5, 10, 0, 0);   // Lower edge
+            ctx.fill();
+            // Subtle center vein
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(20, 0); ctx.stroke();
+            ctx.restore();
+        };
+
+        // Branch 1: Natural upwards growth
+        ctx.strokeStyle = '#5d4037';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-100, 0);
+        ctx.quadraticCurveTo(-90, -15, -70, -25);
+        ctx.stroke();
+        drawBetterLeaf(-70, -25, -0.8);
+
+        // Branch 2: Sideways extension (Moved further left)
+        ctx.beginPath();
+        ctx.moveTo(-80, 5);
+        ctx.quadraticCurveTo(-65, 0, -55, -8);
+        ctx.stroke();
+        drawBetterLeaf(-55, -8, -0.4);
+
+        // Branch 3: Small sprout from top
+        ctx.beginPath();
+        ctx.moveTo(-160, 0);
+        ctx.lineTo(-175, -12);
+        ctx.stroke();
+        drawBetterLeaf(-175, -12, -1.2);
 
         // Hanging moss/vine
         ctx.fillStyle = '#4ade80'; // Bright green
