@@ -90,11 +90,15 @@ export class Game {
         this.setupInput();
         this.setupDebugKeys();
 
-        // Listen for Ground Bounce Events
+        // Listen for Ground/Pipe Bounce Events
         window.addEventListener('groundBounce', () => {
             this.audioManager.play('jump');
             this.particleSystem.emit(this.bird.x, CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT, 10, '#00fff7');
             this.screenShake = 5;
+        });
+        window.addEventListener('shieldActive', (e: any) => {
+            this.audioManager.play('hit');
+            this.particleSystem.emit(e.detail.x, e.detail.y, 8, COLORS.NEON_BLUE);
         });
         this.setupNitroEvents();
         this.syncNitroToBird();
@@ -421,6 +425,22 @@ export class Game {
     private handleGroundCollision(): void {
         if (this.state === 'GAMEOVER') return;
 
+        // NEW: Shield Protection for Ground
+        // If bird is invulnerable (has shield aura), allow one bounce
+        if (this.bird.isInvulnerable()) {
+            this.bird.bounce();
+            // Consume the shield so they aren't immortal 
+            this.bird.invulnerableTimer = 0;
+            if (this.bird.isDashing) {
+                // @ts-ignore - access private but needed for logic sync
+                this.bird.finishDash();
+            }
+
+            this.audioManager.play('hit');
+            this.particleSystem.emit(this.bird.x, this.bird.y + this.bird.radius, 15, COLORS.NEON_BLUE);
+            return;
+        }
+
         // Play die sound if hitting ground directly (skipped triggerDying)
         if (this.state === 'PLAYING') {
             this.audioManager.play('die');
@@ -560,6 +580,12 @@ export class Game {
         this.distanceTraveled = 0;
         this.lastThemeName = '';
         this.bird.reset();
+
+        // Ensure default nitro is full at start of game
+        if (this.saveManager.getEquippedBoostId() === 'nitro_default') {
+            this.saveManager.updateBoostRemaining(10); // nitro_default capacity
+        }
+
         this.syncNitroToBird(); // Ensure fresh boost state from save
         this.pipeManager.reset();
         this.coinManager.reset();

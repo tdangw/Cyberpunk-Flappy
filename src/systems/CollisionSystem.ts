@@ -48,9 +48,13 @@ export class CollisionSystem {
             if (birdRect.r > pipe.x && birdRect.l < pipe.x + pipe.w) {
                 if (birdRect.t < pipe.top || birdRect.b > gapBot) {
                     if (bird.isInvulnerable()) {
-                        // Sticky Invulnerability Logic
-                        if (!bird.isDashing && bird.getInvulnerableTimer() < 5) {
-                            bird.extendInvulnerability(5);
+                        // Persistently extend shield while inside ANY part of the pipe
+                        // 20 frames ensures it lasts until the next collision check
+                        bird.extendInvulnerability(20);
+
+                        // Small visual feedback (no screen shake or big bounce)
+                        if (Math.random() > 0.8) {
+                            window.dispatchEvent(new CustomEvent('shieldActive', { detail: { x: bird.x, y: bird.y } }));
                         }
                     } else {
                         ctx.triggerDying();
@@ -131,7 +135,8 @@ export class CollisionSystem {
                 }
 
                 if (bird.isInvulnerable()) {
-                    bird.extendInvulnerability(2);
+                    // Sticky Safety: Don't die inside the enemy if shield just ended
+                    bird.extendInvulnerability(10);
                 } else {
                     ctx.triggerDying();
                 }

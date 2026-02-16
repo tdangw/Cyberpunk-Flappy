@@ -7,9 +7,18 @@ import type { Particle } from '../types';
 export class ParticleSystem {
     private pool: Particle[] = [];
     private activeParticles: Particle[] = [];
-    private maxParticles = 300; // Increased limit for better effects
+    private maxParticles = 300;
+    private isMobile = false;
 
     constructor() {
+        // Simple mobile/touch detection
+        this.isMobile = (window.innerWidth <= 800) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+        // Cap particles on mobile to maintain 60FPS
+        if (this.isMobile) {
+            this.maxParticles = 120; // Sufficient for mobile screens
+        }
+
         // Pre-allocate pool
         for (let i = 0; i < this.maxParticles; i++) {
             this.pool.push({
@@ -25,46 +34,43 @@ export class ParticleSystem {
     update(speedOffset: number, dtRatio: number): void {
         let writeIdx = 0;
 
-        // Single pass update and compact
         for (let i = 0; i < this.activeParticles.length; i++) {
             const p = this.activeParticles[i];
 
             p.x += (p.vx - speedOffset * 0.5) * dtRatio;
             p.y += p.vy * dtRatio;
-            p.life -= 0.04 * dtRatio;
+            p.life -= (this.isMobile ? 0.05 : 0.04) * dtRatio; // Slightly faster fade on mobile
             p.vx *= 0.95;
             p.vy *= 0.95;
 
             if (p.life > 0) {
-                // Keep active
                 if (writeIdx !== i) {
                     this.activeParticles[writeIdx] = p;
                 }
                 writeIdx++;
             } else {
-                // Return to pool
                 this.pool.push(p);
             }
         }
 
-        // Truncate active list (remove dead references)
-        // Since we pushed dead ones to pool, they are safe. 
-        // We just need to shorten the active array.
         while (this.activeParticles.length > writeIdx) {
             this.activeParticles.pop();
         }
     }
 
     emit(x: number, y: number, count: number, color: string): void {
-        for (let i = 0; i < count; i++) {
-            if (this.pool.length === 0) break; // limit reached
+        // Adaptive count for mobile
+        const finalCount = this.isMobile ? Math.ceil(count * 0.6) : count;
+
+        for (let i = 0; i < finalCount; i++) {
+            if (this.pool.length === 0) break;
 
             const p = this.pool.pop()!;
             p.x = x;
             p.y = y;
             p.vx = (Math.random() - 0.5) * 12;
             p.vy = (Math.random() - 0.5) * 12;
-            p.life = 1.0 + Math.random() * 0.5;
+            p.life = 0.8 + Math.random() * 0.7;
             p.color = color;
             p.text = undefined;
 
@@ -80,7 +86,7 @@ export class ParticleSystem {
         p.y = y;
         p.vx = 0;
         p.vy = -2;
-        p.life = 1.5;
+        p.life = 1.2;
         p.color = color;
         p.text = text;
 
@@ -92,64 +98,28 @@ export class ParticleSystem {
 
         const originalAlpha = ctx.globalAlpha;
 
-        // Separate Text and Shape particles
-        // We can't batch text easily with shapes
-
-        // 1. Draw Shapes (Batched by Color)
-        // Sort by color to minimize state changes and enable batching
-        // Using a temporary array reference for sorting is fine, but sorting in place is better if order doesn't matter (it doesn't usually)
-        this.activeParticles.sort((a, b) => (a.color > b.color) ? 1 : -1);
-
-        let currentColor = '';
-        let batchStarted = false;
-
+        // 1. Render Shapes
+        // On Mobile, we use Squares (fillRect) which is much faster than Arcs
         for (const p of this.activeParticles) {
-            if (p.text) continue; // Skip text for now
+            if (p.text) continue;
 
-            // Start new batch if color changes
-            if (p.color !== currentColor) {
-                if (batchStarted) {
-                    ctx.fill(); // Draw previous batch
-                }
-                currentColor = p.color;
-                ctx.fillStyle = currentColor;
+            const size = Math.max(0, (this.isMobile ? 3 : 4) * p.life);
+            ctx.globalAlpha = Math.min(1.0, p.life);
+            ctx.fillStyle = p.color;
+
+            if (this.isMobile) {
+                // Optimized Square rendering for mobile
+                ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
+            } else {
+                // High-quality Circles for PC
                 ctx.beginPath();
-                batchStarted = true;
+                ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+                ctx.fill();
             }
-
-            // Add circle to current path
-            const radius = Math.max(0, 4 * p.life);
-            ctx.globalAlpha = Math.min(1.0, p.life); // Alpha change breaks batching!
-            // Wait, alpha changes per particle based on life. 
-            // If we want true batching, we can't change alpha per particle.
-            // Option 1: Ignore alpha fading (popping out). 
-            // Option 2: Group by "Color + Alpha bucket"? Too complex.
-            // Option 3: Use globalAlpha = 1 and use rgba() colors? modifying string is slow.
-            // Option 4: Optimization compromise - Batching works for color, but if alpha varies, we invoke draw.
-            // Actually, ctx.globalAlpha affects the whole fill(). 
-            // So we CANNOT batch particles with different alphas into one fill().
-
-            // Re-evaluating: 'Draw each individual particle > not optimized'
-            // The user implies looking for something faster.
-            // If we drop the batching requirement for Alpha, we can keep the loop.
-            // But if we want to batch, we must accept uniform alpha or use a different technique.
-
-            // Let's stick to simple "Sort by Color" to reduce fillStyle changes, 
-            // but we likely have to draw individually if alpha varies.
-            // UNLESS we use instance rendering (WebGL) or put alpha in the color string.
-
-            // Compromise: Just draw individually but sorted by color.
-            // This avoids state changes of `fillStyle`.
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-            ctx.fill();
         }
-        // (Self-Correction: Sorting helps fillStyle, but if we draw individually, it's not a huge batch gain.
-        // However, avoiding `ctx.fillStyle = ...` 200 times is still a win if it checks string equality internally).
 
-        // 2. Draw Text (Individually)
-        ctx.font = '700 20px "JetBrains Mono", monospace';
+        // 2. Render Text
+        ctx.font = '700 18px "JetBrains Mono", monospace';
         ctx.textAlign = 'center';
 
         for (const p of this.activeParticles) {
@@ -163,7 +133,6 @@ export class ParticleSystem {
     }
 
     clear(): void {
-        // Return all to pool
         while (this.activeParticles.length > 0) {
             this.pool.push(this.activeParticles.pop()!);
         }
