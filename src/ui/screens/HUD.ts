@@ -6,19 +6,13 @@ export class HUD {
     private ui: IUIManager;
     private reviveTimer: any = null;
     private energyInterval: any = null;
-    private abortController = new AbortController();
+    private splashInterval: any = null;
 
     constructor(ui: IUIManager) {
         this.ui = ui;
         this.replaceIcons();
         this.energyInterval = setInterval(() => this.updateEnergyBar(), 100);
         this.startSplashLoading();
-    }
-
-    destroy(): void {
-        this.stopReviveTimer();
-        if (this.energyInterval) clearInterval(this.energyInterval);
-        this.abortController.abort();
     }
 
     updateAllUI(): void {
@@ -51,12 +45,13 @@ export class HUD {
             "READY FOR DEPLOYMENT"
         ];
 
-        const interval = setInterval(() => {
+        this.splashInterval = setInterval(() => {
             // Speed varies for realistic look
             progress += Math.random() * 5 + 1;
             if (progress >= 100) {
                 progress = 100;
-                clearInterval(interval);
+                clearInterval(this.splashInterval);
+                this.splashInterval = null;
 
                 status.textContent = messages[messages.length - 1] + " 100%";
                 bar.style.width = '100%';
@@ -351,12 +346,13 @@ export class HUD {
         if (securityModal && !securityModal.classList.contains('modal-active')) {
             this.ui.game.pause();
             securityModal.classList.add('modal-active');
+            const signal = this.ui.getSignal();
 
             okBtn?.addEventListener('click', () => {
                 this.ui.playClick();
                 securityModal.classList.remove('modal-active');
                 this.ui.game.resume();
-            }, { once: true, signal: this.abortController.signal });
+            }, { once: true, signal });
         }
     }
 
@@ -392,6 +388,7 @@ export class HUD {
     }
 
     private setupTooltips(): void {
+        const signal = this.ui.getSignal();
         const icons = [
             { id: 'fullscreen-btn', text: 'FULLSCREEN' },
             { id: 'backpack-btn', text: 'INVENTORY' },
@@ -405,22 +402,34 @@ export class HUD {
             if (!el) return;
 
             // PC Interface
-            el.addEventListener('mouseenter', (e) => this.ui.showTooltip(icon.text, e.clientX, e.clientY), { signal: this.abortController.signal });
-            el.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
+            el.addEventListener('mouseenter', (e) => this.ui.showTooltip(icon.text, e.clientX, e.clientY), { signal });
+            el.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal });
 
             // Mobile Interface - Prevent sticking
             el.addEventListener('touchstart', (e) => {
                 const t = e.touches[0];
                 // Show tooltip slightly offset to not be under finger
                 this.ui.showTooltip(icon.text, t.clientX, t.clientY + 50);
-            }, { passive: true, signal: this.abortController.signal });
+            }, { passive: true, signal });
 
             el.addEventListener('touchend', () => {
                 // Delay hiding slightly so it's readable, but ensure it hides to prevent sticking
                 setTimeout(() => this.ui.hideTooltip(), 400);
-            }, { signal: this.abortController.signal });
+            }, { signal });
 
-            el.addEventListener('touchcancel', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
+            el.addEventListener('touchcancel', () => this.ui.hideTooltip(), { signal });
         });
+    }
+
+    destroy(): void {
+        if (this.energyInterval) {
+            clearInterval(this.energyInterval);
+            this.energyInterval = null;
+        }
+        if (this.splashInterval) {
+            clearInterval(this.splashInterval);
+            this.splashInterval = null;
+        }
+        this.stopReviveTimer();
     }
 }

@@ -25,14 +25,34 @@ export class LevelGenerator {
     getStageForScore(score: number, mapId: string): StageDefinition {
         const map = MAPS.find(m => m.id === mapId) || MAPS[0];
 
-        // Difficulty scaling triggers every 50 points
-        const phase = Math.floor(score / 50);
+        // 1. Theme Scaling (Colors/Styles) - Every 50 points
+        const themePhase = Math.floor(score / 50);
+        const themeSeed = themePhase + mapId.length;
 
-        // Pseudo-random selection based on phase to act as "Seed" 
-        // ensuring consistent experience for a short duration
-        const seed = phase + mapId.length;
+        // 2. Weather Scaling (Decorations) - Map specific durations
+        let weatherThreshold = 30; // Default: 30 points
+        if (mapId === 'sunny') weatherThreshold = 15; // Sunny: Short storms (15 pts)
+        if (mapId === 'jungle') weatherThreshold = 50; // Jungle: Long rain (50 pts)
 
-        return this.generateFromPalette(map, seed);
+        const weatherPhase = Math.floor(score / weatherThreshold);
+        const weatherSeed = weatherPhase + mapId.length + 100; // Offset to not sync with theme
+
+        // Generate base stage
+        const stage = this.generateFromPalette(map, themeSeed);
+
+        // Override decorations specifically with weatherSeed
+        const pseudoRandom = (offset: number) => {
+            const x = Math.sin(weatherSeed + offset) * 10000;
+            return x - Math.floor(x);
+        };
+        stage.decorations = map.palette.decorations[Math.floor(pseudoRandom(5) * map.palette.decorations.length)];
+
+        // 3. Early Game Safety (0-20 score)
+        if (score < 20) {
+            stage.decorations = map.palette.decorations[0];
+        }
+
+        return stage;
     }
 
     private generateFromPalette(map: MapDefinition, seed: number): StageDefinition {

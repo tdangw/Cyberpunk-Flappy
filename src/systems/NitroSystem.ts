@@ -8,6 +8,7 @@ import { Bird } from '../entities/Bird';
  */
 export class NitroSystem {
     private saveManager: SaveManager;
+    private abortController = new AbortController();
     private bird: Bird;
 
     constructor(saveManager: SaveManager, bird: Bird) {
@@ -18,7 +19,12 @@ export class NitroSystem {
     }
 
     private setupEvents(): void {
-        window.addEventListener('nitroDepleted', () => this.handleDepletion());
+        const signal = this.abortController.signal;
+        window.addEventListener('nitroDepleted', () => this.handleDepletion(), { signal });
+    }
+
+    public destroy(): void {
+        this.abortController.abort();
     }
 
     public syncToBird(): void {

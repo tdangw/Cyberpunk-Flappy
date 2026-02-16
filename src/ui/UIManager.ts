@@ -62,6 +62,10 @@ export class UIManager implements IUIManager {
         this.hud.updateAllUI();
     }
 
+    getSignal(): AbortSignal {
+        return this.abortController.signal;
+    }
+
     playClick(): void {
         this.audioManager.play('click');
     }
@@ -130,11 +134,13 @@ export class UIManager implements IUIManager {
             }
         };
         window.addEventListener('resize', handleOrientationChange, { signal });
-        window.addEventListener('orientationchange', handleOrientationChange);
-        if (screen.orientation) screen.orientation.addEventListener('change', handleOrientationChange);
+        window.addEventListener('orientationchange', handleOrientationChange, { signal });
+        if (screen.orientation) {
+            screen.orientation.addEventListener('change', handleOrientationChange, { signal } as any);
+        }
 
-        window.addEventListener('mousedown', (e) => this.closeOnClickOutside(e));
-        window.addEventListener('touchstart', (e) => this.closeOnClickOutside(e), { passive: false });
+        window.addEventListener('mousedown', (e) => this.closeOnClickOutside(e), { signal });
+        window.addEventListener('touchstart', (e) => this.closeOnClickOutside(e), { passive: false, signal });
 
         this.setupConfirmListeners();
 
@@ -196,8 +202,8 @@ export class UIManager implements IUIManager {
                 e.preventDefault();
                 this.game.getInputManager().triggerDashEnd();
             };
-            dashBtn.addEventListener('pointerdown', startDash);
-            window.addEventListener('pointerup', stopDash);
+            dashBtn.addEventListener('pointerdown', startDash, { signal });
+            window.addEventListener('pointerup', stopDash, { signal });
         }
 
         bindAction('play-btn', () => {
@@ -248,9 +254,9 @@ export class UIManager implements IUIManager {
         window.addEventListener('startCountdown', ((e: CustomEvent) => {
             if (e.detail.onStart) e.detail.onStart();
             this.hud.runCountdown(e.detail.onComplete);
-        }) as EventListener);
+        }) as EventListener, { signal });
 
-        window.addEventListener('securityAlert', () => this.hud.showSecurityAlert());
+        window.addEventListener('securityAlert', () => this.hud.showSecurityAlert(), { signal });
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
@@ -262,21 +268,22 @@ export class UIManager implements IUIManager {
             } else {
                 this.audioManager.resumeAll();
             }
-        });
+        }, { signal });
     }
 
     private setupConfirmListeners(): void {
+        const signal = this.abortController.signal;
         document.getElementById('confirm-cancel')?.addEventListener('click', () => {
             this.playClick();
             document.getElementById('confirm-modal')?.classList.remove('modal-active');
-        });
+        }, { signal });
         document.getElementById('confirm-ok')?.addEventListener('click', () => {
             this.playClick();
             const qtyInput = document.getElementById('confirm-qty-input') as HTMLInputElement;
             const qty = parseInt(qtyInput?.value || '1');
             if (this.confirmCallback) { (this.confirmCallback as any)(qty); this.confirmCallback = null; }
             document.getElementById('confirm-modal')?.classList.remove('modal-active');
-        });
+        }, { signal });
     }
 
     showConfirm(title: string, msg: string, callback: (qty?: number) => void, showQty: boolean = false): void {
@@ -397,12 +404,14 @@ export class UIManager implements IUIManager {
     }
 
     destroy(): void {
-        this.shopScreen.destroy();
-        this.inventoryScreen.destroy();
-        this.leaderboardScreen.destroy();
-        this.settingsScreen.destroy();
-        this.startScreen.destroy();
-        this.hud.destroy();
         this.abortController.abort();
+        if (this.notifTimeout) clearTimeout(this.notifTimeout);
+        if (this.tooltipTimeout) clearTimeout(this.tooltipTimeout);
+        this.hud.destroy();
+        if ((this.shopScreen as any).destroy) (this.shopScreen as any).destroy();
+        if ((this.inventoryScreen as any).destroy) (this.inventoryScreen as any).destroy();
+        if ((this.leaderboardScreen as any).destroy) (this.leaderboardScreen as any).destroy();
+        if ((this.settingsScreen as any).destroy) (this.settingsScreen as any).destroy();
+        if ((this.startScreen as any).destroy) (this.startScreen as any).destroy();
     }
 }

@@ -17,6 +17,9 @@ export class Renderer {
     private mapImages: Map<string, HTMLImageElement> = new Map();
     private imagesLoaded: Record<string, boolean> = {};
     private weatherSystem: WeatherSystem;
+    private cachedSkyGrad: CanvasGradient | null = null;
+    private lastSkyTop = '';
+    private lastSkyBot = '';
 
     constructor(ctx: CanvasRenderingContext2D) {
         this.ctx = ctx;
@@ -118,10 +121,15 @@ export class Renderer {
             }
         }
 
-        const grad = this.ctx.createLinearGradient(0, 0, 0, CANVAS.HEIGHT);
-        grad.addColorStop(0, skyTop);
-        grad.addColorStop(1, this.currentTheme.skyColor);
-        this.ctx.fillStyle = grad;
+        if (skyTop !== this.lastSkyTop || this.currentTheme.skyColor !== this.lastSkyBot || !this.cachedSkyGrad) {
+            const grad = this.ctx.createLinearGradient(0, 0, 0, CANVAS.HEIGHT);
+            grad.addColorStop(0, skyTop);
+            grad.addColorStop(1, this.currentTheme.skyColor);
+            this.cachedSkyGrad = grad;
+            this.lastSkyTop = skyTop;
+            this.lastSkyBot = this.currentTheme.skyColor;
+        }
+        this.ctx.fillStyle = this.cachedSkyGrad;
         this.ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
 
         switch (this.currentTheme.decorations) {
@@ -133,15 +141,29 @@ export class Renderer {
                     this.drawBuildings(distanceTraveled, frames);
                     this.drawCyberGrid(frames);
                 }
+            case 'trees':
+                if (this.currentTheme.mapId === 'jungle' && this.mapImages.has('jungle')) {
+                    this.drawImageBackground(distanceTraveled, frames, 'jungle');
+                } else {
+                    this.drawTrees(distanceTraveled);
+                }
+                this.weatherSystem.drawRain(frames, false); // Fade out if it was raining
                 break;
-            case 'trees': this.drawTrees(distanceTraveled); break;
-            case 'rain-forest': this.drawTrees(distanceTraveled); this.weatherSystem.drawRain(frames); break;
+            case 'rain-forest':
+                if (this.currentTheme.mapId === 'jungle' && this.mapImages.has('jungle')) {
+                    this.drawImageBackground(distanceTraveled, frames, 'jungle');
+                } else {
+                    this.drawTrees(distanceTraveled);
+                }
+                this.weatherSystem.drawRain(frames, true);
+                break;
             case 'bubbles':
                 if (this.currentTheme.mapId === 'ocean' && this.mapImages.has('ocean')) {
                     this.drawImageBackground(distanceTraveled, frames, 'ocean');
                 } else {
                     this.weatherSystem.drawUnderwater(frames);
                 }
+                this.weatherSystem.drawRain(frames, false);
                 break;
             case 'embers': this.drawVolcano(distanceTraveled); break;
             case 'smoke': this.drawVolcano(distanceTraveled); this.weatherSystem.drawSmoke(frames); break;
@@ -174,14 +196,23 @@ export class Renderer {
             case 'rain':
                 if (this.currentTheme.mapId === 'ocean') {
                     this.weatherSystem.drawUnderwater(frames);
+                } else if (this.currentTheme.mapId === 'neon') {
+                    this.drawBuildings(distanceTraveled, frames);
                 } else {
                     this.drawHighlands(distanceTraveled);
                 }
-                this.weatherSystem.drawRain(frames);
+                this.weatherSystem.drawRain(frames, true);
                 break;
-            case 'storm': this.drawHighlands(distanceTraveled); this.weatherSystem.drawStorm(frames); break;
-            case 'clouds': this.drawHighlands(distanceTraveled); this.weatherSystem.drawClouds(distanceTraveled, isSunny); break;
-            case 'sun_rays': this.drawHighlands(distanceTraveled); this.weatherSystem.drawSun(frames); this.weatherSystem.drawClouds(distanceTraveled, isSunny); break;
+            case 'storm':
+                if (this.currentTheme.mapId === 'neon') {
+                    this.drawBuildings(distanceTraveled, frames);
+                } else {
+                    this.drawHighlands(distanceTraveled);
+                }
+                this.weatherSystem.drawStorm(frames, true);
+                break;
+            case 'clouds': this.drawHighlands(distanceTraveled); this.weatherSystem.drawClouds(distanceTraveled, isSunny); this.weatherSystem.drawRain(frames, false); break;
+            case 'sun_rays': this.drawHighlands(distanceTraveled); this.weatherSystem.drawSun(frames); this.weatherSystem.drawClouds(distanceTraveled, isSunny); this.weatherSystem.drawRain(frames, false); break;
         }
     }
 
@@ -228,32 +259,34 @@ export class Renderer {
         this.ctx.save();
         this.ctx.translate(drawX, startY);
 
+        const now = Date.now();
+
         switch (this.currentTheme.mapId) {
             case 'neon':
-                this.drawNeonLaunchpad();
+                this.drawNeonLaunchpad(now);
                 break;
             case 'forge':
-                this.drawStarForgeStart();
+                this.drawStarForgeStart(now);
                 break;
             case 'jungle':
-                this.drawLeafNest();
+                this.drawLeafNest(now);
                 break;
             case 'ocean':
-                this.drawClamShell();
+                this.drawClamShell(now);
                 break;
             case 'volcano':
-                this.drawVolcanoRock();
+                this.drawVolcanoRock(now);
                 break;
             case 'sunny':
             default:
-                this.drawWoodenPerch();
+                this.drawWoodenPerch(now);
                 break;
         }
 
         this.ctx.restore();
     }
 
-    private drawNeonLaunchpad() {
+    private drawNeonLaunchpad(timeMs: number) {
         const ctx = this.ctx;
         // Neon Style: Floating data platform
         // Floating from Left
@@ -293,9 +326,9 @@ export class Renderer {
 
         // Arrows indicating forward - SLOWER and optimized for mobile performance
         const slowFactor = 45; // Increased from 15 to reduce visual "jitter" and CPU load
-        const arrowOffset = (Date.now() / slowFactor) % 60;
+        const arrowOffset = (timeMs / slowFactor) % 60;
         const pulseSpeed = 600; // Slower pulsing
-        const arrowAlpha = 0.4 + Math.sin(Date.now() / pulseSpeed) * 0.4;
+        const arrowAlpha = 0.4 + Math.sin(timeMs / pulseSpeed) * 0.4;
         ctx.fillStyle = `rgba(0, 255, 247, ${arrowAlpha})`; // Use Neon Blue
 
         // Arrow 1
@@ -331,9 +364,9 @@ export class Renderer {
         ctx.stroke();
     }
 
-    private drawStarForgeStart() {
+    private drawStarForgeStart(timeMs: number) {
         const ctx = this.ctx;
-        const time = Date.now() / 1000;
+        const time = timeMs / 1000;
 
         // 1. ADVANCED STAR PLATFORM (Below Bird) - Based on reference image
         ctx.save();
@@ -444,7 +477,7 @@ export class Renderer {
         ctx.restore();
     }
 
-    private drawLeafNest() {
+    private drawLeafNest(timeMs: number) {
         const ctx = this.ctx;
 
         // Move the nest up to catch the bird properly
@@ -493,7 +526,7 @@ export class Renderer {
         ctx.beginPath(); ctx.moveTo(-80, 2); ctx.lineTo(-70, 10); ctx.stroke();
 
         // Fireflies / Đom đóm (Behind the leaf) - Optimized for Mobile
-        const time = Date.now() / 1000;
+        const time = timeMs / 1000;
         ctx.save();
         for (let i = 0; i < 6; i++) {
             const seed = i * 1.5;
@@ -559,9 +592,9 @@ export class Renderer {
         ctx.fill();
     }
 
-    private drawClamShell() {
+    private drawClamShell(timeMs: number) {
         const ctx = this.ctx;
-        const time = Date.now() / 1000;
+        const time = timeMs / 1000;
 
         ctx.save();
 
@@ -640,7 +673,7 @@ export class Renderer {
         ctx.restore();
     }
 
-    private drawVolcanoRock() {
+    private drawVolcanoRock(timeMs: number) {
         const ctx = this.ctx;
 
         // Anti-gravity rock shard (SCALED UP)
@@ -660,7 +693,7 @@ export class Renderer {
         ctx.fill();
 
         // Lava glow vein inside the rock
-        const pulse = 0.5 + Math.sin(Date.now() / 400) * 0.5;
+        const pulse = 0.5 + Math.sin(timeMs / 400) * 0.5;
         ctx.strokeStyle = `rgba(239, 68, 68, ${pulse})`;
         ctx.lineWidth = 2;
         ctx.shadowBlur = 5;
@@ -672,7 +705,7 @@ export class Renderer {
         ctx.stroke();
 
         // Heat rising effect (particles) - Optimized for mobile performance
-        const t = Date.now();
+        const t = timeMs;
         ctx.shadowBlur = 0; // Disable blur for small particles on mobile
 
         for (let i = 0; i < 3; i++) {
@@ -691,7 +724,7 @@ export class Renderer {
         }
     }
 
-    private drawWoodenPerch() {
+    private drawWoodenPerch(timeMs: number) {
         const ctx = this.ctx;
 
         // Rustic wooden branch/log from left
@@ -726,7 +759,7 @@ export class Renderer {
         ctx.stroke();
 
         // Advanced Branches and Swaying Leaves (Optimized for Mobile)
-        const time = Date.now() / 1000;
+        const time = timeMs / 1000;
         ctx.fillStyle = '#4caf50';
         ctx.strokeStyle = '#5d4037';
         ctx.lineWidth = 2;
@@ -1021,14 +1054,14 @@ export class Renderer {
         this.ctx.strokeStyle = this.currentTheme.pipeColor;
         this.ctx.lineWidth = 2;
         this.ctx.globalAlpha = 0.5;
+        this.ctx.beginPath();
         for (let i = 0; i < 5; i++) {
             const l = 100 + Math.random() * 50;
             const yo = (Math.random() - 0.5) * 40;
-            this.ctx.beginPath();
             this.ctx.moveTo(bird.x - l, bird.y + yo);
             this.ctx.lineTo(bird.x, bird.y + yo);
-            this.ctx.stroke();
         }
+        this.ctx.stroke();
         this.ctx.restore();
     }
 }

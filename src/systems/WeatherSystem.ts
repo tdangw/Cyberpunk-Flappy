@@ -36,10 +36,14 @@ class Raindrop {
 export class WeatherSystem {
     private ctx: CanvasRenderingContext2D;
     private rainParticles: Raindrop[] = [];
+    private rainOpacity: number = 0;
+    private targetRainOpacity: number = 0;
+    private isMobile: boolean = false;
     private starCache: HTMLCanvasElement | null = null;
 
     constructor(ctx: CanvasRenderingContext2D) {
         this.ctx = ctx;
+        this.isMobile = (window.innerWidth <= 800) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         this.createStarCache();
     }
 
@@ -62,13 +66,24 @@ export class WeatherSystem {
         this.starCache = canvas;
     }
 
-    public drawRain(_frames: number): void {
+    public drawRain(_frames: number, isActive: boolean = true): void {
         const CONFIG = {
-            RAIN_COUNT: 25,
+            RAIN_COUNT: this.isMobile ? 15 : 25,
             WIND: -2,
             FALL_SPEED: 1.0,
             LENGTH_MULT: 1.0
         };
+
+        // Smoothly transition opacity
+        this.targetRainOpacity = isActive ? 1.0 : 0;
+        const lerpSpeed = 0.02; // Slow transition for realism
+        if (this.rainOpacity < this.targetRainOpacity) {
+            this.rainOpacity = Math.min(this.targetRainOpacity, this.rainOpacity + lerpSpeed);
+        } else if (this.rainOpacity > this.targetRainOpacity) {
+            this.rainOpacity = Math.max(this.targetRainOpacity, this.rainOpacity - lerpSpeed);
+        }
+
+        if (this.rainOpacity <= 0) return;
 
         if (this.rainParticles.length !== CONFIG.RAIN_COUNT) {
             this.rainParticles = [];
@@ -81,25 +96,25 @@ export class WeatherSystem {
         ctx.save();
         ctx.lineCap = 'round';
         ctx.strokeStyle = '#fff';
+        ctx.globalAlpha = 0.4 * this.rainOpacity; // Multiply by our transition alpha
+        ctx.lineWidth = 1;
+        ctx.beginPath();
 
         for (const p of this.rainParticles) {
             p.update(CONFIG, CANVAS.WIDTH, CANVAS.HEIGHT);
-            ctx.globalAlpha = 0.4;
-            ctx.beginPath();
-            ctx.lineWidth = 1;
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p.x + (CONFIG.WIND * 0.2), p.y + p.len);
-            ctx.stroke();
         }
+        ctx.stroke();
         ctx.globalAlpha = 1.0;
         ctx.restore();
     }
 
-    public drawStorm(frames: number): void {
-        const LIGHTNING_FREQ = 1;
-        this.drawRain(frames);
+    public drawStorm(frames: number, isActive: boolean = true): void {
+        this.drawRain(frames, isActive);
 
-        if (Math.random() < (LIGHTNING_FREQ / 1200)) {
+        const LIGHTNING_FREQ = 1;
+        if (this.rainOpacity > 0.5 && Math.random() < (LIGHTNING_FREQ / 1200)) {
             this.ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.15 + 0.05})`;
             this.ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
         }

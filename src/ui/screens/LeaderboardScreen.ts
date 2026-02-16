@@ -5,15 +5,10 @@ export class LeaderboardScreen {
     private ui: IUIManager;
     private currentTab: 'personal' | 'online' = 'personal';
     private currentMap: string = 'classic';
-    private abortController = new AbortController();
 
     constructor(ui: IUIManager) {
         this.ui = ui;
         this.setupEventListeners();
-    }
-
-    destroy(): void {
-        this.abortController.abort();
     }
 
     private setupEventListeners(): void {
@@ -32,8 +27,9 @@ export class LeaderboardScreen {
                     panel.setAttribute('data-online', this.currentTab === 'online' ? 'true' : 'false');
                     this.renderLeaderboard();
                 };
-                tab.addEventListener('click', handler, { signal: this.abortController.signal });
-                tab.addEventListener('touchstart', handler, { passive: false, signal: this.abortController.signal });
+                const signal = this.ui.getSignal();
+                tab.addEventListener('click', handler, { signal });
+                tab.addEventListener('touchstart', handler, { passive: false, signal });
             });
 
             panel.querySelectorAll('.lb-sub-tab').forEach((tab) => {
@@ -46,8 +42,9 @@ export class LeaderboardScreen {
                     this.currentMap = (e.target as HTMLElement).getAttribute('data-lb-map') || 'classic';
                     this.renderLeaderboard();
                 };
-                tab.addEventListener('click', handler, { signal: this.abortController.signal });
-                tab.addEventListener('touchstart', handler, { passive: false, signal: this.abortController.signal });
+                const signal = this.ui.getSignal();
+                tab.addEventListener('click', handler, { signal });
+                tab.addEventListener('touchstart', handler, { passive: false, signal });
             });
         }
     }

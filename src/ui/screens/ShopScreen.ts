@@ -7,15 +7,10 @@ export class ShopScreen {
     private currentTab: 'skins' | 'boosts' = 'skins';
     private currentPage: number = 1;
     private readonly itemsPerPage: number = 20;
-    private abortController = new AbortController();
 
     constructor(ui: IUIManager) {
         this.ui = ui;
         this.setupEventListeners();
-    }
-
-    destroy(): void {
-        this.abortController.abort();
     }
 
     private setupEventListeners(): void {
@@ -32,8 +27,9 @@ export class ShopScreen {
                     this.currentPage = 1;
                     this.renderShopGrid();
                 };
-                tab.addEventListener('click', handler, { signal: this.abortController.signal });
-                tab.addEventListener('touchstart', handler, { passive: false, signal: this.abortController.signal });
+                const signal = this.ui.getSignal();
+                tab.addEventListener('click', handler, { signal });
+                tab.addEventListener('touchstart', handler, { passive: false, signal });
             });
         }
     }
@@ -91,8 +87,9 @@ export class ShopScreen {
 
             card.className = `skin-card ${isLimited ? 'limited' : ''} ${isOwned ? 'owned-skin' : ''}`;
 
-            card.addEventListener('mouseenter', (e) => this.ui.showTooltip(skin.description, e.clientX, e.clientY), { signal: this.abortController.signal });
-            card.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
+            const signal = this.ui.getSignal();
+            card.addEventListener('mouseenter', (e) => this.ui.showTooltip(skin.description, e.clientX, e.clientY), { signal });
+            card.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal });
 
             card.innerHTML = `
                 <div class="card-preview-box">
@@ -109,7 +106,7 @@ export class ShopScreen {
                     e.stopPropagation();
                     this.ui.playClick();
                     this.handleSkinAction(skin.id, skin.name, skin.price);
-                }, { signal: this.abortController.signal });
+                }, { signal });
             }
 
             gridEl.appendChild(card);
@@ -138,14 +135,15 @@ export class ShopScreen {
                 <button class="shop-card-btn buy" style="width: 100%">BUY $${boost.price}</button>
             `;
 
-            card.addEventListener('mouseenter', (e) => this.ui.showTooltip(boost.description, e.clientX, e.clientY), { signal: this.abortController.signal });
-            card.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal: this.abortController.signal });
+            const signal = this.ui.getSignal();
+            card.addEventListener('mouseenter', (e) => this.ui.showTooltip(boost.description, e.clientX, e.clientY), { signal });
+            card.addEventListener('mouseleave', () => this.ui.hideTooltip(), { signal });
 
             card.querySelector('.buy')?.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.ui.playClick();
                 this.handleBoostBuy(boost);
-            }, { signal: this.abortController.signal });
+            }, { signal });
 
             gridEl.appendChild(card);
         });
@@ -166,7 +164,7 @@ export class ShopScreen {
                     this.ui.playClick();
                     this.currentPage = page;
                     this.renderShopGrid();
-                }, { signal: this.abortController.signal });
+                }, { signal: this.ui.getSignal() });
             }
             return btn;
         };

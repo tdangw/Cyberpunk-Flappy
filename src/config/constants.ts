@@ -57,7 +57,7 @@ export const MAPS: MapDefinition[] = [
             skyColors: ['#05001a', '#0a0025', '#001a05', '#1a0000', '#1a1a00', '#000000'],
             groundColors: ['#0a0020', '#100030', '#00250a', '#250000', '#252500', '#111'],
             styles: ['cyber', 'neon', 'glitch', 'plasma'],
-            decorations: ['buildings', 'pixels', 'shards', 'waves'],
+            decorations: ['buildings', 'pixels', 'shards', 'waves', 'rain', 'storm'],
             patterns: ['circuit', 'plain', 'lines']
         }
     },
@@ -72,7 +72,7 @@ export const MAPS: MapDefinition[] = [
             skyColors: ['#134e4a', '#064e3b', '#065f46'],
             groundColors: ['#022c22', '#064e3b'],
             styles: ['mossy'],
-            decorations: ['dense_forest'],
+            decorations: ['dense_forest', 'rain-forest', 'rain-forest'],
             patterns: ['plain']
         }
     },
@@ -87,7 +87,7 @@ export const MAPS: MapDefinition[] = [
             skyColors: ['#f8fafc', '#f1f5f9', '#f0f9ff'],
             groundColors: ['#1e293b', '#0f172a'],
             styles: ['coral'],
-            decorations: ['bubbles', 'waves'],
+            decorations: ['bubbles', 'waves', 'rain', 'storm'],
             patterns: ['plain']
         }
     },
@@ -102,7 +102,7 @@ export const MAPS: MapDefinition[] = [
             skyColors: ['#fafaf9', '#fff7ed', '#fff1f2'],
             groundColors: ['#44403c', '#292524'],
             styles: ['magma'],
-            decorations: ['fire', 'smoke'],
+            decorations: ['fire', 'smoke', 'rain', 'storm'],
             patterns: ['plain']
         }
     },
@@ -117,7 +117,7 @@ export const MAPS: MapDefinition[] = [
             skyColors: ['#020617', '#030712', '#080a24', '#0c0e33'],
             groundColors: ['#020617', '#000000'],
             styles: ['star_forge'],
-            decorations: ['cosmic_nebula', 'glowing_stars', 'shooting_stars'],
+            decorations: ['cosmic_nebula', 'glowing_stars', 'shooting_stars', 'rain', 'storm'],
             patterns: ['minimal', 'plain']
         }
     },
@@ -130,7 +130,7 @@ export const MAPS: MapDefinition[] = [
             skyColors: ['#e0f2fe', '#bae6fd', '#7dd3fc', '#0ea5e9'],
             groundColors: ['#15803d', '#166534'],
             styles: ['classic'],
-            decorations: ['clouds', 'highlands'],
+            decorations: ['clouds', 'highlands', 'clouds', 'highlands', 'clouds', 'highlands', 'rain', 'storm'],
             patterns: ['plain']
         }
     }

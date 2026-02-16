@@ -140,7 +140,7 @@ export class Game {
             this.saveManager.setEquippedBoost('nitro_default', 10);
             this.syncNitroToBird();
             this.updateCoinUI();
-        });
+        }, { signal: this.abortController.signal });
     }
 
     public syncNitroToBird(): void {
@@ -164,7 +164,7 @@ export class Game {
                 // Notify UI to update buttons and display
                 window.dispatchEvent(new CustomEvent('updateUI'));
             }
-        });
+        }, { signal: this.abortController.signal });
     }
 
     public requestFullscreen(): void {

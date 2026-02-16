@@ -3,16 +3,11 @@ import { DEFAULT_CONFIG } from '../../config/constants';
 
 export class SettingsScreen {
     private ui: IUIManager;
-    private abortController = new AbortController();
 
     constructor(ui: IUIManager) {
         this.ui = ui;
         this.setupSettingsControls();
         this.setupAudioControls();
-    }
-
-    destroy(): void {
-        this.abortController.abort();
     }
 
     show(): void {
@@ -32,7 +27,7 @@ export class SettingsScreen {
                 range.addEventListener('input', () => {
                     val.textContent = range.value;
                     updateFn(parseFloat(range.value));
-                }, { signal: this.abortController.signal });
+                }, { signal: this.ui.getSignal() });
             }
         };
 
@@ -55,12 +50,12 @@ export class SettingsScreen {
                 // I will make UIManager expose showSplashScreen.
                 (this.ui as any).hud.showSplashScreen();
             });
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
 
         document.getElementById('resetDefaultsBtn')?.addEventListener('click', () => {
             this.ui.playClick();
             this.resetSettings();
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
     }
 
     private setupAudioControls(): void {
@@ -70,58 +65,58 @@ export class SettingsScreen {
 
         if (bgmRange) {
             bgmRange.value = settings.bgmVolume.toString();
-            bgmRange.addEventListener('input', () => this.ui.audioManager.setBGMVolume(parseFloat(bgmRange.value)), { signal: this.abortController.signal });
+            bgmRange.addEventListener('input', () => this.ui.audioManager.setBGMVolume(parseFloat(bgmRange.value)), { signal: this.ui.getSignal() });
         }
         if (sfxRange) {
             sfxRange.value = settings.sfxVolume.toString();
-            sfxRange.addEventListener('input', () => this.ui.audioManager.setSFXVolume(parseFloat(sfxRange.value)), { signal: this.abortController.signal });
+            sfxRange.addEventListener('input', () => this.ui.audioManager.setSFXVolume(parseFloat(sfxRange.value)), { signal: this.ui.getSignal() });
         }
 
         document.getElementById('toggle-bgm')?.addEventListener('click', () => {
             this.ui.playClick();
             this.ui.audioManager.setBGMEnabled(!this.ui.audioManager.getSettings().bgmEnabled);
             this.updateAudioUI();
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
         document.getElementById('toggle-sfx')?.addEventListener('click', () => {
             this.ui.playClick();
             this.ui.audioManager.setSFXEnabled(!this.ui.audioManager.getSettings().sfxEnabled);
             this.updateAudioUI();
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
 
         // Dash Control Selectors
         document.getElementById('mode-touch')?.addEventListener('click', () => {
             this.ui.playClick();
             this.ui.game.updateConfig({ dashControl: 'touch' });
             this.ui.updateAllUI();
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
         document.getElementById('mode-left')?.addEventListener('click', () => {
             this.ui.playClick();
             this.ui.game.updateConfig({ dashControl: 'button_left' });
             this.ui.updateAllUI();
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
         document.getElementById('mode-right')?.addEventListener('click', () => {
             this.ui.playClick();
             this.ui.game.updateConfig({ dashControl: 'button_right' });
             this.ui.updateAllUI();
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
         document.getElementById('mode-fps')?.addEventListener('click', () => {
             this.ui.playClick();
             const current = this.ui.game.getConfig().showFPS;
             this.ui.game.updateConfig({ showFPS: !current });
             this.ui.updateAllUI();
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
         document.getElementById('toggle-bg-details')?.addEventListener('click', () => {
             this.ui.playClick();
             const current = this.ui.game.getConfig().showBackgroundDetails;
             this.ui.game.updateConfig({ showBackgroundDetails: !current });
             this.ui.updateAllUI();
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
         document.getElementById('toggle-ground-details')?.addEventListener('click', () => {
             this.ui.playClick();
             const current = this.ui.game.getConfig().showGroundDetails;
             this.ui.game.updateConfig({ showGroundDetails: !current });
             this.ui.updateAllUI();
-        }, { signal: this.abortController.signal });
+        }, { signal: this.ui.getSignal() });
     }
 
     updateAudioUI(): void {
