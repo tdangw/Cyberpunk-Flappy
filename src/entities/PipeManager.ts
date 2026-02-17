@@ -1,4 +1,4 @@
-import type { Pipe, GameConfig } from '../types';
+import type { Pipe, GameConfig, Crack } from '../types';
 import { CANVAS, COLORS } from '../config/constants';
 import { CoinManager } from './CoinManager';
 import { EnemyManager } from './EnemyManager';
@@ -274,6 +274,19 @@ export class PipeManager {
         this.pipes = this.pipes.filter(p => p.x < birdX - 50 || p.x > birdX + 400);
     }
 
+    addCrackToPipe(pipe: Pipe, x: number, y: number, side: 'left' | 'right' | 'top' | 'bottom'): void {
+        if (!pipe.cracks) pipe.cracks = [];
+        // Avoid too many cracks on one pipe for performance
+        if (pipe.cracks.length > 5) return;
+
+        pipe.cracks.push({
+            relY: y,
+            relX: (x - pipe.x) / pipe.w,
+            side: side,
+            seed: Math.random()
+        });
+    }
+
     render(ctx: CanvasRenderingContext2D, frames: number, _isClassic: boolean = false): void {
         this.pipes.forEach((p) => this.drawPipe(ctx, p, frames));
     }
@@ -312,6 +325,127 @@ export class PipeManager {
         } else {
             drawBody();
         }
+
+        // Draw Cracks on top of the pipe
+        if (p.cracks) {
+            this.drawCracks(ctx, p);
+        }
+
+        ctx.restore();
+    }
+
+    private drawCracks(ctx: CanvasRenderingContext2D, p: Pipe): void {
+        const gap = this.config.pipeGap;
+        const botY = p.top + gap;
+
+        ctx.save();
+
+        // --- 1. Clipping Path (Tight to pipe + rim bounds) ---
+        ctx.beginPath();
+        // Top pipe body + rim (rimOverhang is 4px)
+        ctx.rect(p.x - 4, -50, p.w + 8, p.top + 50);
+        // Bottom pipe body + rim
+        ctx.rect(p.x - 4, botY, p.w + 8, CANVAS.HEIGHT - botY + 50);
+        ctx.clip();
+
+        // --- 2. Render Cracks ---
+        p.cracks?.forEach(crack => {
+            this.drawSingleCrack(ctx, p.x, p.w, crack, p.top, botY);
+        });
+
+        ctx.restore();
+    }
+
+    private drawSingleCrack(ctx: CanvasRenderingContext2D, px: number, pw: number, crack: Crack, topLine: number, botLine: number): void {
+        const seed = crack.seed;
+        // Adjust startX/startY to be slightly INSIDE the pipe to avoid leaking
+        let startX = crack.side === 'left' ? px + 1 : (crack.side === 'right' ? px + pw - 1 : px + ((crack.relX ?? seed) * pw));
+        let startY = crack.relY;
+
+        if (crack.side === 'top') startY = topLine + 1;
+        if (crack.side === 'bottom') startY = botLine - 1;
+
+        // Direction logic: cracks should spread INTO the pipe material
+        let baseAngle = 0;
+        if (crack.side === 'left') baseAngle = 0; // Spread Right
+        else if (crack.side === 'right') baseAngle = Math.PI; // Spread Left
+        else if (crack.side === 'top') baseAngle = -Math.PI / 2; // Spread Up (into top pipe)
+        else if (crack.side === 'bottom') baseAngle = Math.PI / 2; // Spread Down (into bot pipe)
+
+        const getJaggedPath = (sx: number, sy: number, angle: number, radius: number, jitterScale: number = 0.8) => {
+            const pts: { x: number, y: number }[] = [{ x: sx, y: sy }];
+            let curX = sx;
+            let curY = sy;
+            const segments = 5;
+            const step = radius / segments;
+
+            for (let i = 0; i < segments; i++) {
+                const jitter = (Math.sin(seed * 3000 + i + radius) * jitterScale);
+                curX += Math.cos(angle + jitter) * step;
+                curY += Math.sin(angle + jitter) * step;
+                pts.push({ x: curX, y: curY });
+            }
+            return pts;
+        };
+
+        ctx.save();
+        ctx.lineJoin = 'miter';
+        ctx.lineCap = 'butt';
+
+        // 1. Primary Fractures (Softened and blended)
+        const angles = [baseAngle, baseAngle + 0.4, baseAngle - 0.4];
+
+        angles.forEach((ang, idx) => {
+            const radius = (idx === 0 ? 32 : 22) + seed * 18;
+            const pts = getJaggedPath(startX, startY, ang, radius);
+
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+
+            ctx.lineWidth = idx === 0 ? (2.5 + seed * 1.5) : (1 + seed);
+            ctx.strokeStyle = idx === 0 ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.3)';
+            ctx.stroke();
+
+            // Branching off main crack
+            if (idx === 0 && seed > 0.4) {
+                const bPt = pts[2];
+                const bPts = getJaggedPath(bPt.x, bPt.y, ang + 0.8, 12);
+                ctx.beginPath();
+                ctx.moveTo(bPt.x, bPt.y);
+                bPts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+            }
+        });
+
+        // 2. Mesh Hairlines (Very subtle)
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 6; i++) {
+            const ang = baseAngle + (Math.sin(seed * i * 500) * 3);
+            const pts = getJaggedPath(startX, startY, ang, 8 + seed * 10, 1.5);
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+        }
+
+        // 3. Focal Point (Impact Pit) - Use radial gradient for softness
+        const rw = 4 + seed * 2;
+        const rh = (crack.side === 'top' || crack.side === 'bottom') ? 2 : 4;
+        const grad = ctx.createRadialGradient(startX, startY, 0, startX, startY, rw);
+        grad.addColorStop(0, 'rgba(0,0,0,0.8)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+        ctx.fillStyle = grad;
+        ctx.save();
+        ctx.translate(startX, startY);
+        ctx.rotate(baseAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rw, rh, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
 
         ctx.restore();
     }

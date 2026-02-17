@@ -1,5 +1,6 @@
 export class GroundDecorationManager {
     private decorations: { x: number; y: number; type: string; variant: number; scale: number; rotation: number }[] = [];
+    private groundCracks: { x: number; y: number; seed: number }[] = [];
     private density: number = 40;
     private nextGap: number = 0;
     private patternCount: number = 0;
@@ -12,6 +13,7 @@ export class GroundDecorationManager {
         this.nextGap = Math.random() * this.density + 10;
         this.patternCount = 0;
         this.currentPattern = 'random';
+        this.groundCracks = [];
 
         // Pre-fill screen
         let currentX = 0;
@@ -27,6 +29,14 @@ export class GroundDecorationManager {
             this.decorations[i].x -= speed * dtRatio;
             if (this.decorations[i].x < -50) {
                 this.decorations.splice(i, 1);
+            }
+        }
+
+        // Scroll cracks
+        for (let i = this.groundCracks.length - 1; i >= 0; i--) {
+            this.groundCracks[i].x -= speed * dtRatio;
+            if (this.groundCracks[i].x < -100) {
+                this.groundCracks.splice(i, 1);
             }
         }
 
@@ -106,6 +116,14 @@ export class GroundDecorationManager {
         });
     }
 
+    addCrackToGround(x: number, y: number): void {
+        this.groundCracks.push({
+            x: x,
+            y: y,
+            seed: Math.random()
+        });
+    }
+
     render(ctx: CanvasRenderingContext2D): void {
         ctx.save();
 
@@ -129,6 +147,91 @@ export class GroundDecorationManager {
 
             ctx.restore();
         }
+
+        // Draw Ground Cracks
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 2;
+        for (const crack of this.groundCracks) {
+            this.drawCrackDecoration(ctx, crack.x, crack.y, crack.seed);
+        }
+
+        ctx.restore();
+    }
+
+    private drawCrackDecoration(ctx: CanvasRenderingContext2D, x: number, y: number, seed: number): void {
+        ctx.save();
+        ctx.lineJoin = 'miter';
+        ctx.lineCap = 'butt';
+
+        const getJaggedPath = (sx: number, sy: number, angle: number, radius: number) => {
+            let curX = sx;
+            let curY = sy;
+            const segments = 5;
+            const step = radius / segments;
+            const points: { x: number, y: number }[] = [{ x: sx, y: sy }];
+
+            for (let i = 0; i < segments; i++) {
+                const jitter = (Math.sin(seed * 4000 + i) * 0.6);
+                curX += Math.cos(angle + jitter) * step;
+                curY += Math.sin(angle + jitter) * step * 0.5;
+                points.push({ x: curX, y: curY });
+            }
+            return points;
+        };
+
+        // 1. Core Radiating Gaps (Varying intensities)
+        const angles = [0.4, 0.8, 1.2, 1.8, 2.3, 2.7];
+        angles.forEach((ang, idx) => {
+            const len = 12 + (Math.sin(seed * idx) + 1) * 15;
+            const pts = getJaggedPath(x, y, ang, len);
+
+            // Mix of bold and faint
+            const isMain = idx === 1 || idx === 3 || (idx === 4 && seed > 0.5);
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+
+            ctx.lineWidth = isMain ? (1.5 + seed * 1.5) : (0.6 + seed * 0.5);
+            ctx.strokeStyle = isMain ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)';
+            ctx.stroke();
+
+            // Highlight (Top edge)
+            if (isMain) {
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y - 0.5);
+                pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y - 0.5));
+                ctx.lineWidth = 0.5;
+                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                ctx.stroke();
+            }
+        });
+
+        // 2. Hairline cracks (Very faint)
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 0.4;
+        for (let i = 0; i < 5; i++) {
+            const ang = 0.2 + (seed * 2.8) + (Math.sin(i) * 0.3);
+            const pts = getJaggedPath(x, y, ang, 8 + seed * 8);
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+        }
+
+        // 3. Smaller Surface Chips
+        ctx.fillStyle = 'rgba(10,10,10,0.7)';
+        for (let i = 0; i < 8; i++) {
+            const rx = x + (Math.sin(seed * 3000 + i) * 25);
+            const ry = y + (Math.abs(Math.cos(seed * 2000 + i)) * 8);
+            const s = 0.8 + seed * 2;
+            ctx.beginPath();
+            ctx.moveTo(rx, ry);
+            ctx.lineTo(rx + s, ry + s / 2);
+            ctx.lineTo(rx + s / 2, ry + s);
+            ctx.closePath();
+            ctx.fill();
+        }
+
         ctx.restore();
     }
 

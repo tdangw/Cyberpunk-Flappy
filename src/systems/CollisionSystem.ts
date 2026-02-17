@@ -23,10 +23,11 @@ interface CollisionContext {
   updateScoreUI: () => void;
   updateCoinUI: () => void;
   createScorePopup: (x: number, y: number, text: string) => void;
+  onPipeCollision: (pipe: Pipe, x: number, y: number, side: 'left' | 'right' | 'top' | 'bottom') => void;
 }
 
 export class CollisionSystem {
-  constructor() {}
+  constructor() { }
 
   public checkCollisions(ctx: CollisionContext): {
     score: number;
@@ -63,7 +64,26 @@ export class CollisionSystem {
                 })
               );
             }
-          } else {
+          } else {              // Determine impact side for realistic cracks
+            let impactSide: 'left' | 'right' | 'top' | 'bottom' = 'left';
+
+            // We check if the bird's center is horizontally within the pipe bounds
+            // to decide if it hit the mouth (top/bottom) or the side (left/right).
+            const isHInside = bird.x >= pipe.x && bird.x <= pipe.x + pipe.w;
+
+            if (isHInside) {
+              // Mouth hit: determine which pipe mouth based on vertical position
+              // pipe.top is the bottom mouth of the top pipe
+              // gapBot is the top mouth of the bottom pipe
+              impactSide = bird.y < pipe.top + config.pipeGap / 2 ? 'top' : 'bottom';
+            } else {
+              // Side hit
+              impactSide = bird.x < pipe.x ? 'left' : 'right';
+            }
+
+            const y = bird.y;
+            const x = bird.x;
+            ctx.onPipeCollision(pipe, x, y, impactSide);
             ctx.triggerDying();
           }
         }

@@ -62,6 +62,13 @@ export interface Particle {
     text?: string;
 }
 
+export interface Crack {
+    relY: number; // Y position relative to the top/bottom boundary
+    relX?: number; // X position relative to the pipe start
+    side: 'left' | 'right' | 'top' | 'bottom';
+    seed: number;
+}
+
 export interface Pipe {
     x: number;
     top: number;
@@ -72,6 +79,7 @@ export interface Pipe {
     mechanic?: string;    // Tên hiệu ứng (ví dụ: 'falling', 'pixelate', 'hologram'...)
     animTimer?: number;   // Timer dùng chung cho mọi hiệu ứng
     mechanicState?: any;  // Dữ liệu phụ trợ nếu cần (vận tốc, vị trí ban đầu...)
+    cracks?: Crack[];
 }
 
 export interface Coin {

@@ -404,7 +404,8 @@ export class Game {
             triggerDying: this.triggerDying.bind(this),
             createScorePopup: this.createScorePopup.bind(this),
             updateScoreUI: this.updateScoreUI.bind(this),
-            updateCoinUI: this.updateCoinUI.bind(this)
+            updateCoinUI: this.updateCoinUI.bind(this),
+            onPipeCollision: (pipe, x, y, side) => this.pipeManager.addCrackToPipe(pipe, x, y, side)
         });
 
         this.score = result.score;
@@ -460,6 +461,10 @@ export class Game {
 
         this.audioManager.play('hit'); // Sync: Impact Ground
         this.audioManager.play('stunt'); // Game Over Stunt Sound
+
+        if (!this.isClassicMode) {
+            this.groundDecorationManager.addCrackToGround(this.bird.x, CANVAS.HEIGHT - CANVAS.GROUND_HEIGHT);
+        }
         this.audioManager.stopBGM();
         this.bird.isStunned = true;
         this.gameOver();
