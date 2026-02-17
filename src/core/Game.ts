@@ -503,12 +503,12 @@ export class Game {
             this.ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
         }
 
-        this.renderer.drawDistanceMarkers(this.distanceTraveled, this.isClassicMode);
         this.renderer.drawGround(this.frames, this.state === 'PLAYING' ? this.config.speed : 0);
 
         this.pipeManager.render(this.ctx, this.frames, this.isClassicMode);
         this.coinManager.draw(this.ctx);
         this.enemyManager.draw(this.ctx);
+        this.renderer.drawDistanceMarkers(this.distanceTraveled, this.isClassicMode);
 
         if (!this.isClassicMode && this.config.showGroundDetails) {
             this.groundDecorationManager.render(this.ctx);

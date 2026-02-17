@@ -80,17 +80,18 @@ export class Renderer {
     clear(): void { this.ctx.clearRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT); }
 
     drawBackground(frames: number, distanceTraveled: number, isClassicMode: boolean = false): void {
-        const isSunny = this.currentTheme.mapId === 'sunny';
+        const mapId = this.currentTheme.mapId;
         const isDark = this.currentTheme.isDark;
+        const isSunny = mapId === 'sunny';
 
         // Calculate Sky Top based on theme brightness
         let skyTop = isDark ? '#000000' : '#4ec0ca';
 
         // Specific overrides for improved aesthetics
-        if (this.currentTheme.mapId === 'volcano') skyTop = '#fbcfe8'; // Pinkish-red morning
-        if (this.currentTheme.mapId === 'forge') skyTop = '#050a1e'; // Deep Cosmic Blue
-        if (this.currentTheme.mapId === 'jungle') skyTop = '#022c22'; // Deep Forest Green
-        if (this.currentTheme.mapId === 'ocean') skyTop = '#f0f9ff'; // Pale blue
+        if (mapId === 'volcano') skyTop = '#fbcfe8'; // Pinkish-red morning
+        if (mapId === 'forge') skyTop = '#050a1e'; // Deep Cosmic Blue
+        if (mapId === 'jungle') skyTop = '#022c22'; // Deep Forest Green
+        if (mapId === 'ocean') skyTop = '#f0f9ff'; // Pale blue
 
         // Simplified Sky for Classic
         if (isClassicMode) {
@@ -100,17 +101,14 @@ export class Renderer {
             this.ctx.fillStyle = grad;
             this.ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
 
-            // Only draw static decorations or simple ones
-            if (this.currentTheme.decorations === 'highlands' || isSunny) {
+            if (isSunny) {
                 this.drawHighlands(distanceTraveled);
             } else {
-                this.drawBuildings(distanceTraveled, frames);
-                this.drawCyberGrid(frames);
+                this.drawMapBase(frames, distanceTraveled);
             }
-            return; // Stop here for Classic
+            return;
         }
 
-        // ... Standard Advance Logic ...
         // Adaptive Sky for Sunny Storms/Rain
         if (isSunny) {
             const dec = this.currentTheme.decorations;
@@ -132,88 +130,79 @@ export class Renderer {
         this.ctx.fillStyle = this.cachedSkyGrad;
         this.ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
 
-        switch (this.currentTheme.decorations) {
-            case 'buildings':
-                const isNeon = this.currentTheme.mapId === 'neon';
-                if (isNeon && this.mapImages.has('neon')) {
-                    this.drawImageBackground(distanceTraveled, frames, 'neon');
-                } else {
-                    this.drawBuildings(distanceTraveled, frames);
-                    this.drawCyberGrid(frames);
-                }
-                break;
-            case 'trees':
-                if (this.currentTheme.mapId === 'jungle' && this.mapImages.has('jungle')) {
-                    this.drawImageBackground(distanceTraveled, frames, 'jungle');
-                } else {
-                    this.drawTrees(distanceTraveled);
-                }
-                this.weatherSystem.drawRain(frames, false); // Fade out if it was raining
-                break;
+        // 1. Draw the Base Layer (Image or Procedural fallback)
+        this.drawMapBase(frames, distanceTraveled);
+
+        // 2. Apply Decoration/Weather Overlays
+        const dec = this.currentTheme.decorations;
+
+        // Specific overlay effects based on decoration type
+        switch (dec) {
+            case 'rain':
             case 'rain-forest':
-                if (this.currentTheme.mapId === 'jungle' && this.mapImages.has('jungle')) {
-                    this.drawImageBackground(distanceTraveled, frames, 'jungle');
-                } else {
-                    this.drawTrees(distanceTraveled);
-                }
                 this.weatherSystem.drawRain(frames, true);
                 break;
-            case 'bubbles':
-                if (this.currentTheme.mapId === 'ocean' && this.mapImages.has('ocean')) {
-                    this.drawImageBackground(distanceTraveled, frames, 'ocean');
-                } else {
-                    this.weatherSystem.drawUnderwater(frames);
-                }
-                this.weatherSystem.drawRain(frames, false);
+            case 'storm':
+                this.weatherSystem.drawStorm(frames, true);
                 break;
-            case 'embers': this.drawVolcano(distanceTraveled); break;
-            case 'smoke': this.drawVolcano(distanceTraveled); this.weatherSystem.drawSmoke(frames); break;
-            case 'ash': this.drawVolcano(distanceTraveled); this.weatherSystem.drawAsh(frames); break;
+            case 'smoke':
+                if (mapId === 'volcano') this.weatherSystem.drawSmoke(frames);
+                break;
+            case 'ash':
+                if (mapId === 'volcano') this.weatherSystem.drawAsh(frames);
+                break;
             case 'cosmic_nebula':
                 this.weatherSystem.drawCosmicNebula(frames);
                 this.weatherSystem.drawShootingStars(frames);
                 break;
-            case 'glowing_stars': this.weatherSystem.drawGlowingStars(frames); break;
-            case 'stars': this.weatherSystem.drawStars(frames); break;
             case 'shooting_stars':
-                this.weatherSystem.drawStars(frames);
                 this.weatherSystem.drawShootingStars(frames);
                 break;
-            case 'dense_forest':
-                this.drawImageBackground(distanceTraveled, frames, 'jungle');
+            case 'sun_rays':
+                this.weatherSystem.drawSun(frames);
+                if (isSunny) this.weatherSystem.drawClouds(distanceTraveled, true);
                 break;
+            case 'clouds':
+            case 'highlands':
+                if (isSunny) this.weatherSystem.drawClouds(distanceTraveled, true);
+                break;
+        }
+
+        // Always fade out rain if not active
+        if (dec !== 'rain' && dec !== 'rain-forest' && dec !== 'storm') {
+            this.weatherSystem.drawRain(frames, false);
+        }
+    }
+
+    /**
+     * Helper to draw the representative background for the current map
+     */
+    private drawMapBase(frames: number, distanceTraveled: number): void {
+        const mapId = this.currentTheme.mapId;
+
+        // 1. Try Image Background first (High priority)
+        if (mapId !== 'sunny' && mapId !== 'forge' && this.mapImages.has(mapId)) {
+            this.drawImageBackground(distanceTraveled, frames, mapId);
+            return;
+        }
+
+        // 2. Minimal Procedural Fallbacks for maps without images
+        switch (mapId) {
+            case 'neon':
+                this.ctx.fillStyle = 'rgba(15, 0, 30, 0.6)';
+                this.ctx.fillRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT);
+                this.drawCyberGrid(frames);
+                break;
+            case 'ocean':
+                this.weatherSystem.drawUnderwater(frames);
+                break;
+            case 'forge':
+                this.weatherSystem.drawStars(frames);
+                break;
+            case 'sunny':
             default:
-                const mapId = this.currentTheme.mapId;
-                if (mapId !== 'sunny' && mapId !== 'forge' && this.mapImages.has(mapId)) {
-                    this.drawImageBackground(distanceTraveled, frames, mapId);
-                } else {
-                    if (this.currentTheme.decorations === 'buildings') {
-                        this.drawBuildings(distanceTraveled, frames);
-                        this.drawCyberGrid(frames);
-                    }
-                }
+                this.drawHighlands(distanceTraveled);
                 break;
-            case 'highlands': this.drawHighlands(distanceTraveled); this.weatherSystem.drawClouds(distanceTraveled, isSunny); break;
-            case 'rain':
-                if (this.currentTheme.mapId === 'ocean') {
-                    this.weatherSystem.drawUnderwater(frames);
-                } else if (this.currentTheme.mapId === 'neon') {
-                    this.drawBuildings(distanceTraveled, frames);
-                } else {
-                    this.drawHighlands(distanceTraveled);
-                }
-                this.weatherSystem.drawRain(frames, true);
-                break;
-            case 'storm':
-                if (this.currentTheme.mapId === 'neon') {
-                    this.drawBuildings(distanceTraveled, frames);
-                } else {
-                    this.drawHighlands(distanceTraveled);
-                }
-                this.weatherSystem.drawStorm(frames, true);
-                break;
-            case 'clouds': this.drawHighlands(distanceTraveled); this.weatherSystem.drawClouds(distanceTraveled, isSunny); this.weatherSystem.drawRain(frames, false); break;
-            case 'sun_rays': this.drawHighlands(distanceTraveled); this.weatherSystem.drawSun(frames); this.weatherSystem.drawClouds(distanceTraveled, isSunny); this.weatherSystem.drawRain(frames, false); break;
         }
     }
 
@@ -828,36 +817,6 @@ export class Renderer {
         ctx.fill();
     }
 
-    private drawBuildings(distanceTraveled: number, frames: number): void {
-        const isDark = this.currentTheme.isDark;
-        this.ctx.fillStyle = isDark ? 'rgba(15, 0, 30, 0.6)' : 'rgba(30, 41, 59, 0.25)';
-        const w = 150;
-        const totalWidth = CANVAS.WIDTH + 200;
-
-        for (let i = 0; i < 10; i++) {
-            const offset = distanceTraveled * 0.05;
-            const pos = (i * 200) - offset;
-            const wrappedX = ((pos % totalWidth) + totalWidth) % totalWidth - 200;
-
-            const h = 200 + Math.sin(i * 2) * 120;
-            this.ctx.fillRect(wrappedX, CANVAS.HEIGHT - h - 30, w, h);
-
-            if (isDark) {
-                this.ctx.fillStyle = i % 2 === 0 ? '#00fff7' : '#ff00ff';
-                this.ctx.globalAlpha = 0.3 + Math.sin(frames * 0.05 + i) * 0.2;
-                for (let row = 1; row < 5; row++) {
-                    for (let col = 1; col < 3; col++) {
-                        if ((i + row + col) % 3 === 0) continue;
-                        this.ctx.fillRect(wrappedX + col * 40, CANVAS.HEIGHT - h - 30 + row * 40, 10, 10);
-                    }
-                }
-                this.ctx.globalAlpha = 1.0;
-                this.ctx.fillStyle = 'rgba(15, 0, 30, 0.6)';
-            }
-        }
-    }
-
-
     private drawCyberGrid(frames: number): void {
         this.ctx.save();
         this.ctx.strokeStyle = this.currentTheme.pipeColor;
@@ -915,34 +874,6 @@ export class Renderer {
         }
 
         this.ctx.restore();
-    }
-
-    private drawTrees(distanceTraveled: number): void {
-        this.ctx.fillStyle = 'rgba(0, 30, 0, 0.5)';
-        for (let i = 0; i < 12; i++) {
-            const offset = distanceTraveled * 0.15;
-            const x = (i * 180 - offset) % (CANVAS.WIDTH + 200);
-            const h = 250 + Math.sin(i * 3) * 150;
-            this.ctx.beginPath();
-            this.ctx.moveTo(x < -100 ? x + CANVAS.WIDTH + 300 : x, CANVAS.HEIGHT - 30);
-            this.ctx.lineTo((x < -100 ? x + CANVAS.WIDTH + 300 : x) + 40, CANVAS.HEIGHT - h);
-            this.ctx.lineTo((x < -100 ? x + CANVAS.WIDTH + 300 : x) + 80, CANVAS.HEIGHT - 30);
-            this.ctx.fill();
-        }
-    }
-
-    private drawVolcano(distanceTraveled: number): void {
-        this.ctx.fillStyle = 'rgba(60, 0, 0, 0.4)';
-        for (let i = 0; i < 5; i++) {
-            const offset = distanceTraveled * 0.1;
-            const x = (i * 400 - offset) % (CANVAS.WIDTH + 400);
-            const drawX = x < -400 ? x + CANVAS.WIDTH + 800 : x;
-            this.ctx.beginPath();
-            this.ctx.moveTo(drawX, CANVAS.HEIGHT - 30);
-            this.ctx.lineTo(drawX + 200, 300);
-            this.ctx.lineTo(drawX + 400, CANVAS.HEIGHT - 30);
-            this.ctx.fill();
-        }
     }
 
     drawDistanceMarkers(distanceTraveled: number, isClassicMode: boolean): void {
